@@ -292,22 +292,22 @@ def createPasswordResetEmail(firstName, username, resetCode):
             <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins">
             <body style="background-color:#191919;font-size:16px;font-family:'Poppins', 'Helvetica Neue', sans-serif;">
                 <div style="background-color:#464646;background:linear-gradient(0deg, #232323 0%, #5A5A5A 100%);Margin:0px auto;max-width:600px;">
-                    <div style="color:#24A292;font-size:25px;width:40%;margin-left:30%;">
+                    <div style="color:#4f8cff;font-size:25px;width:40%;margin-left:30%;">
                         <a href="http://localhost:1817/myshare/home" style="text-decoration:none;">
-                            <div style="width:100%;background-color: #353535;background: linear-gradient(0deg, #1D1D1D 0%, #353535 100%);color:#24A292;font-size:25px;text-align:center;padding-top:10px;padding-bottom:10px;border:2px solid #24A292;border-radius:10px;cursor:pointer;">MyShare</div>
+                            <div style="width:100%;background-color: #353535;background: linear-gradient(0deg, #1D1D1D 0%, #353535 100%);color:#4f8cff;font-size:25px;text-align:center;padding-top:10px;padding-bottom:10px;border:2px solid #4f8cff;border-radius:10px;cursor:pointer;">📊 FinSTR</div>
                         </a>
                     </div>
-                    <div style="width:90%;margin-left:5%;border-bottom:2px solid #24A292;">
+                    <div style="width:90%;margin-left:5%;border-bottom:2px solid #4f8cff;">
                         <div style="color:#C4C4C4;width:90%;margin-left:5%;margin-bottom:15px;font-size:18px;font-weight:bolder;">Hi {firstName},</div>
-                        <div style="color:#FFFDFD;width:90%;margin-left:5%;">You have requested to reset your MyShare password. If this was not you, please ignore this email.</div>
+                        <div style="color:#FFFDFD;width:90%;margin-left:5%;">You have requested to reset your FinSTR password. If this was not you, please ignore this email.</div>
                     </div>
-                    <div style="width:90%;margin-left:5%;border-bottom:2px solid #24A292;">
+                    <div style="width:90%;margin-left:5%;border-bottom:2px solid #4f8cff;">
                         <div style="color:#FFFDFD;width:90%;margin-left:5%;margin-bottom:5px;">Here is the information you will need to reset your password:</div>
                         <div style="color:#C4C4C4;width:90%;margin-left:5%;">Username: <span style="color:#FFFDFD;font-weight:bolder;">{username}</span><br><span>Password Reset Code: </span><span style="font-weight:bolder;color:#FF3200">{resetCode}</span></div>
                     </div>
                     <div style="width:36%;margin-left:32%;">
                         <a href="http://localhost:1817/myshare/recover-password" style="text-decoration:none;">
-                            <div style="width:100%;margin-bottom:10px;padding-top:10px;padding-bottom:10px;background-color:#24A292;background:linear-gradient(90deg, #24A292 0%, #247da2 100%);color:#FFFDFD;border-radius:45px;text-align:center;cursor:pointer;">Reset Password</div>
+                            <div style="width:100%;margin-bottom:10px;padding-top:10px;padding-bottom:10px;background-color:#4f8cff;background:linear-gradient(90deg, #4f8cff 0%, #3d6fd9 100%);color:#FFFDFD;border-radius:45px;text-align:center;cursor:pointer;">Reset Password</div>
                         </a>
                     </div>
                 </div>
@@ -1715,7 +1715,7 @@ class PasswordReset(Resource):
             return Response(json.dumps({ "message" : "Email service not configured. Set ADMIN_EMAIL_ADDRESS and ADMIN_EMAIL_PASSWORD environment variables." }), status=HTTP_INTERNAL_SERVER_ERROR, mimetype="application/json")
 
         yag_smtp_connection = yagmail.SMTP(user=ADMIN_EMAIL_ADDRESS, password=ADMIN_EMAIL_PASSWORD, host='smtp.gmail.com')
-        subject = "MyShare Password Recovery"
+        subject = "FinSTR Password Recovery"
         contents = [createPasswordResetEmail(result[0][1], result[0][2], resetCode)]
         try:
             yag_smtp_connection.send(params["email"], subject, contents)

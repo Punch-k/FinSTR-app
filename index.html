@@ -6,6 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <title>FinSTR — Stock Screener &amp; Maps</title>
+<link rel="icon" type="image/png" href="static/img/finstr-logo.png">
 <style>
   :root{
     --bg:#0b0e14; --panel:#131722; --panel2:#171c28; --border:#232838;
@@ -28,7 +29,8 @@
   /* Top nav */
   .topnav{ background:var(--panel); border:1px solid var(--border); border-radius:8px; margin-bottom:10px; position:sticky; top:8px; z-index:500; }
   .topnav-bar{ display:flex; align-items:center; justify-content:space-between; padding:10px 16px; }
-  .brand{font-weight:800; font-size:15px; white-space:nowrap;}
+  .brand{font-weight:800; font-size:15px; white-space:nowrap; display:flex; align-items:center;}
+  .brand-logo{height:28px; width:auto; display:block;}
   .hamburger-btn{ display:none; background:var(--panel2); border:1px solid var(--border); color:var(--text); width:38px; height:38px; border-radius:6px; font-size:16px; cursor:pointer; }
   .topnav-body{ display:flex; justify-content:space-between; align-items:center; padding:0 16px 12px; flex-wrap:wrap; gap:10px; }
   .nav-links{display:flex; gap:14px; flex-wrap:wrap; align-items:center;}
@@ -151,6 +153,10 @@
   .star-cell{cursor:pointer; text-align:center; color:#ffd54f; font-size:15px;}
   .cmp-cell{cursor:pointer; text-align:center; font-size:14px;}
   .ma-badge{margin-left:4px; font-weight:700;}
+  /* Monospaced tabular figures so decimal points align vertically down numeric columns
+     (Price, P/E, PEG, etc.) — makes the table much faster to scan for outliers. */
+  #screenerTable td[data-col]{font-variant-numeric:tabular-nums; font-family:'Roboto Mono','SF Mono','Fira Code',ui-monospace,monospace; font-size:12.5px;}
+  #screenerTable td[data-col="ticker"],#screenerTable td[data-col="name"],#screenerTable td[data-col="sector"],#screenerTable td[data-col="industry"],#screenerTable td[data-col="insight"]{font-family:inherit; font-size:inherit;}
   .insight-line{display:flex;flex-wrap:wrap;gap:6px;}
   .tag-pos,.tag-neg,.tag-neutral{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap;}
   .tag-pos{background:rgba(38,166,91,0.15);color:#26a65b;}
@@ -475,7 +481,7 @@
 
   <div class="topnav">
     <div class="topnav-bar">
-      <span class="brand">📊 FinSTR</span>
+      <span class="brand"><img src="static/img/finstr-logo.png" alt="FinSTR" class="brand-logo"></span>
       <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()">☰</button>
     </div>
     <div class="topnav-body" id="topnavBody">
@@ -636,6 +642,7 @@
       <div class="ctab" data-view="performance" onclick="setColumnView('performance')">Performance</div>
       <div class="ctab" data-view="technical" onclick="setColumnView('technical')">Technical</div>
       <div class="ctab" data-view="insights" onclick="setColumnView('insights')">Insights</div>
+      <div class="ctab" data-view="finstr" onclick="setColumnView('finstr')">FinSTR Score</div>
       <div class="ctab" data-view="custom" onclick="setColumnView('custom')">Custom</div>
     </div>
 
@@ -1473,6 +1480,34 @@ function setView(view){
   closeMobileMenu();
 }
 
+// ---------- FINSTR SCORES ----------
+// Composite 0-100 scores so users don't have to mentally juggle P/E, PEG, and moving-
+// average distance separately. Pure functions of each stock's own fields.
+function finstrValueScore(s){
+  const peN  = s.pe>0  ? Math.min(s.pe/40, 1)  : 1;
+  const pegN = s.peg>0 ? Math.min(s.peg/3, 1)  : 1;
+  return Math.round(Math.max(0, 100 - (peN*55 + pegN*45)));
+}
+function finstrMomentumScore(s){
+  const distFromMA = s.ma50>0 ? (s.price - s.ma50)/s.ma50*100 : 0;
+  const raw = 50 + distFromMA*2.5 + s.changePercent*3;
+  return Math.round(Math.max(0, Math.min(100, raw)));
+}
+function finstrScore(s){ return Math.round((finstrValueScore(s) + finstrMomentumScore(s))/2); }
+function scoreBadge(score){
+  const cls = score>=70 ? 'tag-pos' : score<=35 ? 'tag-neg' : 'tag-neutral';
+  return `<span class="${cls}" style="font-size:13px;padding:3px 10px;font-weight:700;">${score}</span>`;
+}
+
+// Cell-level heatmap tint for P/E — low P/E (cheap) shades green, high P/E (expensive)
+// shades red, so scanning the whole column reads like a heatmap, not just isolated text.
+function peHeatStyle(pe){
+  if(!(pe>0)) return '';
+  const t = Math.max(0, Math.min(1, (pe-8)/42)); // 8x -> green, 50x+ -> red
+  const r = Math.round(38 + t*(239-38)), g = Math.round(166 + t*(83-166)), b = Math.round(91 + t*(80-91));
+  return ` style="background:rgba(${r},${g},${b},0.16)"`;
+}
+
 // ---------- COLUMN VIEWS ----------
 const COLUMN_DEFS = {
   ticker:{label:'Ticker', render:s=>s.ticker},
@@ -1483,15 +1518,22 @@ const COLUMN_DEFS = {
   price:{label:'Price', render:s=>`$${s.price.toFixed(2)}`},
   changePercent:{label:'Change %', render:s=>`<span class="${s.changePercent>=0?'pos':'neg'}">${s.changePercent>=0?'+':''}${s.changePercent.toFixed(2)}%</span>`},
   volume:{label:'Volume', render:s=>`${s.volume.toFixed(1)}M`},
-  pe:{label:'P/E', render:s=> s.pe>0? s.pe.toFixed(1):'N/A'},
-  forwardPE:{label:'Fwd P/E', render:s=> s.forwardPE.toFixed(1)},
-  peg:{label:'PEG', render:s=> s.peg.toFixed(2)},
-  roe:{label:'ROE', render:s=> s.roe.toFixed(1)+'%'},
-  profitMargin:{label:'Profit Margin', render:s=> s.profitMargin.toFixed(1)+'%'},
-  dividendYield:{label:'Dividend', render:s=> s.dividendYield.toFixed(2)+'%'},
-  eps:{label:'EPS', render:s=> `$${s.eps.toFixed(2)}`},
-  ma50:{label:'50D MA', render:s=> `$${s.ma50.toFixed(2)} <span class="ma-badge ${s.price>=s.ma50?'pos':'neg'}">${s.price>=s.ma50?'▲':'▼'}</span>`},
-  beta:{label:'Beta', render:s=> s.beta.toFixed(2)},
+  // These six remain estimates, not live data — Yahoo's quote/quoteSummary endpoints that
+  // carry them now require an auth crumb (confirmed 401 even fetched directly), and are
+  // not obtainable client-side through a public proxy. Marked with "~" and a tooltip
+  // rather than silently presented as real. See COLUMN_DEFS comment above render().
+  pe:{label:'P/E ~', title:'Estimated — Yahoo\'s live P/E endpoint requires server-side auth', cellAttrs:s=>peHeatStyle(s.pe), render:s=> s.pe>0? s.pe.toFixed(1):'N/A'},
+  valueScore:{label:'Value Score', render:s=> scoreBadge(finstrValueScore(s))},
+  momentumScore:{label:'Momentum Score', render:s=> scoreBadge(finstrMomentumScore(s))},
+  finstrScore:{label:'FinSTR Score', render:s=> scoreBadge(finstrScore(s))},
+  forwardPE:{label:'Fwd P/E ~', title:'Estimated, not live', render:s=> s.forwardPE.toFixed(1)},
+  peg:{label:'PEG ~', title:'Estimated, not live', render:s=> s.peg.toFixed(2)},
+  roe:{label:'ROE ~', title:'Estimated, not live', render:s=> s.roe.toFixed(1)+'%'},
+  profitMargin:{label:'Profit Margin ~', title:'Estimated, not live', render:s=> s.profitMargin.toFixed(1)+'%'},
+  dividendYield:{label:'Dividend ~', title:'Estimated, not live', render:s=> s.dividendYield.toFixed(2)+'%'},
+  eps:{label:'EPS ~', title:'Estimated, not live', render:s=> `$${s.eps.toFixed(2)}`},
+  ma50:{label:'50D MA', render:s=> `$${s.ma50.toFixed(2)} <span class="ma-badge ${s.price>=s.ma50?'pos':'neg'}">${s.price>=s.ma50?'▲':'▼'}</span>${s.hasRealFundamentals?'':' <span class="sim-tag" title="Real once live prices load">~</span>'}`},
+  beta:{label:'Beta ~', title:'Estimated, not live', render:s=> s.beta.toFixed(2)},
   insight:{label:'Insight', render:s=> `<span class="insight-line">${computeInsight(s).join(' · ')}</span>`},
 };
 
@@ -1524,6 +1566,7 @@ const COLUMN_SETS = {
   performance:['ticker','price','changePercent','ma50'],
   technical:['ticker','price','beta','ma50'],
   insights:['ticker','name','sector','price','changePercent','insight'],
+  finstr:['ticker','name','sector','price','changePercent','valueScore','momentumScore','finstrScore'],
   custom:['ticker','name','sector','marketCap','price','changePercent','pe','forwardPE','peg','ma50','volume']
 };
 function setColumnView(v){
@@ -1537,7 +1580,7 @@ function renderTable(dataAll){
   const cols = COLUMN_SETS[state.columnView] || COLUMN_SETS.overview;
   document.getElementById('screenerHead').innerHTML = `<tr>
     <th title="Watchlist">★</th><th title="Compare">☐</th>
-    ${cols.map(k=>`<th data-key="${k}">${COLUMN_DEFS[k].label}<span class="arrow"></span></th>`).join('')}
+    ${cols.map(k=>`<th data-key="${k}"${COLUMN_DEFS[k].title?` title="${COLUMN_DEFS[k].title}"`:''}>${COLUMN_DEFS[k].label}<span class="arrow"></span></th>`).join('')}
     <th>Trend</th></tr>`;
   document.querySelectorAll('#screenerHead th[data-key]').forEach(th=>{
     th.addEventListener('click', ()=> sortBy(th.dataset.key));
@@ -1565,7 +1608,7 @@ function renderTable(dataAll){
       <tr data-ticker="${s.ticker}" style="border-left:4px solid ${s.changePercent>=0?'#26a65b':'#ef5350'}">
         <td data-label="Watch" class="star-cell" onclick="toggleWatch('${s.ticker}', event)">${watchlist.has(s.ticker)?'★':'☆'}</td>
         <td data-label="Compare" class="cmp-cell" onclick="toggleCompare('${s.ticker}', event)">${compareSet.has(s.ticker)?'☑':'☐'}</td>
-        ${cols.map(k=>`<td data-label="${COLUMN_DEFS[k].label}" data-col="${k}">${COLUMN_DEFS[k].render(s)}</td>`).join('')}
+        ${cols.map(k=>`<td data-label="${COLUMN_DEFS[k].label}" data-col="${k}"${COLUMN_DEFS[k].cellAttrs?COLUMN_DEFS[k].cellAttrs(s):''}>${COLUMN_DEFS[k].render(s)}</td>`).join('')}
         <td data-label="Trend"><svg width="60" height="20" title="Simulated trend (illustrative)"><polyline points="${genSparkPoints(s,60,20)}" fill="none" stroke="${s.changePercent>=0?'#26a65b':'#ef5350'}" stroke-width="1.5"/></svg></td>
       </tr>`).join('');
     tbody.querySelectorAll('tr').forEach(tr=> tr.addEventListener('click', ()=> openModal(tr.dataset.ticker)));
@@ -1869,6 +1912,7 @@ function recalcModal(){
   document.getElementById('modalScore').textContent = `Score: ${score.toFixed(0)}/100 · Fair Value $${fairValue.toFixed(2)} · ${upside>=0?'+':''}${upside.toFixed(1)}% vs current price`;
   document.getElementById('modalNote').textContent = note;
   document.getElementById('modalMetricsGrid').innerHTML = `
+    <div class="mm-card"><div class="mm-label">FinSTR Score</div><div class="mm-value">${scoreBadge(finstrScore(s))}</div></div>
     <div class="mm-card"><div class="mm-label">Fair Value</div><div class="mm-value">$${fairValue.toFixed(2)}</div></div>
     <div class="mm-card"><div class="mm-label">Upside</div><div class="mm-value ${upside>=0?'pos':'neg'}">${upside>=0?'+':''}${upside.toFixed(1)}%</div></div>
     <div class="mm-card"><div class="mm-label">P/E</div><div class="mm-value">${s.pe>0? s.pe.toFixed(1)+'x':'N/A'}</div></div>
@@ -1876,7 +1920,9 @@ function recalcModal(){
     <div class="mm-card"><div class="mm-label">ROE</div><div class="mm-value">${s.roe.toFixed(1)}%</div></div>
     <div class="mm-card"><div class="mm-label">Profit Margin</div><div class="mm-value">${s.profitMargin.toFixed(1)}%</div></div>
     <div class="mm-card"><div class="mm-label">Volume</div><div class="mm-value">${s.volume.toFixed(1)}M</div></div>
-    <div class="mm-card"><div class="mm-label">vs 50D MA</div><div class="mm-value ${s.price>=s.ma50?'pos':'neg'}">${s.price>=s.ma50?'Above ▲':'Below ▼'}</div></div>`;
+    <div class="mm-card"><div class="mm-label">vs 50D MA</div><div class="mm-value ${s.price>=s.ma50?'pos':'neg'}">${s.price>=s.ma50?'Above ▲':'Below ▼'}</div></div>
+    ${s.fiftyTwoWeekLow!=null ? `<div class="mm-card"><div class="mm-label">52-Week Range</div><div class="mm-value" style="font-size:13px">$${s.fiftyTwoWeekLow.toFixed(2)} – $${s.fiftyTwoWeekHigh.toFixed(2)}</div></div>` : ''}
+    ${s.dayLow!=null ? `<div class="mm-card"><div class="mm-label">Day Range</div><div class="mm-value" style="font-size:13px">$${s.dayLow.toFixed(2)} – $${s.dayHigh.toFixed(2)}</div></div>` : ''}`;
   renderModalProjection(s, growth);
 }
 function renderModalProjection(s, growth){
@@ -1970,19 +2016,38 @@ async function fetchTextWithProxy(url){
   return null;
 }
 
+// Yahoo's v7/finance/quote and v10/finance/quoteSummary endpoints (which carry P/E, PEG,
+// beta, ROE, dividend yield) now require an auth crumb Yahoo added — confirmed they 401
+// even hit directly, not just through the proxy, so those fields cannot be fetched
+// client-side without a paid API or the Flask backend. The v8/finance/chart endpoint stays
+// open and, with range=3mo, returns real historical closes — so real price, volume,
+// 52-week range, day range, AND a genuinely-computed 50-day moving average all come from
+// this ONE still-open endpoint, at no extra request cost versus the old price-only fetch.
 async function fetchSinglePrice(ticker){
-  const url = `https://query2.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=2d`;
+  const url = `https://query2.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=3mo`;
   const data = await fetchWithProxy(url);
-  const meta = data?.chart?.result?.[0]?.meta;
+  const result = data?.chart?.result?.[0];
+  const meta = result?.meta;
   if(!meta?.regularMarketPrice) return null;
   const price = meta.regularMarketPrice;
   const prev  = meta.chartPreviousClose || meta.previousClose || price;
   const change = price - prev;
+
+  const closes = (result?.indicators?.quote?.[0]?.close || []).filter(c => c != null);
+  const last50 = closes.slice(-50);
+  const ma50 = last50.length ? last50.reduce((a,b)=>a+b,0) / last50.length : null;
+
   return {
     ticker,
-    price:         Math.round(price  * 100) / 100,
-    change:        Math.round(change * 10000) / 10000,
-    changePercent: prev ? Math.round(change / prev * 10000) / 100 : 0
+    price:          Math.round(price  * 100) / 100,
+    change:         Math.round(change * 10000) / 10000,
+    changePercent:  prev ? Math.round(change / prev * 10000) / 100 : 0,
+    ma50:           ma50 != null ? Math.round(ma50 * 100) / 100 : null,
+    volume:         meta.regularMarketVolume != null ? Math.round(meta.regularMarketVolume / 1e5) / 10 : null,
+    fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh ?? null,
+    fiftyTwoWeekLow:  meta.fiftyTwoWeekLow ?? null,
+    dayHigh:        meta.regularMarketDayHigh ?? null,
+    dayLow:         meta.regularMarketDayLow ?? null,
   };
 }
 
@@ -2039,6 +2104,15 @@ async function refreshPricesInner(){
       s.price         = p.price;
       s.change        = p.change;
       s.changePercent = p.changePercent;
+      // These come from the same real Yahoo response as price — replace the earlier
+      // synthesized placeholders with genuine values once a live fetch succeeds.
+      if(p.ma50 != null) s.ma50 = p.ma50;
+      if(p.volume != null) s.volume = p.volume;
+      if(p.fiftyTwoWeekHigh != null) s.fiftyTwoWeekHigh = p.fiftyTwoWeekHigh;
+      if(p.fiftyTwoWeekLow != null) s.fiftyTwoWeekLow = p.fiftyTwoWeekLow;
+      if(p.dayHigh != null) s.dayHigh = p.dayHigh;
+      if(p.dayLow != null) s.dayLow = p.dayLow;
+      s.hasRealFundamentals = true;
       updated++;
     }
   });
@@ -2050,7 +2124,7 @@ async function refreshPricesInner(){
     if(!usingLiveData && !livePriceBannerSet){
       livePriceBannerSet = true;
       document.getElementById('dataBanner').innerHTML =
-        '<b>📡 Live Prices:</b> Real-time quotes from Yahoo Finance · fundamentals are demo data · <span id="lastUpdated"></span>';
+        '<b>📡 Live Data:</b> Price, volume, day range, 52-week range & 50-day MA are real-time from Yahoo Finance · P/E, PEG, beta, ROE, margin & dividend yield are estimates (Yahoo\'s endpoints for those now require server-side auth Yahoo added — see the "~" marked columns) · <span id="lastUpdated"></span>';
     }
     const el = document.getElementById('lastUpdated');
     if(el) el.textContent = `Prices last refreshed ${ts}`;
