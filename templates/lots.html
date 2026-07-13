@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lots - MyShare</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/myshare/home">MyShare</a>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/myshare/home">Home</a></li>
+            <li><a href="/myshare/symbol">Symbol Lookup</a></li>
+            <li><a href="/myshare/holdings">Holdings</a></li>
+            <li><a href="/myshare/lots">Lots</a></li>
+            <li><a href="/myshare/sell-lots">Sell Lots</a></li>
+            <li><a href="/myshare/login">Login</a></li>
+            <li><a href="/myshare/register">Register</a></li>
+        </ul>
+    </nav>
+    <main class="container">
+        <div class="page-header">
+            <h1>My Lots</h1>
+            <a href="/myshare/new-lot" class="btn btn-primary">Add New Lot</a>
+        </div>
+        <div class="summary-cards">
+            <div class="card">
+                <h3>Current Principal</h3>
+                <p id="currentPrincipal">$0.00</p>
+            </div>
+            <div class="card">
+                <h3>Total Value Increase</h3>
+                <p id="totalValueIncrease">$0.00</p>
+            </div>
+            <div class="card">
+                <h3>Profit from Selling</h3>
+                <p id="totalProfitFromSelling">$0.00</p>
+            </div>
+        </div>
+        <div id="lotsContainer" class="lots-container"></div>
+    </main>
+    <script src="/static/js/main.js"></script>
+    <script>
+        async function loadLots() {
+            const userId = localStorage.getItem('userId');
+            const password = localStorage.getItem('userPassword');
+
+            if (!userId || !password) {
+                window.location.href = '/myshare/login';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/myshare/user/lots?id=${userId}&password=${encodeURIComponent(password)}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    document.getElementById('lotsContainer').innerHTML = '<p class="error">Failed to load lots</p>';
+                    return;
+                }
+
+                document.getElementById('currentPrincipal').textContent = '$' + (data.currentPrincipal || 0).toFixed(2);
+                document.getElementById('totalValueIncrease').textContent = '$' + (data.totalValueIncrease || 0).toFixed(2);
+                document.getElementById('totalProfitFromSelling').textContent = '$' + (data.totalProfitFromSelling || 0).toFixed(2);
+
+                if (!data.lots || data.lots.length === 0) {
+                    document.getElementById('lotsContainer').innerHTML = '<p>No lots yet. Add your first lot!</p>';
+                    return;
+                }
+
+                let html = '';
+                data.lots.forEach(lot => {
+                    html += `
+                        <div class="lot-card">
+                            <div class="lot-header">
+                                <h2>${lot.symbol} - Lot #${lot.lotId}</h2>
+                                <span class="price">$${lot.currentPrice?.toFixed(2) || '0.00'}</span>
+                            </div>
+                            <div class="lot-details">
+                                <p>Buy Price: $${lot.buyPrice?.toFixed(2) || '0.00'}</p>
+                                <p>Buy Date: ${lot.buyDate || 'N/A'}</p>
+                                <p>Shares Holding: ${lot.sharesHolding || 0}</p>
+                                <p>Shares Sold: ${lot.sharesSold || 0}</p>
+                                <p class="${lot.holdingValueIncrease >= 0 ? 'positive' : 'negative'}">
+                                    Holding Gain/Loss: ${lot.holdingValueIncrease >= 0 ? '+' : ''}$${lot.holdingValueIncrease?.toFixed(2) || '0.00'}
+                                </p>
+                                <p class="${lot.profitFromSelling >= 0 ? 'positive' : 'negative'}">
+                                    Profit from Selling: ${lot.profitFromSelling >= 0 ? '+' : ''}$${lot.profitFromSelling?.toFixed(2) || '0.00'}
+                                </p>
+                            </div>
+                            <div class="lot-actions">
+                                <a href="/myshare/lot?lotId=${lot.lotId}" class="btn btn-secondary">View Details</a>
+                                <a href="/myshare/edit-lot?lotId=${lot.lotId}" class="btn btn-primary">Edit</a>
+                                <a href="/myshare/delete-lot?lotId=${lot.lotId}" class="btn btn-danger">Delete</a>
+                            </div>
+                        </div>
+                    `;
+                });
+                document.getElementById('lotsContainer').innerHTML = html;
+            } catch (error) {
+                document.getElementById('lotsContainer').innerHTML = '<p class="error">Failed to load lots</p>';
+            }
+        }
+
+        loadLots();
+    </script>
+</body>
+</html>

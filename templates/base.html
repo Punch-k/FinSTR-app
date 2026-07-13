@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MyShare{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/myshare/home">MyShare</a>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/myshare/home">Home</a></li>
+            <li><a href="/myshare/symbol">Symbol Lookup</a></li>
+            <li><a href="/myshare/holdings">Holdings</a></li>
+            <li><a href="/myshare/lots">Lots</a></li>
+            <li><a href="/myshare/sell-lots">Sell Lots</a></li>
+            <li><a href="/myshare/login">Login</a></li>
+            <li><a href="/myshare/register">Register</a></li>
+        </ul>
+    </nav>
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    <script src="/static/js/main.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

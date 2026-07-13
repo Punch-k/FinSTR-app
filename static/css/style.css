@@ -1,0 +1,402 @@
+/* MyShare - Stock Portfolio Manager Styles */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', 'Helvetica Neue', sans-serif;
+    background-color: #191919;
+    color: #C4C4C4;
+    line-height: 1.6;
+}
+
+/* Navigation */
+.navbar {
+    background: linear-gradient(0deg, #232323 0%, #5A5A5A 100%);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #24A292;
+}
+
+.nav-brand a {
+    color: #24A292;
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.nav-links {
+    display: flex;
+    list-style: none;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.nav-links a {
+    color: #C4C4C4;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.nav-links a:hover {
+    color: #24A292;
+}
+
+/* Container */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Hero Section */
+.hero {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: linear-gradient(0deg, #232323 0%, #3A3A3A 100%);
+    border-radius: 10px;
+    margin-bottom: 2rem;
+}
+
+.hero h1 {
+    color: #24A292;
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.hero p {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Buttons */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    text-decoration: none;
+    display: inline-block;
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
+}
+
+.btn-primary {
+    background: linear-gradient(90deg, #24A292 0%, #247da2 100%);
+    color: #FFFDFD;
+}
+
+.btn-secondary {
+    background: #464646;
+    color: #C4C4C4;
+}
+
+.btn-danger {
+    background: linear-gradient(90deg, #A22424 0%, #a24d24 100%);
+    color: #FFFDFD;
+}
+
+/* Cards */
+.card {
+    background: #232323;
+    padding: 1.5rem;
+    border-radius: 10px;
+    border: 1px solid #353535;
+}
+
+.card h3 {
+    color: #24A292;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.card p {
+    font-size: 1.5rem;
+    color: #FFFDFD;
+}
+
+/* Summary Cards */
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+/* Features */
+.features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.feature-card {
+    background: #232323;
+    padding: 2rem;
+    border-radius: 10px;
+    border: 1px solid #353535;
+    text-align: center;
+}
+
+.feature-card h3 {
+    color: #24A292;
+    margin-bottom: 1rem;
+}
+
+/* Forms */
+.form-container {
+    max-width: 500px;
+    margin: 0 auto;
+    background: #232323;
+    padding: 2rem;
+    border-radius: 10px;
+    border: 1px solid #353535;
+}
+
+.form-container h1 {
+    color: #24A292;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #C4C4C4;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #353535;
+    border-radius: 5px;
+    background: #191919;
+    color: #FFFDFD;
+    font-size: 1rem;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #24A292;
+}
+
+.form-footer {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.form-footer a {
+    color: #24A292;
+}
+
+/* Messages */
+.message {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.message.success {
+    background: rgba(36, 162, 146, 0.2);
+    color: #24A292;
+    border: 1px solid #24A292;
+}
+
+.message.error {
+    background: rgba(162, 36, 36, 0.2);
+    color: #ff6b6b;
+    border: 1px solid #A22424;
+}
+
+/* Page Header */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.page-header h1 {
+    color: #24A292;
+}
+
+/* Holdings Container */
+.holdings-container,
+.lots-container,
+.sell-lots-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Holding Card */
+.holding-card,
+.lot-card,
+.sell-lot-card {
+    background: #232323;
+    border-radius: 10px;
+    border: 1px solid #353535;
+    overflow: hidden;
+}
+
+.holding-header,
+.lot-header,
+.sell-lot-header {
+    background: linear-gradient(0deg, #232323 0%, #3A3A3A 100%);
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #24A292;
+}
+
+.holding-header h2,
+.lot-header h2,
+.sell-lot-header h2 {
+    color: #24A292;
+    font-size: 1.25rem;
+}
+
+.holding-header .price,
+.lot-header .price,
+.sell-lot-header .price {
+    color: #FFFDFD;
+    font-weight: bold;
+}
+
+.holding-details,
+.lot-details,
+.sell-lot-details {
+    padding: 1.5rem;
+}
+
+.holding-details p,
+.lot-details p,
+.sell-lot-details p {
+    margin-bottom: 0.5rem;
+}
+
+.holding-actions,
+.lot-actions,
+.sell-lot-actions {
+    padding: 1rem 1.5rem;
+    background: #191919;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Positive/Negative Values */
+.positive {
+    color: #24A292;
+}
+
+.negative {
+    color: #ff6b6b;
+}
+
+/* Warning Box */
+.warning-box {
+    background: rgba(162, 36, 36, 0.1);
+    border: 1px solid #A22424;
+    padding: 1.5rem;
+    border-radius: 5px;
+    margin-bottom: 1.5rem;
+}
+
+.warning-box ul {
+    margin-left: 1.5rem;
+    margin-top: 0.5rem;
+}
+
+/* Result Container */
+.result-container {
+    margin-top: 2rem;
+}
+
+.stock-info {
+    background: #232323;
+    padding: 1.5rem;
+    border-radius: 10px;
+    border: 1px solid #353535;
+}
+
+.stock-info h2 {
+    color: #24A292;
+    margin-bottom: 1rem;
+}
+
+.stock-info .price {
+    font-size: 2rem;
+    color: #FFFDFD;
+    margin-bottom: 1rem;
+}
+
+.stock-info p {
+    margin-bottom: 0.5rem;
+}
+
+/* Sell Lot Item */
+.sell-lot-list,
+.lots-list {
+    margin-top: 1rem;
+}
+
+.sell-lot-item,
+.lot-item {
+    background: #191919;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 5px;
+    border: 1px solid #353535;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .nav-links {
+        justify-content: center;
+    }
+
+    .hero h1 {
+        font-size: 1.75rem;
+    }
+
+    .summary-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .holdings-container,
+    .lots-container,
+    .sell-lots-container {
+        grid-template-columns: 1fr;
+    }
+}

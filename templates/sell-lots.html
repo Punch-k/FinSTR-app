@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sell Lots - MyShare</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/myshare/home">MyShare</a>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/myshare/home">Home</a></li>
+            <li><a href="/myshare/symbol">Symbol Lookup</a></li>
+            <li><a href="/myshare/holdings">Holdings</a></li>
+            <li><a href="/myshare/lots">Lots</a></li>
+            <li><a href="/myshare/sell-lots">Sell Lots</a></li>
+            <li><a href="/myshare/login">Login</a></li>
+            <li><a href="/myshare/register">Register</a></li>
+        </ul>
+    </nav>
+    <main class="container">
+        <div class="page-header">
+            <h1>My Sell Lots</h1>
+            <a href="/myshare/new-sell-lot" class="btn btn-primary">Record New Sell</a>
+        </div>
+        <div class="summary-cards">
+            <div class="card">
+                <h3>Total Withdrawn</h3>
+                <p id="totalWithdrawn">$0.00</p>
+            </div>
+            <div class="card">
+                <h3>Total Profit</h3>
+                <p id="totalProfit">$0.00</p>
+            </div>
+        </div>
+        <div id="sellLotsContainer" class="sell-lots-container"></div>
+    </main>
+    <script src="/static/js/main.js"></script>
+    <script>
+        async function loadSellLots() {
+            const userId = localStorage.getItem('userId');
+            const password = localStorage.getItem('userPassword');
+
+            if (!userId || !password) {
+                window.location.href = '/myshare/login';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/myshare/user/sell-lots?id=${userId}&password=${encodeURIComponent(password)}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    document.getElementById('sellLotsContainer').innerHTML = '<p class="error">Failed to load sell lots</p>';
+                    return;
+                }
+
+                document.getElementById('totalWithdrawn').textContent = '$' + (data.totalWithdrawn || 0).toFixed(2);
+                document.getElementById('totalProfit').textContent = '$' + (data.totalProfit || 0).toFixed(2);
+
+                if (!data.sellLots || data.sellLots.length === 0) {
+                    document.getElementById('sellLotsContainer').innerHTML = '<p>No sell lots yet. Record your first sell!</p>';
+                    return;
+                }
+
+                let html = '';
+                data.sellLots.forEach(sellLot => {
+                    html += `
+                        <div class="sell-lot-card">
+                            <div class="sell-lot-header">
+                                <h2>${sellLot.symbol} - Sell Lot #${sellLot.sellLotId}</h2>
+                                <span class="price">$${sellLot.sellPrice?.toFixed(2) || '0.00'}</span>
+                            </div>
+                            <div class="sell-lot-details">
+                                <p>Sell Date: ${sellLot.sellDate || 'N/A'}</p>
+                                <p>Shares Sold: ${sellLot.sharesSold || 0}</p>
+                                <p class="${sellLot.profit >= 0 ? 'positive' : 'negative'}">
+                                    Profit: ${sellLot.profit >= 0 ? '+' : ''}$${sellLot.profit?.toFixed(2) || '0.00'}
+                                </p>
+                            </div>
+                            <div class="sell-lot-actions">
+                                <a href="/myshare/sell-lot?sellLotId=${sellLot.sellLotId}" class="btn btn-secondary">View Details</a>
+                                <a href="/myshare/edit-sell-lot?sellLotId=${sellLot.sellLotId}" class="btn btn-primary">Edit</a>
+                                <a href="/myshare/delete-sell-lot?sellLotId=${sellLot.sellLotId}" class="btn btn-danger">Delete</a>
+                            </div>
+                        </div>
+                    `;
+                });
+                document.getElementById('sellLotsContainer').innerHTML = html;
+            } catch (error) {
+                document.getElementById('sellLotsContainer').innerHTML = '<p class="error">Failed to load sell lots</p>';
+            }
+        }
+
+        loadSellLots();
+    </script>
+</body>
+</html>

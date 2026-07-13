@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Holdings - MyShare</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/myshare/home">MyShare</a>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/myshare/home">Home</a></li>
+            <li><a href="/myshare/symbol">Symbol Lookup</a></li>
+            <li><a href="/myshare/holdings">Holdings</a></li>
+            <li><a href="/myshare/lots">Lots</a></li>
+            <li><a href="/myshare/sell-lots">Sell Lots</a></li>
+            <li><a href="/myshare/login">Login</a></li>
+            <li><a href="/myshare/register">Register</a></li>
+        </ul>
+    </nav>
+    <main class="container">
+        <div class="page-header">
+            <h1>My Holdings</h1>
+            <a href="/myshare/new-lot" class="btn btn-primary">Add New Lot</a>
+        </div>
+        <div class="summary-cards">
+            <div class="card">
+                <h3>Total Principal</h3>
+                <p id="totalPrincipal">$0.00</p>
+            </div>
+            <div class="card">
+                <h3>Market Value</h3>
+                <p id="marketValue">$0.00</p>
+            </div>
+            <div class="card">
+                <h3>Total Gain/Loss</h3>
+                <p id="totalValueIncrease">$0.00</p>
+            </div>
+        </div>
+        <div id="holdingsContainer" class="holdings-container"></div>
+    </main>
+    <script src="/static/js/main.js"></script>
+    <script>
+        async function loadHoldings() {
+            const userId = localStorage.getItem('userId');
+            const password = localStorage.getItem('userPassword');
+
+            if (!userId || !password) {
+                window.location.href = '/myshare/login';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/myshare/user/holdings?id=${userId}&password=${encodeURIComponent(password)}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    document.getElementById('holdingsContainer').innerHTML = '<p class="error">Failed to load holdings</p>';
+                    return;
+                }
+
+                document.getElementById('totalPrincipal').textContent = '$' + (data.totalPrincipal || 0).toFixed(2);
+                document.getElementById('marketValue').textContent = '$' + (data.marketValue || 0).toFixed(2);
+                const valueIncrease = data.totalValueIncrease || 0;
+                document.getElementById('totalValueIncrease').textContent = (valueIncrease >= 0 ? '+' : '') + '$' + valueIncrease.toFixed(2);
+                document.getElementById('totalValueIncrease').className = valueIncrease >= 0 ? 'positive' : 'negative';
+
+                if (!data.holdings || data.holdings.length === 0) {
+                    document.getElementById('holdingsContainer').innerHTML = '<p>No holdings yet. Add your first lot!</p>';
+                    return;
+                }
+
+                let html = '';
+                data.holdings.forEach(holding => {
+                    html += `
+                        <div class="holding-card">
+                            <div class="holding-header">
+                                <h2>${holding.symbol}</h2>
+                                <span class="price">$${holding.info?.currentPrice?.toFixed(2) || '0.00'}</span>
+                            </div>
+                            <div class="holding-details">
+                                <p>Shares: ${holding.shares}</p>
+                                <p>Avg Cost: $${holding.avgCostPerShare?.toFixed(2) || '0.00'}</p>
+                                <p>Principal: $${holding.principal?.toFixed(2) || '0.00'}</p>
+                                <p>Market Value: $${holding.marketValue?.toFixed(2) || '0.00'}</p>
+                                <p class="${holding.valueIncrease >= 0 ? 'positive' : 'negative'}">
+                                    Gain/Loss: ${holding.valueIncrease >= 0 ? '+' : ''}$${holding.valueIncrease?.toFixed(2) || '0.00'}
+                                </p>
+                            </div>
+                            <div class="holding-actions">
+                                <a href="/myshare/lot?lotId=${holding.lots[0]?.lotId}" class="btn btn-secondary">View Lots</a>
+                                <a href="/myshare/new-sell-lot?symbol=${holding.symbol}" class="btn btn-primary">Sell</a>
+                            </div>
+                        </div>
+                    `;
+                });
+                document.getElementById('holdingsContainer').innerHTML = html;
+            } catch (error) {
+                document.getElementById('holdingsContainer').innerHTML = '<p class="error">Failed to load holdings</p>';
+            }
+        }
+
+        loadHoldings();
+    </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+flask
+flask-restful
+passlib
+lxml
+yahoo_fin
+yfinance
+yagmail

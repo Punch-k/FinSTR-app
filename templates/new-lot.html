@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Lot - MyShare</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/myshare/home">MyShare</a>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/myshare/home">Home</a></li>
+            <li><a href="/myshare/symbol">Symbol Lookup</a></li>
+            <li><a href="/myshare/holdings">Holdings</a></li>
+            <li><a href="/myshare/lots">Lots</a></li>
+            <li><a href="/myshare/sell-lots">Sell Lots</a></li>
+            <li><a href="/myshare/login">Login</a></li>
+            <li><a href="/myshare/register">Register</a></li>
+        </ul>
+    </nav>
+    <main class="container">
+        <div class="form-container">
+            <h1>Add New Lot</h1>
+            <form id="newLotForm">
+                <div class="form-group">
+                    <label for="symbol">Symbol</label>
+                    <input type="text" id="symbol" name="symbol" required maxlength="5" placeholder="e.g., AAPL">
+                </div>
+                <div class="form-group">
+                    <label for="shares">Number of Shares</label>
+                    <input type="number" id="shares" name="shares" required min="1">
+                </div>
+                <div class="form-group">
+                    <label for="buyPrice">Buy Price per Share</label>
+                    <input type="number" id="buyPrice" name="buyPrice" required min="0.01" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="buyDate">Buy Date</label>
+                    <input type="date" id="buyDate" name="buyDate" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Lot</button>
+            </form>
+            <div id="message" class="message"></div>
+        </div>
+    </main>
+    <script src="/static/js/main.js"></script>
+    <script>
+        document.getElementById('newLotForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = localStorage.getItem('userId');
+            const password = localStorage.getItem('userPassword');
+            const messageDiv = document.getElementById('message');
+
+            const formData = new FormData(e.target);
+            const data = {
+                id: userId,
+                password: password,
+                symbol: formData.get('symbol'),
+                shares: formData.get('shares'),
+                buyPrice: formData.get('buyPrice'),
+                buyDate: formData.get('buyDate')
+            };
+
+            try {
+                const response = await fetch('/myshare/user/lots', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+
+                if (result.lotId) {
+                    messageDiv.className = 'message success';
+                    messageDiv.textContent = 'Lot added successfully! Redirecting...';
+                    setTimeout(() => {
+                        window.location.href = '/myshare/lots';
+                    }, 1500);
+                } else {
+                    messageDiv.className = 'message error';
+                    messageDiv.textContent = result.message || 'Failed to add lot';
+                }
+            } catch (error) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = 'An error occurred. Please try again.';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Symbol Lookup - MyShare</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/myshare/home">MyShare</a>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/myshare/home">Home</a></li>
+            <li><a href="/myshare/symbol">Symbol Lookup</a></li>
+            <li><a href="/myshare/holdings">Holdings</a></li>
+            <li><a href="/myshare/lots">Lots</a></li>
+            <li><a href="/myshare/sell-lots">Sell Lots</a></li>
+            <li><a href="/myshare/login">Login</a></li>
+            <li><a href="/myshare/register">Register</a></li>
+        </ul>
+    </nav>
+    <main class="container">
+        <div class="form-container">
+            <h1>Symbol Lookup</h1>
+            <form id="symbolForm">
+                <div class="form-group">
+                    <label for="symbol">Stock Symbol</label>
+                    <input type="text" id="symbol" name="symbol" required placeholder="e.g., AAPL" maxlength="5">
+                </div>
+                <button type="submit" class="btn btn-primary">Lookup</button>
+            </form>
+            <div id="result" class="result-container"></div>
+        </div>
+    </main>
+    <script src="/static/js/main.js"></script>
+    <script>
+        document.getElementById('symbolForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const symbol = document.getElementById('symbol').value.toUpperCase();
+            const resultDiv = document.getElementById('result');
+
+            try {
+                const response = await fetch(`/myshare/info?symbol=${encodeURIComponent(symbol)}`);
+                if (!response.ok) {
+                    throw new Error('Symbol not found');
+                }
+                const data = await response.json();
+
+                resultDiv.innerHTML = `
+                    <div class="stock-info">
+                        <h2>${data.symbol || symbol} - ${data.shortName || data.longName || 'N/A'}</h2>
+                        <p class="price">Current Price: $${data.currentPrice?.toFixed(2) || 'N/A'}</p>
+                        <p>Previous Close: $${data.previousClose?.toFixed(2) || 'N/A'}</p>
+                        <p>Open: $${data.open?.toFixed(2) || 'N/A'}</p>
+                        <p>Day Range: ${data.dayLow?.toFixed(2) || 'N/A'} - ${data.dayHigh?.toFixed(2) || 'N/A'}</p>
+                        <p>52 Week Range: ${data.fiftyTwoWeekLow?.toFixed(2) || 'N/A'} - ${data.fiftyTwoWeekHigh?.toFixed(2) || 'N/A'}</p>
+                        <p>Volume: ${data.volume?.toLocaleString() || 'N/A'}</p>
+                        <p>Market Cap: ${data.marketCap ? (data.marketCap / 1e9).toFixed(2) + 'B' : 'N/A'}</p>
+                        <p>P/E Ratio: ${data.trailingPE?.toFixed(2) || 'N/A'}</p>
+                        <p>Dividend Yield: ${data.dividendYield ? (data.dividendYield * 100).toFixed(2) + '%' : 'N/A'}</p>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = '<p class="error">Symbol not found or invalid</p>';
+            }
+        });
+    </script>
+</body>
+</html>

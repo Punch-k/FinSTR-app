@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Lot - MyShare</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/myshare/home">MyShare</a>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/myshare/home">Home</a></li>
+            <li><a href="/myshare/symbol">Symbol Lookup</a></li>
+            <li><a href="/myshare/holdings">Holdings</a></li>
+            <li><a href="/myshare/lots">Lots</a></li>
+            <li><a href="/myshare/sell-lots">Sell Lots</a></li>
+            <li><a href="/myshare/login">Login</a></li>
+            <li><a href="/myshare/register">Register</a></li>
+        </ul>
+    </nav>
+    <main class="container">
+        <div class="form-container">
+            <h1>Edit Lot</h1>
+            <form id="editLotForm">
+                <div class="form-group">
+                    <label for="shares">Number of Shares</label>
+                    <input type="number" id="shares" name="shares" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="buyPrice">Buy Price per Share</label>
+                    <input type="number" id="buyPrice" name="buyPrice" min="0.01" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="buyDate">Buy Date</label>
+                    <input type="date" id="buyDate" name="buyDate">
+                </div>
+                <button type="submit" class="btn btn-primary">Update Lot</button>
+            </form>
+            <div id="message" class="message"></div>
+        </div>
+    </main>
+    <script src="/static/js/main.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const lotId = urlParams.get('lotId');
+
+        async function loadLot() {
+            const userId = localStorage.getItem('userId');
+            const password = localStorage.getItem('userPassword');
+
+            if (!userId || !password || !lotId) {
+                window.location.href = '/myshare/login';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/myshare/user/lots?id=${userId}&password=${encodeURIComponent(password)}&lotId=${lotId}`);
+                const data = await response.json();
+
+                if (data.lotId) {
+                    document.getElementById('shares').value = data.sharesHolding || 0;
+                    document.getElementById('buyPrice').value = data.buyPrice || '';
+                    document.getElementById('buyDate').value = data.buyDate || '';
+                }
+            } catch (error) {
+                document.getElementById('message').className = 'message error';
+                document.getElementById('message').textContent = 'Failed to load lot';
+            }
+        }
+
+        document.getElementById('editLotForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = localStorage.getItem('userId');
+            const password = localStorage.getItem('userPassword');
+            const messageDiv = document.getElementById('message');
+
+            const formData = new FormData(e.target);
+            const data = {
+                id: userId,
+                password: password,
+                lotId: lotId
+            };
+
+            if (formData.get('shares')) data.shares = formData.get('shares');
+            if (formData.get('buyPrice')) data.buyPrice = formData.get('buyPrice');
+            if (formData.get('buyDate')) data.buyDate = formData.get('buyDate');
+
+            try {
+                const response = await fetch('/myshare/user/lots', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+
+                if (result.lotId) {
+                    messageDiv.className = 'message success';
+                    messageDiv.textContent = 'Lot updated successfully! Redirecting...';
+                    setTimeout(() => {
+                        window.location.href = '/myshare/lots';
+                    }, 1500);
+                } else {
+                    messageDiv.className = 'message error';
+                    messageDiv.textContent = result.message || 'Failed to update lot';
+                }
+            } catch (error) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = 'An error occurred. Please try again.';
+            }
+        });
+
+        loadLot();
+    </script>
+</body>
+</html>

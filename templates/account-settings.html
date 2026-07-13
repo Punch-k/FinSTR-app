@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Settings - MyShare</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/myshare/home">MyShare</a>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/myshare/home">Home</a></li>
+            <li><a href="/myshare/symbol">Symbol Lookup</a></li>
+            <li><a href="/myshare/holdings">Holdings</a></li>
+            <li><a href="/myshare/lots">Lots</a></li>
+            <li><a href="/myshare/sell-lots">Sell Lots</a></li>
+            <li><a href="/myshare/login">Login</a></li>
+            <li><a href="/myshare/register">Register</a></li>
+        </ul>
+    </nav>
+    <main class="container">
+        <div class="form-container">
+            <h1>Account Settings</h1>
+            <form id="accountForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email">
+                </div>
+                <div class="form-group">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" name="firstName">
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" name="lastName">
+                </div>
+                <div class="form-group">
+                    <label for="currentPassword">Current Password</label>
+                    <input type="password" id="currentPassword" name="currentPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Update Account</button>
+            </form>
+            <div id="message" class="message"></div>
+        </div>
+    </main>
+    <script src="/static/js/main.js"></script>
+    <script>
+        // Load current user data
+        async function loadUserData() {
+            const userId = localStorage.getItem('userId');
+            const password = prompt('Enter your password to load account data:');
+            if (!userId || !password) return;
+
+            try {
+                const response = await fetch(`/myshare/user?id=${userId}&password=${encodeURIComponent(password)}`);
+                const data = await response.json();
+
+                if (data.username) {
+                    document.getElementById('username').value = data.username || '';
+                    document.getElementById('email').value = data.email || '';
+                    document.getElementById('firstName').value = data.firstName || '';
+                    document.getElementById('lastName').value = data.lastName || '';
+                    localStorage.setItem('userPassword', password);
+                }
+            } catch (error) {
+                console.error('Failed to load user data');
+            }
+        }
+
+        document.getElementById('accountForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = localStorage.getItem('userId');
+            const password = localStorage.getItem('userPassword');
+            const messageDiv = document.getElementById('message');
+
+            const formData = new FormData(e.target);
+            const data = {
+                id: userId,
+                password: password
+            };
+
+            if (formData.get('username')) data.username = formData.get('username');
+            if (formData.get('email')) data.email = formData.get('email');
+            if (formData.get('firstName')) data.firstName = formData.get('firstName');
+            if (formData.get('lastName')) data.lastName = formData.get('lastName');
+            if (formData.get('newPassword')) data.newPassword = formData.get('newPassword');
+
+            try {
+                const response = await fetch('/myshare/user', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+
+                if (result.username) {
+                    messageDiv.className = 'message success';
+                    messageDiv.textContent = 'Account updated successfully!';
+                } else {
+                    messageDiv.className = 'message error';
+                    messageDiv.textContent = result.message || 'Failed to update account';
+                }
+            } catch (error) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = 'An error occurred. Please try again.';
+            }
+        });
+
+        loadUserData();
+    </script>
+</body>
+</html>

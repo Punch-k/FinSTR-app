@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sell Lot Details - MyShare</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/myshare/home">MyShare</a>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/myshare/home">Home</a></li>
+            <li><a href="/myshare/symbol">Symbol Lookup</a></li>
+            <li><a href="/myshare/holdings">Holdings</a></li>
+            <li><a href="/myshare/lots">Lots</a></li>
+            <li><a href="/myshare/sell-lots">Sell Lots</a></li>
+            <li><a href="/myshare/login">Login</a></li>
+            <li><a href="/myshare/register">Register</a></li>
+        </ul>
+    </nav>
+    <main class="container">
+        <div class="page-header">
+            <h1>Sell Lot Details</h1>
+        </div>
+        <div id="sellLotDetails" class="sell-lot-details-container"></div>
+    </main>
+    <script src="/static/js/main.js"></script>
+    <script>
+        async function loadSellLotDetails() {
+            const userId = localStorage.getItem('userId');
+            const password = localStorage.getItem('userPassword');
+            const urlParams = new URLSearchParams(window.location.search);
+            const sellLotId = urlParams.get('sellLotId');
+
+            if (!userId || !password || !sellLotId) {
+                window.location.href = '/myshare/login';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/myshare/user/sell-lots?id=${userId}&password=${encodeURIComponent(password)}&sellLotId=${sellLotId}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    document.getElementById('sellLotDetails').innerHTML = '<p class="error">Failed to load sell lot details</p>';
+                    return;
+                }
+
+                let html = `
+                    <div class="sell-lot-card">
+                        <div class="sell-lot-header">
+                            <h2>${data.symbol} - Sell Lot #${data.sellLotId}</h2>
+                            <span class="price">$${data.sellPrice?.toFixed(2) || '0.00'}</span>
+                        </div>
+                        <div class="sell-lot-details">
+                            <p>Sell Date: ${data.sellDate || 'N/A'}</p>
+                            <p>Shares Sold: ${data.sharesSold || 0}</p>
+                            <p class="${data.profit >= 0 ? 'positive' : 'negative'}">
+                                Total Profit: ${data.profit >= 0 ? '+' : ''}$${data.profit?.toFixed(2) || '0.00'}
+                            </p>
+                        </div>
+                        <div class="sell-lot-actions">
+                            <a href="/myshare/edit-sell-lot?sellLotId=${data.sellLotId}" class="btn btn-primary">Edit</a>
+                            <a href="/myshare/delete-sell-lot?sellLotId=${data.sellLotId}" class="btn btn-danger">Delete</a>
+                        </div>
+                    </div>
+                `;
+
+                if (data.lots && data.lots.length > 0) {
+                    html += '<h3>Associated Buy Lots</h3><div class="lots-list">';
+                    data.lots.forEach(lot => {
+                        html += `
+                            <div class="lot-item">
+                                <p>Lot #${lot.lotId}</p>
+                                <p>Buy Price: $${lot.buyPrice?.toFixed(2)}</p>
+                                <p>Buy Date: ${lot.buyDate}</p>
+                                <p>Shares: ${lot.shares}</p>
+                                <p class="${lot.profit >= 0 ? 'positive' : 'negative'}">Profit: $${lot.profit?.toFixed(2)}</p>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+
+                document.getElementById('sellLotDetails').innerHTML = html;
+            } catch (error) {
+                document.getElementById('sellLotDetails').innerHTML = '<p class="error">Failed to load sell lot details</p>';
+            }
+        }
+
+        loadSellLotDetails();
+    </script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Account - MyShare</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/myshare/home">MyShare</a>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/myshare/home">Home</a></li>
+            <li><a href="/myshare/symbol">Symbol Lookup</a></li>
+            <li><a href="/myshare/holdings">Holdings</a></li>
+            <li><a href="/myshare/lots">Lots</a></li>
+            <li><a href="/myshare/sell-lots">Sell Lots</a></li>
+            <li><a href="/myshare/login">Login</a></li>
+            <li><a href="/myshare/register">Register</a></li>
+        </ul>
+    </nav>
+    <main class="container">
+        <div class="form-container">
+            <h1>Delete Account</h1>
+            <div class="warning-box">
+                <p><strong>Warning:</strong> This action will permanently delete your account and all associated data including:</p>
+                <ul>
+                    <li>All your holdings</li>
+                    <li>All your lots</li>
+                    <li>All your sell records</li>
+                </ul>
+                <p>This action cannot be undone!</p>
+            </div>
+            <form id="deleteForm">
+                <div class="form-group">
+                    <label for="password">Enter your password to confirm</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-danger">Delete Account</button>
+            </form>
+            <div id="message" class="message"></div>
+        </div>
+    </main>
+    <script src="/static/js/main.js"></script>
+    <script>
+        document.getElementById('deleteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = localStorage.getItem('userId');
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+
+            if (!confirm('Are you sure you want to delete your account? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/myshare/user', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: userId,
+                        password: password
+                    })
+                });
+                const result = await response.json();
+
+                if (result.id) {
+                    messageDiv.className = 'message success';
+                    messageDiv.textContent = 'Account deleted successfully';
+                    localStorage.removeItem('userId');
+                    localStorage.removeItem('username');
+                    setTimeout(() => {
+                        window.location.href = '/myshare/home';
+                    }, 1500);
+                } else {
+                    messageDiv.className = 'message error';
+                    messageDiv.textContent = result.message || 'Failed to delete account';
+                }
+            } catch (error) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = 'An error occurred. Please try again.';
+            }
+        });
+    </script>
+</body>
+</html>

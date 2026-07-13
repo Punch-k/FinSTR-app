@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Lot - MyShare</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/myshare/home">MyShare</a>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/myshare/home">Home</a></li>
+            <li><a href="/myshare/symbol">Symbol Lookup</a></li>
+            <li><a href="/myshare/holdings">Holdings</a></li>
+            <li><a href="/myshare/lots">Lots</a></li>
+            <li><a href="/myshare/sell-lots">Sell Lots</a></li>
+            <li><a href="/myshare/login">Login</a></li>
+            <li><a href="/myshare/register">Register</a></li>
+        </ul>
+    </nav>
+    <main class="container">
+        <div class="form-container">
+            <h1>Delete Lot</h1>
+            <div class="warning-box">
+                <p><strong>Warning:</strong> This action will permanently delete this lot and all associated data.</p>
+                <p>This action cannot be undone!</p>
+            </div>
+            <form id="deleteLotForm">
+                <div class="form-group">
+                    <label for="password">Enter your password to confirm</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-danger">Delete Lot</button>
+            </form>
+            <div id="message" class="message"></div>
+        </div>
+    </main>
+    <script src="/static/js/main.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const lotId = urlParams.get('lotId');
+
+        document.getElementById('deleteLotForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = localStorage.getItem('userId');
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+
+            if (!confirm('Are you sure you want to delete this lot? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/myshare/user/lots', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: userId,
+                        password: password,
+                        lotId: lotId
+                    })
+                });
+                const result = await response.json();
+
+                if (result.lotId) {
+                    messageDiv.className = 'message success';
+                    messageDiv.textContent = 'Lot deleted successfully! Redirecting...';
+                    setTimeout(() => {
+                        window.location.href = '/myshare/lots';
+                    }, 1500);
+                } else {
+                    messageDiv.className = 'message error';
+                    messageDiv.textContent = result.message || 'Failed to delete lot';
+                }
+            } catch (error) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = 'An error occurred. Please try again.';
+            }
+        });
+    </script>
+</body>
+</html>
