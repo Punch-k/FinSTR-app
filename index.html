@@ -151,6 +151,11 @@
   .star-cell{cursor:pointer; text-align:center; color:#ffd54f; font-size:15px;}
   .cmp-cell{cursor:pointer; text-align:center; font-size:14px;}
   .ma-badge{margin-left:4px; font-weight:700;}
+  .insight-line{display:flex;flex-wrap:wrap;gap:6px;}
+  .tag-pos,.tag-neg,.tag-neutral{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap;}
+  .tag-pos{background:rgba(38,166,91,0.15);color:#26a65b;}
+  .tag-neg{background:rgba(239,83,80,0.15);color:#ef5350;}
+  .tag-neutral{background:rgba(139,148,163,0.15);color:var(--dim);}
   .empty-state{padding:60px 20px; text-align:center; color:var(--dim);}
 
   /* ===== HOME SECTION ===== */
@@ -425,6 +430,9 @@
   .modal-proj-table{width:100%; font-size:12.5px; border-collapse:collapse;}
   .modal-proj-table th{font-size:10px; padding:6px 8px;}
   .modal-proj-table td{padding:7px 8px;}
+  .modal-news-section{margin-top:16px; padding-top:14px; border-top:1px solid var(--border);}
+  .modal-news-title{font-size:14px; font-weight:700; margin-bottom:8px;}
+  .modal-news-section .news-list{max-height:220px; overflow-y:auto;}
 
   @media (max-width:720px){
     .modal-overlay{ align-items:flex-end; padding:0; }
@@ -627,6 +635,7 @@
       <div class="ctab" data-view="financial" onclick="setColumnView('financial')">Financial</div>
       <div class="ctab" data-view="performance" onclick="setColumnView('performance')">Performance</div>
       <div class="ctab" data-view="technical" onclick="setColumnView('technical')">Technical</div>
+      <div class="ctab" data-view="insights" onclick="setColumnView('insights')">Insights</div>
       <div class="ctab" data-view="custom" onclick="setColumnView('custom')">Custom</div>
     </div>
 
@@ -697,7 +706,7 @@
     </div>
     <div class="news-cols">
       <div>
-        <div class="news-col-title" id="newsMainTitle">News</div>
+        <div class="news-col-title"><span id="newsMainTitle">News</span> <span id="newsSourceNote" class="sim-tag"></span></div>
         <ul class="news-list" id="newsMainCol"><li class="news-loading">Loading market news…</li></ul>
         <button id="newsLoadMoreBtn" style="display:none" onclick="loadMoreNews()">Load more</button>
       </div>
@@ -859,6 +868,10 @@
     <div class="modal-metrics-grid" id="modalMetricsGrid"></div>
     <div class="modal-investment-row"><label>Simulate investment:</label><input type="number" id="modalInvestment" value="10000" step="1000" onchange="recalcModal()"></div>
     <table class="modal-proj-table"><thead><tr><th>Year</th><th>Price</th><th>Value</th><th>Gain / Loss</th></tr></thead><tbody id="modalProjBody"></tbody></table>
+    <div class="modal-news-section">
+      <div class="modal-news-title">Latest News <span class="sim-tag">(Google News)</span></div>
+      <ul class="news-list" id="modalNewsList"><li class="news-loading">Loading…</li></ul>
+    </div>
   </div>
 </div>
 
@@ -943,7 +956,161 @@ const RAW = [
 ["APD","Air Products & Chemicals","Materials","Chemicals",68,305.20,-0.5,25.5,22.8,2.1,310.00,11.97,2.5,0.9,10.5,15.2],
 ["SHW","Sherwin-Williams","Materials","Chemicals",88,345.20,0.6,32.5,28.2,2.5,340.00,10.62,0.8,1.0,62.5,11.2]
 ];
-let stockData = RAW.map(r => Object.fromEntries(FIELDS.map((f,i)=>[f,r[i]])));
+
+// Additional real, well-known tickers to broaden coverage beyond the 74 hand-curated
+// above. Ticker/name/sector/industry/marketCap are real facts; the remaining valuation
+// fields (PE, PEG, beta, ROE, etc.) are not sourced per-company — they're deterministically
+// synthesized per-ticker (same approach already used for volume/sparklines below), scoped
+// to realistic per-sector ranges. This is consistent with the existing disclosed model:
+// "fundamentals are demo data" — only price/change become real via the live fetch overlay.
+const EXTRA_TICKERS = [
+["CSCO","Cisco Systems","Technology","Networking",210],["IBM","IBM Corp","Technology","IT Services",255],
+["HPE","Hewlett Packard Enterprise","Technology","Hardware",28],["PANW","Palo Alto Networks","Technology","Software",130],
+["CRWD","CrowdStrike Holdings","Technology","Software",95],["FTNT","Fortinet Inc","Technology","Software",75],
+["ZS","Zscaler Inc","Technology","Software",32],["SNOW","Snowflake Inc","Technology","Software",55],
+["PLTR","Palantir Technologies","Technology","Software",95],["MU","Micron Technology","Technology","Semiconductors",120],
+["LRCX","Lam Research","Technology","Semiconductors",115],["AMAT","Applied Materials","Technology","Semiconductors",155],
+["KLAC","KLA Corp","Technology","Semiconductors",105],["ADI","Analog Devices","Technology","Semiconductors",105],
+["MRVL","Marvell Technology","Technology","Semiconductors",75],["ON","ON Semiconductor","Technology","Semiconductors",30],
+["SWKS","Skyworks Solutions","Technology","Semiconductors",12],["WDC","Western Digital","Technology","Hardware",22],
+["STX","Seagate Technology","Technology","Hardware",20],["JNPR","Juniper Networks","Technology","Networking",13],
+["ANET","Arista Networks","Technology","Networking",110],["TEL","TE Connectivity","Technology","Electronic Components",50],
+["GLW","Corning Inc","Technology","Electronic Components",38],["APH","Amphenol Corp","Technology","Electronic Components",95],
+["KEYS","Keysight Technologies","Technology","Electronic Components",28],["AKAM","Akamai Technologies","Technology","Software",13],
+["NET","Cloudflare Inc","Technology","Software",35],["DDOG","Datadog Inc","Technology","Software",40],
+["MDB","MongoDB Inc","Technology","Software",22],["TEAM","Atlassian Corp","Technology","Software",50],
+["WDAY","Workday Inc","Technology","Software",62],["ZM","Zoom Communications","Technology","Software",22],
+["DOCU","DocuSign Inc","Technology","Software",13],["OKTA","Okta Inc","Technology","Software",15],
+["ANSS","Ansys Inc","Technology","Software",30],["CDNS","Cadence Design Systems","Technology","Software",85],
+["SNPS","Synopsys Inc","Technology","Software",80],["ROP","Roper Technologies","Technology","Software",58],
+["ADP","Automatic Data Processing","Technology","IT Services",115],["PAYX","Paychex Inc","Technology","IT Services",48],
+["CMCSA","Comcast Corp","Communication Services","Media",145],["CHTR","Charter Communications","Communication Services","Media",42],
+["DIS","Walt Disney Co","Communication Services","Media",210],["WBD","Warner Bros Discovery","Communication Services","Media",28],
+["EA","Electronic Arts","Communication Services","Gaming",38],["TTWO","Take-Two Interactive","Communication Services","Gaming",28],
+["MTCH","Match Group","Communication Services","Internet Content",9],["PINS","Pinterest Inc","Communication Services","Internet Content",22],
+["SNAP","Snap Inc","Communication Services","Internet Content",18],["LYV","Live Nation Entertainment","Communication Services","Media",30],
+["HD","Home Depot Inc","Consumer Discretionary","Home Improvement Retail",395],["LOW","Lowe's Companies","Consumer Discretionary","Home Improvement Retail",145],
+["TJX","TJX Companies","Consumer Discretionary","Apparel Retail",145],["ROST","Ross Stores","Consumer Discretionary","Apparel Retail",48],
+["NKE","Nike Inc","Consumer Discretionary","Apparel",95],["LULU","Lululemon Athletica","Consumer Discretionary","Apparel",32],
+["YUM","Yum! Brands","Consumer Discretionary","Restaurants",38],["DPZ","Domino's Pizza","Consumer Discretionary","Restaurants",15],
+["BKNG","Booking Holdings","Consumer Discretionary","Travel Services",145],["ABNB","Airbnb Inc","Consumer Discretionary","Travel Services",78],
+["MAR","Marriott International","Consumer Discretionary","Hotels",72],["HLT","Hilton Worldwide","Consumer Discretionary","Hotels",58],
+["RCL","Royal Caribbean Group","Consumer Discretionary","Travel Services",52],["CCL","Carnival Corp","Consumer Discretionary","Travel Services",32],
+["LVS","Las Vegas Sands","Consumer Discretionary","Casinos",32],["WYNN","Wynn Resorts","Consumer Discretionary","Casinos",10],
+["MGM","MGM Resorts International","Consumer Discretionary","Casinos",12],["TGT","Target Corp","Consumer Discretionary","General Merchandise",68],
+["DG","Dollar General Corp","Consumer Discretionary","General Merchandise",18],["DLTR","Dollar Tree Inc","Consumer Discretionary","General Merchandise",18],
+["ORLY","O'Reilly Automotive","Consumer Discretionary","Specialty Retail",68],["AZO","AutoZone Inc","Consumer Discretionary","Specialty Retail",58],
+["ULTA","Ulta Beauty Inc","Consumer Discretionary","Specialty Retail",18],["BBY","Best Buy Co","Consumer Discretionary","Specialty Retail",18],
+["WMT","Walmart Inc","Consumer Staples","Discount Stores",620],["COST","Costco Wholesale","Consumer Staples","Discount Stores",420],
+["KR","Kroger Co","Consumer Staples","Grocery Stores",42],["SYY","Sysco Corp","Consumer Staples","Food Distribution",38],
+["ADM","Archer-Daniels-Midland","Consumer Staples","Agricultural Products",28],["TSN","Tyson Foods","Consumer Staples","Food Products",22],
+["HRL","Hormel Foods","Consumer Staples","Food Products",17],["GIS","General Mills","Consumer Staples","Food Products",32],
+["K","Kellanova","Consumer Staples","Food Products",28],["HSY","Hershey Co","Consumer Staples","Food Products",38],
+["STZ","Constellation Brands","Consumer Staples","Beverages",38],["MO","Altria Group","Consumer Staples","Tobacco",92],
+["PM","Philip Morris International","Consumer Staples","Tobacco",210],["CLX","Clorox Co","Consumer Staples","Household Products",18],
+["EL","Estee Lauder Companies","Consumer Staples","Personal Products",42],["KDP","Keurig Dr Pepper","Consumer Staples","Beverages",48],
+["MNST","Monster Beverage Corp","Consumer Staples","Beverages",52],["KHC","Kraft Heinz Co","Consumer Staples","Food Products",38],
+["GS","Goldman Sachs Group","Financials","Investment Banking",185],["MS","Morgan Stanley","Financials","Investment Banking",195],
+["SCHW","Charles Schwab Corp","Financials","Investment Services",145],["BLK","BlackRock Inc","Financials","Asset Management",145],
+["BX","Blackstone Inc","Financials","Asset Management",165],["KKR","KKR & Co","Financials","Asset Management",115],
+["AXP","American Express Co","Financials","Payments",195],["DFS","Discover Financial Services","Financials","Payments",42],
+["COF","Capital One Financial","Financials","Banks",68],["USB","U.S. Bancorp","Financials","Banks",78],
+["PNC","PNC Financial Services","Financials","Banks",72],["TFC","Truist Financial Corp","Financials","Banks",58],
+["STT","State Street Corp","Financials","Asset Management",28],["ICE","Intercontinental Exchange","Financials","Financial Exchanges",92],
+["CME","CME Group Inc","Financials","Financial Exchanges",85],["NDAQ","Nasdaq Inc","Financials","Financial Exchanges",42],
+["MCO","Moody's Corp","Financials","Financial Data",85],["SPGI","S&P Global Inc","Financials","Financial Data",145],
+["AON","Aon plc","Financials","Insurance Brokers",78],["MMC","Marsh & McLennan","Financials","Insurance Brokers",108],
+["TRV","Travelers Companies","Financials","Insurance",52],["ALL","Allstate Corp","Financials","Insurance",48],
+["MET","MetLife Inc","Financials","Insurance",52],["PRU","Prudential Financial","Financials","Insurance",42],
+["AFL","Aflac Inc","Financials","Insurance",58],["HIG","Hartford Financial Services","Financials","Insurance",38],
+["CB","Chubb Ltd","Financials","Insurance",112],["LLY","Eli Lilly and Co","Healthcare","Pharma",720],
+["ABT","Abbott Laboratories","Healthcare","Medical Devices",195],["TMO","Thermo Fisher Scientific","Healthcare","Life Sciences Tools",185],
+["DHR","Danaher Corp","Healthcare","Life Sciences Tools",155],["SYK","Stryker Corp","Healthcare","Medical Devices",145],
+["BSX","Boston Scientific Corp","Healthcare","Medical Devices",125],["MDT","Medtronic plc","Healthcare","Medical Devices",108],
+["ISRG","Intuitive Surgical","Healthcare","Medical Devices",185],["ZTS","Zoetis Inc","Healthcare","Pharma",85],
+["EW","Edwards Lifesciences","Healthcare","Medical Devices",42],["BDX","Becton Dickinson","Healthcare","Medical Devices",62],
+["IDXX","IDEXX Laboratories","Healthcare","Diagnostics",42],["IQV","IQVIA Holdings","Healthcare","Life Sciences Tools",38],
+["A","Agilent Technologies","Healthcare","Life Sciences Tools",38],["DXCM","DexCom Inc","Healthcare","Medical Devices",32],
+["HUM","Humana Inc","Healthcare","Health Insurance",32],["CVS","CVS Health Corp","Healthcare","Health Services",78],
+["MCK","McKesson Corp","Healthcare","Health Services",78],["CAH","Cardinal Health Inc","Healthcare","Health Services",38],
+["BIIB","Biogen Inc","Healthcare","Biotech",22],["REGN","Regeneron Pharmaceuticals","Healthcare","Biotech",78],
+["ILMN","Illumina Inc","Healthcare","Life Sciences Tools",18],["GE","GE Aerospace","Industrials","Aerospace",195],
+["MMM","3M Co","Industrials","Diversified Industrials",78],["EMR","Emerson Electric","Industrials","Electrical Equipment",62],
+["ETN","Eaton Corp","Industrials","Electrical Equipment",125],["ITW","Illinois Tool Works","Industrials","Diversified Industrials",78],
+["PH","Parker-Hannifin Corp","Industrials","Machinery",78],["ROK","Rockwell Automation","Industrials","Machinery",32],
+["CMI","Cummins Inc","Industrials","Machinery",42],["PCAR","Paccar Inc","Industrials","Machinery",52],
+["CSX","CSX Corp","Industrials","Railroads",62],["UNP","Union Pacific Corp","Industrials","Railroads",145],
+["NSC","Norfolk Southern Corp","Industrials","Railroads",58],["UPS","United Parcel Service","Industrials","Air Freight",95],
+["FDX","FedEx Corp","Industrials","Air Freight",62],["DAL","Delta Air Lines","Industrials","Airlines",38],
+["UAL","United Airlines Holdings","Industrials","Airlines",28],["LUV","Southwest Airlines","Industrials","Airlines",18],
+["WM","Waste Management Inc","Industrials","Environmental Services",92],["RSG","Republic Services","Industrials","Environmental Services",68],
+["URI","United Rentals Inc","Industrials","Rental Services",48],["GD","General Dynamics Corp","Industrials","Aerospace",78],
+["NOC","Northrop Grumman Corp","Industrials","Aerospace",78],["TDG","TransDigm Group","Industrials","Aerospace",78],
+["OXY","Occidental Petroleum","Energy","Oil & Gas",48],["EOG","EOG Resources","Energy","Oil & Gas",68],
+["MPC","Marathon Petroleum","Energy","Oil & Gas Refining",48],["PSX","Phillips 66","Energy","Oil & Gas Refining",48],
+["VLO","Valero Energy Corp","Energy","Oil & Gas Refining",42],["WMB","Williams Companies","Energy","Oil & Gas Midstream",58],
+["KMI","Kinder Morgan Inc","Energy","Oil & Gas Midstream",58],["OKE","ONEOK Inc","Energy","Oil & Gas Midstream",48],
+["HAL","Halliburton Co","Energy","Oil & Gas Equipment",22],["BKR","Baker Hughes Co","Energy","Oil & Gas Equipment",38],
+["DVN","Devon Energy Corp","Energy","Oil & Gas",22],["D","Dominion Energy Inc","Utilities","Electric",48],
+["EXC","Exelon Corp","Utilities","Electric",42],["AEP","American Electric Power","Utilities","Electric",52],
+["XEL","Xcel Energy Inc","Utilities","Electric",38],["ED","Consolidated Edison","Utilities","Electric",32],
+["PEG","Public Service Enterprise Group","Utilities","Electric",42],["WEC","WEC Energy Group","Utilities","Electric",28],
+["ETR","Entergy Corp","Utilities","Electric",32],["SPG","Simon Property Group","Real Estate","REITs",62],
+["O","Realty Income Corp","Real Estate","REITs",48],["PSA","Public Storage","Real Estate","REITs",52],
+["WELL","Welltower Inc","Real Estate","REITs",78],["DLR","Digital Realty Trust","Real Estate","REITs",52],
+["AVB","AvalonBay Communities","Real Estate","REITs",32],["EQR","Equity Residential","Real Estate","REITs",28],
+["VTR","Ventas Inc","Real Estate","REITs",28],["INVH","Invitation Homes","Real Estate","REITs",22],
+["CBRE","CBRE Group Inc","Real Estate","Real Estate Services",32],["FCX","Freeport-McMoRan Inc","Materials","Mining",62],
+["NEM","Newmont Corp","Materials","Mining",52],["ECL","Ecolab Inc","Materials","Chemicals",62],
+["DD","DuPont de Nemours","Materials","Chemicals",32],["DOW","Dow Inc","Materials","Chemicals",32],
+["PPG","PPG Industries","Materials","Chemicals",28],["NUE","Nucor Corp","Materials","Steel",32],
+["VMC","Vulcan Materials Co","Materials","Building Materials",32],["MLM","Martin Marietta Materials","Materials","Building Materials",32],
+["ALB","Albemarle Corp","Materials","Chemicals",12],["CTVA","Corteva Inc","Materials","Agricultural Chemicals",38]
+];
+
+const SECTOR_RANGES = {
+  'Technology':          { pe:[18,55], peg:[1.2,2.8], div:[0,2.5], beta:[0.9,2.0], roe:[10,60], margin:[8,38] },
+  'Communication Services':{ pe:[12,35], peg:[1.0,2.2], div:[0,4.5], beta:[0.8,1.6], roe:[8,35],  margin:[5,32] },
+  'Consumer Discretionary':{ pe:[10,42], peg:[0.9,2.5], div:[0,3.0], beta:[0.8,2.0], roe:[8,50],  margin:[3,22] },
+  'Consumer Staples':    { pe:[15,28], peg:[1.5,3.2], div:[1.5,5.5], beta:[0.3,0.8], roe:[10,45],  margin:[4,20] },
+  'Financials':           { pe:[9,22],  peg:[0.8,2.0], div:[0.5,4.0], beta:[0.9,1.7], roe:[8,25],   margin:[15,45] },
+  'Healthcare':           { pe:[12,35], peg:[1.2,3.0], div:[0,3.5],  beta:[0.5,1.2], roe:[8,35],   margin:[5,28] },
+  'Industrials':          { pe:[14,28], peg:[1.2,2.5], div:[0,3.0],  beta:[0.9,1.6], roe:[10,40],  margin:[5,20] },
+  'Energy':                { pe:[8,16],  peg:[0.7,1.8], div:[2.5,6.5], beta:[1.0,1.8], roe:[8,25],   margin:[5,18] },
+  'Utilities':             { pe:[16,23], peg:[1.8,3.5], div:[2.8,4.8], beta:[0.3,0.7], roe:[8,15],   margin:[8,18] },
+  'Real Estate':           { pe:[20,45], peg:[1.5,3.5], div:[2.5,5.5], beta:[0.7,1.3], roe:[3,12],   margin:[15,40] },
+  'Materials':             { pe:[12,26], peg:[1.0,2.2], div:[0,3.0],  beta:[0.9,1.6], roe:[8,25],   margin:[5,18] },
+};
+
+function synthesizeRow(ticker, name, sector, industry, marketCap){
+  const rnd = mulberry32(hashSeed(ticker+'_fund'));
+  const r = SECTOR_RANGES[sector] || SECTOR_RANGES['Industrials'];
+  const lerp = (lo,hi) => lo + rnd()*(hi-lo);
+  // rough per-share price band from market cap tier, purely a plausible placeholder —
+  // gets overwritten by the real live price fetch on load for any valid ticker
+  const price = marketCap > 300 ? lerp(150,550) : marketCap > 80 ? lerp(50,250) : marketCap > 20 ? lerp(20,150) : lerp(8,90);
+  const pe = lerp(...r.pe);
+  const eps = pe > 0 ? Math.round((price/pe)*100)/100 : -Math.round(lerp(0.5,5)*100)/100;
+  return [
+    ticker, name, sector, industry, marketCap,
+    Math.round(price*100)/100,
+    Math.round(lerp(-4,4)*100)/100,
+    Math.round(pe*10)/10,
+    Math.round(pe*lerp(0.75,0.95)*10)/10,
+    Math.round(lerp(...r.peg)*100)/100,
+    Math.round(price*lerp(0.94,1.02)*100)/100,
+    eps,
+    Math.round(lerp(...r.div)*100)/100,
+    Math.round(lerp(...r.beta)*100)/100,
+    Math.round(lerp(...r.roe)*10)/10,
+    Math.round(lerp(...r.margin)*10)/10
+  ];
+}
+
+const EXTRA_RAW = EXTRA_TICKERS.map(t => synthesizeRow(t[0], t[1], t[2], t[3], t[4]));
+const EXISTING_TICKER_SET = new Set(RAW.map(r=>r[0]));
+const ALL_RAW = RAW.concat(EXTRA_RAW.filter(r => !EXISTING_TICKER_SET.has(r[0])));
+let stockData = ALL_RAW.map(r => Object.fromEntries(FIELDS.map((f,i)=>[f,r[i]])));
 
 function hashSeed(str){ let h=0; for(let i=0;i<str.length;i++){ h = Math.imul(31,h)+str.charCodeAt(i)|0; } return h>>>0; }
 function mulberry32(seed){
@@ -1325,13 +1492,38 @@ const COLUMN_DEFS = {
   eps:{label:'EPS', render:s=> `$${s.eps.toFixed(2)}`},
   ma50:{label:'50D MA', render:s=> `$${s.ma50.toFixed(2)} <span class="ma-badge ${s.price>=s.ma50?'pos':'neg'}">${s.price>=s.ma50?'▲':'▼'}</span>`},
   beta:{label:'Beta', render:s=> s.beta.toFixed(2)},
+  insight:{label:'Insight', render:s=> `<span class="insight-line">${computeInsight(s).join(' · ')}</span>`},
 };
+
+// Computes short signal tags directly from a stock's own numeric fields — no external
+// data, no fabricated commentary. Each tag states a concrete threshold it crossed so it's
+// checkable against the row, not vague sentiment.
+function computeInsight(s){
+  const tags = [];
+  if(s.pe>0 && s.peg>0){
+    if(s.peg<1) tags.push('<span class="tag-pos">Undervalued vs growth (PEG<1)</span>');
+    else if(s.peg>2.5) tags.push('<span class="tag-neg">Rich vs growth (PEG>2.5)</span>');
+  }
+  if(s.price>=s.ma50) tags.push('<span class="tag-pos">Above 50D MA</span>');
+  else tags.push('<span class="tag-neg">Below 50D MA</span>');
+  if(s.roe>=20) tags.push('<span class="tag-pos">High ROE</span>');
+  else if(s.roe>0 && s.roe<8) tags.push('<span class="tag-neg">Low ROE</span>');
+  if(s.dividendYield>=3.5) tags.push('<span class="tag-pos">High yield</span>');
+  if(s.beta>=1.5) tags.push('<span class="tag-neg">High volatility (β≥1.5)</span>');
+  else if(s.beta>0 && s.beta<=0.6) tags.push('<span class="tag-pos">Defensive (β≤0.6)</span>');
+  if(s.eps<0) tags.push('<span class="tag-neg">Unprofitable (negative EPS)</span>');
+  if(Math.abs(s.changePercent)>=3) tags.push(`<span class="${s.changePercent>=0?'tag-pos':'tag-neg'}">${s.changePercent>=0?'Momentum up':'Momentum down'} today</span>`);
+  if(tags.length===0) tags.push('<span class="tag-neutral">No notable signals</span>');
+  return tags;
+}
+
 const COLUMN_SETS = {
   overview:['ticker','name','sector','industry','marketCap','price','changePercent','volume'],
   valuation:['ticker','marketCap','price','pe','forwardPE','peg'],
   financial:['ticker','roe','profitMargin','dividendYield','eps'],
   performance:['ticker','price','changePercent','ma50'],
   technical:['ticker','price','beta','ma50'],
+  insights:['ticker','name','sector','price','changePercent','insight'],
   custom:['ticker','name','sector','marketCap','price','changePercent','pe','forwardPE','peg','ma50','volume']
 };
 function setColumnView(v){
@@ -1609,8 +1801,39 @@ function openModal(ticker){
   document.getElementById('discountInput').value = 9;
   document.getElementById('modalInvestment').value = 10000;
   recalcModal();
+  loadModalNews(s);
 }
 function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
+
+let modalNewsRequestId = 0;
+async function loadModalNews(s){
+  const listEl = document.getElementById('modalNewsList');
+  listEl.innerHTML = '<li class="news-loading">Loading…</li>';
+  // Guards against a stale response landing after the user has already opened a
+  // different stock (e.g. clicking through several rows quickly).
+  const requestId = ++modalNewsRequestId;
+  // Strip common corporate suffixes — "Tesla Inc stock" returns broad/generic results from
+  // Yahoo's search API, while a clean company name (e.g. "Tesla") returns tightly relevant
+  // matches, per manual testing during development.
+  const cleanName = s.name.replace(/\s+(Inc\.?|Corp\.?|Corporation|Co\.?|Company|plc|Ltd\.?|Group|Holdings?|International|The)\.?$/i, '').trim();
+  const { articles, source } = await fetchNews([cleanName || s.name], 8);
+  if(requestId !== modalNewsRequestId) return;
+  const titleEl = document.querySelector('.modal-news-title .sim-tag');
+  if(titleEl) titleEl.textContent = `(${source})`;
+  if(!articles.length){
+    listEl.innerHTML = `<li class="news-loading">No recent news found for ${s.ticker}.</li>`;
+    return;
+  }
+  listEl.innerHTML = articles.map(a=>{
+    const t = fmtNewsTime(a.date);
+    const safeLink = a.link && a.link.startsWith('http') ? a.link : '#';
+    return `<li class="news-item">
+      <span class="news-time">${t}</span>
+      ${srcIcon(a.publisher)}
+      <span class="news-headline" onclick="window.open('${safeLink}','_blank')">${a.title}</span>
+    </li>`;
+  }).join('');
+}
 
 function recalcModal(){
   const s = stockData.find(x=>x.ticker===modalTicker);
@@ -1733,6 +1956,20 @@ async function fetchWithProxy(url){
   return null;
 }
 
+async function fetchTextWithProxy(url){
+  for(const {base, encode} of PROXY_LIST){
+    try{
+      const proxyUrl = base + (encode ? encodeURIComponent(url) : url);
+      const ctrl = new AbortController();
+      const tid = setTimeout(()=>ctrl.abort(), 9000);
+      const res = await fetch(proxyUrl, {signal: ctrl.signal});
+      clearTimeout(tid);
+      if(res.ok) return await res.text();
+    }catch(e){}
+  }
+  return null;
+}
+
 async function fetchSinglePrice(ticker){
   const url = `https://query2.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=2d`;
   const data = await fetchWithProxy(url);
@@ -1750,17 +1987,38 @@ async function fetchSinglePrice(ticker){
 }
 
 async function fetchAllPricesDirect(){
+  // With ~250 tickers, firing every request concurrently floods the free CORS proxy and
+  // most fail. Batch it the same way the Futures/Forex fetchers already do (batches of 6,
+  // 200ms stagger) so the full list actually resolves instead of mostly erroring out.
   const tickers = stockData.map(s=>s.ticker);
-  const results = await Promise.all(tickers.map(t=>fetchSinglePrice(t).catch(()=>null)));
   const map = {};
-  results.forEach(r=>{ if(r) map[r.ticker]=r; });
+  const BATCH = 6;
+  for(let i=0; i<tickers.length; i+=BATCH){
+    if(i>0) await new Promise(r=>setTimeout(r,200));
+    const batch = tickers.slice(i,i+BATCH);
+    const batchRes = await Promise.all(batch.map(t=>fetchSinglePrice(t).catch(()=>null)));
+    batchRes.forEach(r=>{ if(r) map[r.ticker]=r; });
+  }
   return map;
 }
 
 let priceRefreshInterval = null;
 let livePriceBannerSet = false;
+let refreshInFlight = false;
 
 async function refreshPrices(){
+  // Guard against overlap: a full batched fetch across ~250 tickers can occasionally run
+  // longer than the 60s auto-refresh interval, especially if the proxy is slow/retrying.
+  if(refreshInFlight) return 0;
+  refreshInFlight = true;
+  try{
+    return await refreshPricesInner();
+  } finally {
+    refreshInFlight = false;
+  }
+}
+
+async function refreshPricesInner(){
   let priceMap = {};
   try{
     if(usingLiveData){
@@ -2026,6 +2284,44 @@ const NEWS_TAB_QUERIES = {
 let newsPage = 0;
 let newsAllArticles = [];
 
+// Google News RSS is a public feed (news.google.com/rss/search) — no API key required,
+// unlike the Google Custom Search JSON API. This is now the primary news source; Yahoo
+// Finance search stays as a fallback only if the Google RSS fetch comes back empty
+// (e.g. proxy failure), so results are Google-sourced whenever possible.
+async function fetchGoogleNews(queries, count=30){
+  const seen = new Set();
+  const articles = [];
+  await Promise.all(queries.map(async q=>{
+    try{
+      const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`;
+      const xmlText = await fetchTextWithProxy(url);
+      if(!xmlText) return;
+      const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+      doc.querySelectorAll('item').forEach(item=>{
+        const title = item.querySelector('title')?.textContent || '';
+        const link = item.querySelector('link')?.textContent || '#';
+        const pubDate = item.querySelector('pubDate')?.textContent || '';
+        const source = item.querySelector('source')?.textContent || 'Google News';
+        // Google News RSS titles are formatted "Headline - Publisher"; split that back out.
+        const dashIdx = title.lastIndexOf(' - ');
+        const headline = dashIdx > 0 ? title.slice(0, dashIdx) : title;
+        const key = link || title;
+        if(title && !seen.has(key)){
+          seen.add(key);
+          articles.push({
+            title:     headline,
+            link:      link,
+            publisher: source || 'Google News',
+            date:      pubDate ? new Date(pubDate).toISOString() : '',
+            summary:   ''
+          });
+        }
+      });
+    }catch(e){}
+  }));
+  return articles.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,count);
+}
+
 async function fetchYahooNews(queries, count=30){
   const seen = new Set();
   const articles = [];
@@ -2048,6 +2344,19 @@ async function fetchYahooNews(queries, count=30){
     }catch(e){}
   }));
   return articles.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,count);
+}
+
+// Tries Google News first (per user requirement that news be Google-sourced); falls back
+// to Yahoo Finance search only if Google returns nothing, so the section never goes empty.
+// Returns { articles, source } — Google News RSS is blocked/rate-limited by the free
+// public CORS proxies fairly often (Google appears to actively push back on known open-
+// proxy IPs), so callers should show which source actually served the results rather
+// than always claiming Google.
+async function fetchNews(queries, count=30){
+  const google = await fetchGoogleNews(queries, count);
+  if(google.length) return { articles: google, source: 'Google News' };
+  const yahoo = await fetchYahooNews(queries, count);
+  return { articles: yahoo, source: 'Yahoo Finance' };
 }
 
 const SRC_COLORS=['#4f8cff','#26a65b','#ef5350','#ffc107','#ab47bc','#26c6da','#ff7043','#66bb6a'];
@@ -2109,7 +2418,7 @@ async function searchNews(){
   blogsCol.innerHTML = '<li class="news-loading">Searching…</li>';
   document.getElementById('newsLoadMoreBtn').style.display='none';
 
-  const all = await fetchYahooNews([q], 40);
+  const { articles: all, source } = await fetchNews([q], 40);
   newsAllArticles = all;
   newsPage = 1;
   if(!all.length){
@@ -2120,6 +2429,7 @@ async function searchNews(){
   renderArticles(all.slice(0, NEWS_PAGE_SIZE), 'newsMainCol');
   renderArticles(all.slice(NEWS_PAGE_SIZE, NEWS_PAGE_SIZE*2), 'newsBlogsCol');
   document.getElementById('newsLoadMoreBtn').style.display = all.length > NEWS_PAGE_SIZE*2 ? '' : 'none';
+  document.getElementById('newsSourceNote').textContent = `Source: ${source}`;
 }
 
 function loadMoreNews(){
@@ -2149,6 +2459,7 @@ async function loadNews(){
       renderArticles(cached.main.slice(0, NEWS_PAGE_SIZE), 'newsMainCol');
       renderArticles(cached.blogs, 'newsBlogsCol');
       document.getElementById('newsLoadMoreBtn').style.display = cached.main.length > NEWS_PAGE_SIZE ? '' : 'none';
+      document.getElementById('newsSourceNote').textContent = `Source: ${cached.source || 'Google News'}`;
       return;
     }
   }catch(e){}
@@ -2156,19 +2467,21 @@ async function loadNews(){
   col.innerHTML = '<div class="news-loading">Loading news…</div>';
   blogsCol.innerHTML = '<div class="news-loading">Loading…</div>';
 
-  // Try Yahoo Finance search API (works on GitHub Pages, no key needed)
+  // Google News RSS is the primary source (falls back to Yahoo only if empty)
   try{
-    const [main, blogs] = await Promise.all([
-      fetchYahooNews(mainQueries, 30),
-      fetchYahooNews(blogsQueries, 10),
+    const [mainRes, blogsRes] = await Promise.all([
+      fetchNews(mainQueries, 30),
+      fetchNews(blogsQueries, 10),
     ]);
+    const main = mainRes.articles, blogs = blogsRes.articles;
     if(main.length || blogs.length){
       newsAllArticles = main;
       newsPage = 1;
       renderArticles(main.slice(0, NEWS_PAGE_SIZE), 'newsMainCol');
       renderArticles(blogs, 'newsBlogsCol');
       document.getElementById('newsLoadMoreBtn').style.display = main.length > NEWS_PAGE_SIZE ? '' : 'none';
-      try{ localStorage.setItem(cacheKey, JSON.stringify({ts:Date.now(), main, blogs})); }catch(e){}
+      document.getElementById('newsSourceNote').textContent = `Source: ${mainRes.source}`;
+      try{ localStorage.setItem(cacheKey, JSON.stringify({ts:Date.now(), main, blogs, source:mainRes.source})); }catch(e){}
       return;
     }
   }catch(e){}
