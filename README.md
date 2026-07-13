@@ -1,6 +1,6 @@
 # FinSTR — Stock Screener & Portfolio Manager
 
-### [🌐 Live Demo (GitHub Pages)](https://punch-k.github.io/FinSTR/)
+### [🌐 Live Demo (GitHub Pages)](https://punch-k.github.io/FinSTR-app/)
 
 > **Note:** The live demo runs in static mode with 74 sample large-cap stocks. To get real Yahoo Finance data, run the Flask backend locally (see setup below) — the frontend auto-detects the backend and switches to live data.
 
@@ -36,8 +36,8 @@
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/Punch-k/FinSTR.git
-cd FinSTR
+git clone https://github.com/Punch-k/FinSTR-app.git
+cd FinSTR-app
 
 # 2. Install dependencies
 pip install flask flask-restful passlib yahoo_fin yfinance yagmail lxml

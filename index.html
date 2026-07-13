@@ -1791,7 +1791,11 @@ function startPriceRefresh(){
 
 // ---------- PORTFOLIO ----------
 function openPortfolio(){
-  if(usingLiveData){
+  // /myshare/* only exists when this Flask app itself is serving the page (i.e. running
+  // locally via `python app.py`). On GitHub Pages there is no backend at that path, so
+  // usingLiveData (screener prices working) is not a reliable signal that Portfolio works too.
+  const runningOnOwnBackend = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  if(runningOnOwnBackend){
     window.open('/myshare/home','_blank');
   } else {
     showToast('Portfolio requires the local Flask backend — run python app.py then visit http://localhost:1817/myshare/home');
