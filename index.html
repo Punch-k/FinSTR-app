@@ -484,7 +484,7 @@
       </div>
       <div class="topnav-right">
         <span id="lastUpdated"></span>
-        <button class="sim-btn" onclick="simulateMarketMove()">🔄 Simulate Move</button>
+        <button class="sim-btn" id="simUpdateBtn" onclick="simOrUpdate()">🔄 Update Prices</button>
         <span id="liveClock" class="live-clock"></span>
         <label class="theme-switch"><input type="checkbox" id="themeSwitchInput" onchange="toggleTheme()"><span class="switch-track"><span class="switch-thumb">🌙</span></span></label>
         <button class="nav-ghost-btn" onclick="navClick('Help')">Help</button>
@@ -1549,6 +1549,22 @@ function renderAll(){
 }
 
 // ---------- SIMULATE MARKET MOVE ----------
+// Real prices are fetched client-side (via a CORS proxy to Yahoo Finance) even without
+// a Flask backend, so "usingLiveData" alone isn't a reliable signal of whether we have
+// real data to show. Try a real refresh first; only fall back to a labeled simulated
+// move if the proxy fetch genuinely returns nothing (e.g. proxy is down), so we never
+// silently overwrite real prices with random noise.
+async function simOrUpdate(){
+  const btn = document.getElementById('simUpdateBtn');
+  if(btn){ btn.disabled = true; btn.textContent = '🔄 Updating…'; }
+  const updated = await refreshPrices();
+  if(btn){ btn.disabled = false; btn.textContent = '🔄 Update Prices'; }
+  if(updated === 0){
+    simulateMarketMove();
+    showToast('Live price fetch unavailable — showing a simulated demo move instead.');
+  }
+}
+
 function simulateMarketMove(){
   stockData.forEach(s=>{
     const drift = (Math.random()*6-3);
@@ -1781,6 +1797,7 @@ async function refreshPrices(){
     const el = document.getElementById('lastUpdated');
     if(el) el.textContent = `Prices last refreshed ${ts}`;
   }
+  return updated;
 }
 
 function startPriceRefresh(){
