@@ -23,6 +23,7 @@ from functools import wraps
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import send_from_directory
 import time
+from scripts.tickers import SCREENER_TICKERS
 
 # Load credentials from environment variables (never hardcode secrets)
 ADMIN_EMAIL_ADDRESS = os.environ.get('ADMIN_EMAIL_ADDRESS', '')
@@ -31,15 +32,6 @@ ADMIN_EMAIL_PASSWORD = os.environ.get('ADMIN_EMAIL_PASSWORD', '')
 SQLITE_DATABASE = "database/MyShare.db"
 
 SCREENER_CACHE_TTL = 6 * 3600  # seconds
-
-SCREENER_TICKERS = [
-    "MSFT","ORCL","CRM","ADBE","INTU","NOW","NVDA","AVGO","AMD","TXN","QCOM","INTC",
-    "AAPL","HPQ","DELL","GOOGL","META","NFLX","T","VZ","TMUS","AMZN","EBAY","TSLA",
-    "GM","F","MCD","SBUX","CMG","PG","CL","KMB","KO","PEP","MDLZ","JPM","BAC","WFC",
-    "C","BRK-B","PGR","AIG","V","MA","PYPL","JNJ","PFE","MRK","ABBV","AMGN","GILD",
-    "VRTX","UNH","CI","ELV","BA","LMT","RTX","CAT","DE","HON","XOM","CVX","COP",
-    "SLB","NEE","DUK","SO","AMT","PLD","EQIX","LIN","APD","SHW"
-]
 
 MAX_USER_ID = 1000000000000
 MAX_ID = 1000000000000000

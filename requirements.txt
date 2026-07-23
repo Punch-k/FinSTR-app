@@ -3,5 +3,5 @@ flask-restful
 passlib
 lxml
 yahoo_fin
-yfinance
+yfinance>=1.5.1
 yagmail

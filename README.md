@@ -2,18 +2,19 @@
 
 ### [🌐 Live Demo (GitHub Pages)](https://punch-k.github.io/FinSTR-app/)
 
-> **Note:** The live demo runs in static mode with 74 sample large-cap stocks. To get real Yahoo Finance data, run the Flask backend locally (see setup below) — the frontend auto-detects the backend and switches to live data.
+> **Note:** The live demo has no server, but it isn't static-only either — `.github/workflows/update-data.yml` runs on a 6-hour schedule, pulls fresh fundamentals + news for all 126 tickers via `scripts/fetch_data.py`, and commits `data/screener.json` back to the repo. The frontend fetches that file when no local Flask backend is present. Run the Flask backend locally (see setup below) for true real-time data instead.
 
 ---
 
 ### FEATURES
 
-**Screener** (`/api/screener`)
-- 74 large-cap stocks with real fundamentals pulled from Yahoo Finance via `yfinance`
+**Screener** (`/api/screener` locally, `data/screener.json` on GitHub Pages)
+- 126 large-cap stocks across all 11 GICS sectors with fundamentals pulled from Yahoo Finance via `yfinance`
 - Filters: Sector, Industry, Market Cap, P/E, PEG, Dividend Yield, ROE, Profit Margin, Beta, 50D MA
 - Signals: Top Gainers / Losers, Unusual Volume, Above/Below 50D MA, New High/Low
 - Sort by any column · 6 column view presets (Overview, Valuation, Financial, Performance, Technical, Custom)
-- Data cached in SQLite for 6 hours — fast on repeat visits
+- Per-ticker news (top 3 headlines) bundled into the same snapshot, sourced from Yahoo Finance's own ticker-scoped news feed
+- Locally: data cached in SQLite for 6 hours. On GitHub Pages: refreshed by the scheduled Action instead
 
 **Maps**
 - Treemap and bubble chart heatmap grouped by sector/industry
@@ -50,7 +51,14 @@ python app.py
 #    Portfolio: http://localhost:1817/myshare/home
 ```
 
-On first run, `/api/screener` fetches live data for all 74 tickers in parallel (may take ~30–60s). Subsequent calls use the 6-hour SQLite cache.
+On first run, `/api/screener` fetches live data for all 126 tickers in parallel (may take ~30–60s). Subsequent calls use the 6-hour SQLite cache.
+
+To regenerate the static snapshot used by GitHub Pages yourself:
+
+```bash
+python scripts/fetch_data.py
+# writes data/screener.json and data/meta.json
+```
 
 ---
 
@@ -59,7 +67,10 @@ On first run, `/api/screener` fetches live data for all 74 tickers in parallel (
 | File | Purpose |
 |---|---|
 | `app.py` | Flask app — screener API + MyShare portfolio API + serves index.html |
-| `index.html` | FinSTR frontend — auto-switches between live and demo data |
+| `index.html` | FinSTR frontend — tries `/api/screener`, then `data/screener.json`, then a hardcoded seed as last resort |
+| `scripts/tickers.py` | Shared 126-ticker universe used by both `app.py` and `scripts/fetch_data.py` |
+| `scripts/fetch_data.py` | Standalone fetch script (no Flask/SQLite) that writes `data/screener.json` for GitHub Pages |
+| `.github/workflows/update-data.yml` | Runs `fetch_data.py` every 6 hours and commits the refreshed JSON |
 | `database/MyShare.db` | SQLite database (users, holdings, stock cache) |
 | `database/create.sql` | Schema definition |
 | `templates/` | Jinja2 HTML pages for the MyShare portfolio section |

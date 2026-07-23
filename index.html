@@ -2922,7 +2922,7 @@ async function init(){
     if(th){ document.documentElement.dataset.theme = th; document.getElementById('themeSwitchInput').checked = th==='light'; }
   }catch(e){}
 
-  // Try fetching live data from backend
+  // Try fetching live data from backend (only present when running python app.py locally)
   try{
     const ctrl = new AbortController();
     const tid = setTimeout(()=> ctrl.abort(), 20000);
@@ -2939,6 +2939,24 @@ async function init(){
       }
     }
   }catch(e){}
+
+  // No local Flask backend (e.g. on GitHub Pages) — fall back to the JSON snapshot
+  // committed by .github/workflows/update-data.yml every 6 hours.
+  if(!usingLiveData){
+    try{
+      const res = await fetch('data/screener.json', {cache: 'no-store'});
+      if(res.ok){
+        const snapshot = await res.json();
+        if(snapshot && snapshot.length > 0){
+          stockData = snapshot;
+          usingLiveData = true;
+          document.getElementById('dataBanner').innerHTML =
+            '<b>📊 Automated Snapshot:</b> Fundamentals + news refreshed every 6 hours via GitHub Actions · <span id="lastUpdated"></span>';
+          startPriceRefresh();
+        }
+      }
+    }catch(e){}
+  }
 
   if(!usingLiveData){
     document.getElementById('dataBanner').innerHTML =
