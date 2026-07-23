@@ -24,6 +24,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import send_from_directory
 import time
 from scripts.tickers import SCREENER_TICKERS
+from scripts.fetch_data import fetch_insider_transactions, fetch_calendar
 
 # Load credentials from environment variables (never hardcode secrets)
 ADMIN_EMAIL_ADDRESS = os.environ.get('ADMIN_EMAIL_ADDRESS', '')
@@ -372,6 +373,8 @@ def fetch_ticker_data(ticker):
             "profitMargin": round(float(info.get("profitMargins") or 0) * 100, 1),
             "volume": round((info.get("volume") or 0) / 1e6, 2),
             "avgVolume": round((info.get("averageVolume") or 0) / 1e6, 2),
+            "insiderTransactions": fetch_insider_transactions(ticker),
+            **fetch_calendar(ticker),
         }
         set_screener_cache(ticker, data)
         return data

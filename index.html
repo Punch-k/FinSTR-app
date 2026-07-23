@@ -32,6 +32,9 @@
   .brand{font-weight:800; font-size:15px; white-space:nowrap; display:flex; align-items:center;}
   .brand-logo{height:28px; width:auto; display:block;}
   .hamburger-btn{ display:none; background:var(--panel2); border:1px solid var(--border); color:var(--text); width:38px; height:38px; border-radius:6px; font-size:16px; cursor:pointer; }
+  .global-search{background:var(--panel2);border:1px solid var(--border);border-radius:6px;color:var(--fg);padding:7px 12px;font-size:12.5px;width:220px;margin-left:12px;}
+  .global-search:focus{outline:none;border-color:var(--accent);}
+  @media (max-width:720px){ .global-search{width:120px;margin-left:8px;} }
   .topnav-body{ display:flex; justify-content:space-between; align-items:center; padding:0 16px 12px; flex-wrap:wrap; gap:10px; }
   .nav-links{display:flex; gap:14px; flex-wrap:wrap; align-items:center;}
   .nav-link{font-size:12.5px; color:var(--dim); cursor:pointer; padding:4px 2px; white-space:nowrap;}
@@ -270,6 +273,15 @@
   .news-headline:hover{text-decoration:underline;}
   .news-loading{padding:60px;text-align:center;color:var(--dim);}
 
+  /* Shimmering placeholder tiles so Futures/Forex reads as "loading" not "stuck" during
+     the ~5-8s client-side fetch (no server-side cache to serve instantly from). */
+  @keyframes skeletonPulse{ 0%{opacity:.5;} 50%{opacity:.9;} 100%{opacity:.5;} }
+  .skeleton-tile{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:14px;animation:skeletonPulse 1.3s ease-in-out infinite;}
+  .skeleton-tile .sk-line{background:var(--border);border-radius:4px;height:12px;margin-bottom:8px;}
+  .skeleton-tile .sk-line.w60{width:60%;}
+  .skeleton-tile .sk-line.w40{width:40%;height:20px;}
+  .skeleton-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}
+
   /* ===== GROUPS SECTION ===== */
   .groups-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;}
   .groups-top select{background:var(--panel2);color:var(--text);border:1px solid var(--border);padding:7px 12px;border-radius:6px;font-size:12.5px;}
@@ -416,6 +428,7 @@
   .modal-spark-row{margin-bottom:16px;}
   .modal-spark-label{font-size:11px; color:var(--dim); margin-bottom:6px;}
   .sim-tag{font-style:italic;}
+  .demo-badge{font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;background:var(--border);color:var(--dim);border-radius:4px;padding:1px 5px;margin-left:5px;vertical-align:middle;}
   .modal-rec{border-radius:8px; padding:14px 16px; margin-bottom:16px; border-left:4px solid;}
   .modal-rec.buy{background:rgba(38,166,91,0.12); border-color:var(--pos);}
   .modal-rec.hold{background:rgba(255,193,7,0.12); border-color:#ffc107;}
@@ -482,6 +495,8 @@
   <div class="topnav">
     <div class="topnav-bar">
       <span class="brand"><img src="static/img/finstr-logo.png" alt="FinSTR" class="brand-logo"></span>
+      <input id="globalSearchInput" class="global-search" type="text" placeholder="Search ticker or company…" maxlength="40"
+        onkeydown="if(event.key==='Enter')globalTickerJump()">
       <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()">☰</button>
     </div>
     <div class="topnav-body" id="topnavBody">
@@ -494,7 +509,10 @@
         <span class="nav-link" data-nav="groups" onclick="setView('groups')">Groups</span>
         <span class="nav-link" data-nav="futures" onclick="setView('futures')">Futures</span>
         <span class="nav-link" data-nav="forex" onclick="setView('forex')">Forex</span>
-        <span class="nav-link" onclick="openPortfolio()">Portfolio</span>
+        <span class="nav-link" data-nav="crypto" onclick="setView('crypto')">Crypto</span>
+        <span class="nav-link" data-nav="insider" onclick="setView('insider')">Insider</span>
+        <span class="nav-link" data-nav="calendar" onclick="setView('calendar')">Calendar</span>
+        <span class="nav-link" onclick="openPortfolio()" title="Requires running the Flask backend locally — not available on this hosted demo">Portfolio<span class="demo-badge">Local only</span></span>
       </div>
       <div class="topnav-right">
         <span id="lastUpdated"></span>
@@ -502,8 +520,8 @@
         <span id="liveClock" class="live-clock"></span>
         <label class="theme-switch"><input type="checkbox" id="themeSwitchInput" onchange="toggleTheme()"><span class="switch-track"><span class="switch-thumb">🌙</span></span></label>
         <button class="nav-ghost-btn" onclick="navClick('Help')">Help</button>
-        <button class="nav-ghost-btn" onclick="navClick('Login')">Login</button>
-        <button class="nav-cta-btn" onclick="navClick('Register')">Register</button>
+        <button class="nav-ghost-btn" onclick="navClick('Login')" title="Not available on this hosted demo">Login<span class="demo-badge">Demo</span></button>
+        <button class="nav-cta-btn" onclick="navClick('Register')" title="Not available on this hosted demo">Register<span class="demo-badge">Demo</span></button>
       </div>
     </div>
   </div>
@@ -643,6 +661,8 @@
       <div class="ctab" data-view="technical" onclick="setColumnView('technical')">Technical</div>
       <div class="ctab" data-view="insights" onclick="setColumnView('insights')">Insights</div>
       <div class="ctab" data-view="finstr" onclick="setColumnView('finstr')">FinSTR Score</div>
+      <div class="ctab" data-view="volume" onclick="setColumnView('volume')">Volume</div>
+      <div class="ctab" data-view="all" onclick="setColumnView('all')">All</div>
       <div class="ctab" data-view="custom" onclick="setColumnView('custom')">Custom</div>
     </div>
 
@@ -786,6 +806,30 @@
     <div class="fx-grid" id="forexGrid"><div class="news-loading">Loading forex…</div></div>
   </div>
 
+  <!-- ===================== CRYPTO SECTION ===================== -->
+  <div id="cryptoSection" style="display:none;">
+    <div id="cryptoGrid"><div class="news-loading">Loading crypto…</div></div>
+  </div>
+
+  <!-- ===================== INSIDER SECTION ===================== -->
+  <div id="insiderSection" style="display:none;">
+    <table class="gl-table" id="insiderTable" style="width:100%">
+      <thead><tr><th>Ticker</th><th>Insider</th><th>Position</th><th>Transaction</th><th>Shares</th><th>Value</th><th>Date</th></tr></thead>
+      <tbody id="insiderBody"><tr><td colspan="7" class="news-loading">Loading insider transactions…</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- ===================== CALENDAR SECTION ===================== -->
+  <div id="calendarSection" style="display:none;">
+    <div class="news-loading" style="padding:12px 0;text-align:left;font-size:12px;">
+      Upcoming earnings dates for FinSTR's tracked tickers only — not a full market economic calendar.
+    </div>
+    <table class="gl-table" id="calendarTable" style="width:100%">
+      <thead><tr><th>Ticker</th><th>Company</th><th>Earnings Date</th><th>Ex-Dividend Date</th></tr></thead>
+      <tbody id="calendarBody"><tr><td colspan="4" class="news-loading">Loading calendar…</td></tr></tbody>
+    </table>
+  </div>
+
   <!-- ===================== HEATMAP SECTION ===================== -->
   <div id="heatmapSection" style="display:none;">
     <div class="heatmap-layout">
@@ -861,6 +905,7 @@
     <div class="modal-live-row">
       <button class="live-btn" id="liveFetchBtn" onclick="fetchLivePrice()">🔄 Fetch Live Price</button>
       <button class="live-btn" id="modalStarBtn" onclick="toggleWatchFromModal()">☆ Watch</button>
+      <button class="live-btn" onclick="copyShareLink()">🔗 Copy Link</button>
       <span class="live-status" id="liveStatus"></span>
     </div>
     <div class="modal-spark-row">
@@ -1314,11 +1359,38 @@ function populateIndustryOptions(){
   document.getElementById('industryFilter').innerHTML = '<option value="All">All Industries</option>' + industries.map(i=>`<option>${i}</option>`).join('');
 }
 
+// Global ticker/company search in the top nav — reachable from every view (Home, Maps,
+// Groups, etc.), not just the Screener/Charts pages that already had their own search.
+function globalTickerJump(){
+  const raw = document.getElementById('globalSearchInput').value.trim();
+  if(!raw) return;
+  const q = raw.toUpperCase();
+  let match = stockData.find(s=>s.ticker===q);
+  if(!match) match = stockData.find(s=>s.name.toUpperCase().includes(q));
+  if(match){
+    document.getElementById('globalSearchInput').value='';
+    openModal(match.ticker);
+  } else {
+    showToast(`No match for "${raw}" in FinSTR's ${stockData.length}-ticker universe.`);
+  }
+}
+
 // ---------- WATCHLIST / COMPARE ----------
 function toggleWatch(ticker, evt){
   if(evt) evt.stopPropagation();
+  const adding = !watchlist.has(ticker);
   if(watchlist.has(ticker)) watchlist.delete(ticker); else watchlist.add(ticker);
   try{ localStorage.setItem('finstr_watchlist', JSON.stringify([...watchlist])); }catch(e){}
+  // First-ever star: confirm it actually persists, since there's no account system to
+  // otherwise reassure the user their watchlist survives closing the tab.
+  if(adding){
+    try{
+      if(!localStorage.getItem('finstr_watchlist_hint_shown')){
+        showToast('⭐ Saved to your watchlist — stored in this browser, so it\'ll still be here next visit.');
+        localStorage.setItem('finstr_watchlist_hint_shown','1');
+      }
+    }catch(e){}
+  }
   renderAll();
 }
 function toggleWatchFromModal(){
@@ -1404,6 +1476,7 @@ function encodeStateToHash(){
   if(state.search) p.set('q', state.search);
   if(state.view!=='screener') p.set('view', state.view);
   if(state.watchlistOnly) p.set('wl','1');
+  if(modalTicker) p.set('stock', modalTicker);
   const str=p.toString();
   history.replaceState(null,'', str? '#'+str: location.pathname+location.search);
 }
@@ -1424,6 +1497,7 @@ function decodeStateFromHash(){
   if(p.has('q')) state.search=p.get('q');
   if(p.has('view')) state.view=p.get('view');
   if(p.get('wl')==='1') state.watchlistOnly=true;
+  if(p.has('stock')) state.pendingStockDeepLink=p.get('stock');
 }
 function copyShareLink(){
   encodeStateToHash();
@@ -1461,7 +1535,7 @@ function selectAutocomplete(ticker){
 function hideAutocomplete(){ document.getElementById('autocompleteBox').style.display='none'; }
 
 // ---------- VIEW SWITCH ----------
-const ALL_SECTIONS = ['home','screener','heatmap','news','charts','groups','futures','forex'];
+const ALL_SECTIONS = ['home','screener','heatmap','news','charts','groups','futures','forex','crypto','insider','calendar'];
 function setView(view){
   state.view = view;
   ALL_SECTIONS.forEach(s=>{
@@ -1476,6 +1550,9 @@ function setView(view){
   if(view==='groups') renderGroups();
   if(view==='futures' && !futuresLoaded) loadFutures();
   if(view==='forex' && !forexLoaded) loadForex();
+  if(view==='crypto' && !cryptoLoaded) loadCrypto();
+  if(view==='insider') renderInsider();
+  if(view==='calendar') renderCalendar();
   encodeStateToHash();
   closeMobileMenu();
 }
@@ -1509,6 +1586,13 @@ function peHeatStyle(pe){
 }
 
 // ---------- COLUMN VIEWS ----------
+// Per-row (not per-column) freshness marker: true once a row comes from a real fetch
+// (live Flask API or the GitHub Actions JSON snapshot); false only for the hardcoded
+// offline seed data, which synthesizes these fields. Was previously a static column-
+// header label claiming ALL rows were "Estimated, not live" regardless of source.
+function estTag(s){
+  return s.hasRealFundamentals ? '' : ' <span class="sim-tag" title="Demo estimate — not from a live fetch">~</span>';
+}
 const COLUMN_DEFS = {
   ticker:{label:'Ticker', render:s=>s.ticker},
   name:{label:'Company', render:s=>s.name},
@@ -1518,23 +1602,31 @@ const COLUMN_DEFS = {
   price:{label:'Price', render:s=>`$${s.price.toFixed(2)}`},
   changePercent:{label:'Change %', render:s=>`<span class="${s.changePercent>=0?'pos':'neg'}">${s.changePercent>=0?'+':''}${s.changePercent.toFixed(2)}%</span>`},
   volume:{label:'Volume', render:s=>`${s.volume.toFixed(1)}M`},
-  // These six remain estimates, not live data — Yahoo's quote/quoteSummary endpoints that
-  // carry them now require an auth crumb (confirmed 401 even fetched directly), and are
-  // not obtainable client-side through a public proxy. Marked with "~" and a tooltip
-  // rather than silently presented as real. See COLUMN_DEFS comment above render().
-  pe:{label:'P/E ~', title:'Estimated — Yahoo\'s live P/E endpoint requires server-side auth', cellAttrs:s=>peHeatStyle(s.pe), render:s=> s.pe>0? s.pe.toFixed(1):'N/A'},
+  // Real for any row from a live fetch (Flask API or the GitHub Actions JSON snapshot —
+  // fetched server-side via yfinance, no browser auth-wall issue there). Only the
+  // hardcoded offline seed data synthesizes these; estTag() marks those rows only.
+  pe:{label:'P/E', cellAttrs:s=>peHeatStyle(s.pe), render:s=> (s.pe>0? s.pe.toFixed(1):'N/A') + estTag(s)},
   valueScore:{label:'Value Score', render:s=> scoreBadge(finstrValueScore(s))},
   momentumScore:{label:'Momentum Score', render:s=> scoreBadge(finstrMomentumScore(s))},
   finstrScore:{label:'FinSTR Score', render:s=> scoreBadge(finstrScore(s))},
-  forwardPE:{label:'Fwd P/E ~', title:'Estimated, not live', render:s=> s.forwardPE.toFixed(1)},
-  peg:{label:'PEG ~', title:'Estimated, not live', render:s=> s.peg.toFixed(2)},
-  roe:{label:'ROE ~', title:'Estimated, not live', render:s=> s.roe.toFixed(1)+'%'},
-  profitMargin:{label:'Profit Margin ~', title:'Estimated, not live', render:s=> s.profitMargin.toFixed(1)+'%'},
-  dividendYield:{label:'Dividend ~', title:'Estimated, not live', render:s=> s.dividendYield.toFixed(2)+'%'},
-  eps:{label:'EPS ~', title:'Estimated, not live', render:s=> `$${s.eps.toFixed(2)}`},
-  ma50:{label:'50D MA', render:s=> `$${s.ma50.toFixed(2)} <span class="ma-badge ${s.price>=s.ma50?'pos':'neg'}">${s.price>=s.ma50?'▲':'▼'}</span>${s.hasRealFundamentals?'':' <span class="sim-tag" title="Real once live prices load">~</span>'}`},
-  beta:{label:'Beta ~', title:'Estimated, not live', render:s=> s.beta.toFixed(2)},
+  forwardPE:{label:'Fwd P/E', render:s=> s.forwardPE.toFixed(1) + estTag(s)},
+  peg:{label:'PEG', render:s=> s.peg.toFixed(2) + estTag(s)},
+  roe:{label:'ROE', render:s=> s.roe.toFixed(1)+'%' + estTag(s)},
+  profitMargin:{label:'Profit Margin', render:s=> s.profitMargin.toFixed(1)+'%' + estTag(s)},
+  dividendYield:{label:'Dividend', render:s=> s.dividendYield.toFixed(2)+'%' + estTag(s)},
+  eps:{label:'EPS', render:s=> `$${s.eps.toFixed(2)}` + estTag(s)},
+  ma50:{label:'50D MA', render:s=> `$${s.ma50.toFixed(2)} <span class="ma-badge ${s.price>=s.ma50?'pos':'neg'}">${s.price>=s.ma50?'▲':'▼'}</span>${estTag(s)}`},
+  beta:{label:'Beta', render:s=> s.beta.toFixed(2) + estTag(s)},
   insight:{label:'Insight', render:s=> `<span class="insight-line">${computeInsight(s).join(' · ')}</span>`},
+  // Fetched by scripts/fetch_data.py all along but never surfaced in any column view —
+  // no new data pipeline work needed to add the Volume preset below.
+  avgVolume:{label:'Avg Volume', render:s=> `${s.avgVolume.toFixed(1)}M` + estTag(s)},
+  relVolume:{label:'Rel Volume', render:s=>{
+    if(!(s.avgVolume>0)) return 'N/A';
+    const r = s.volume/s.avgVolume;
+    const cls = r>=1.5?'pos':r<=0.5?'neg':'';
+    return `<span class="${cls}">${r.toFixed(2)}x</span>`;
+  }},
 };
 
 // Computes short signal tags directly from a stock's own numeric fields — no external
@@ -1567,6 +1659,8 @@ const COLUMN_SETS = {
   technical:['ticker','price','beta','ma50'],
   insights:['ticker','name','sector','price','changePercent','insight'],
   finstr:['ticker','name','sector','price','changePercent','valueScore','momentumScore','finstrScore'],
+  volume:['ticker','name','price','changePercent','volume','avgVolume','relVolume'],
+  all:['ticker','name','sector','industry','marketCap','price','changePercent','volume','avgVolume','relVolume','pe','forwardPE','peg','roe','profitMargin','dividendYield','eps','beta','ma50'],
   custom:['ticker','name','sector','marketCap','price','changePercent','pe','forwardPE','peg','ma50','volume']
 };
 function setColumnView(v){
@@ -1845,8 +1939,13 @@ function openModal(ticker){
   document.getElementById('modalInvestment').value = 10000;
   recalcModal();
   loadModalNews(s);
+  encodeStateToHash();
 }
-function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('show');
+  modalTicker = null;
+  encodeStateToHash();
+}
 
 let modalNewsRequestId = 0;
 async function loadModalNews(s){
@@ -2452,6 +2551,18 @@ function fmtNewsTime(dateStr){
   return d.toLocaleDateString([],{month:'short',day:'numeric'});
 }
 
+// Removes any article already present in `exclude` (matched by link, falling back to
+// title) — both news columns can otherwise converge on the same top headlines when the
+// Yahoo Finance fallback path serves similar results for two differently-worded queries.
+function dedupeAgainst(articles, exclude){
+  const seen = new Set(exclude.map(a=> a.link!=='#' && a.link ? a.link : a.title));
+  return articles.filter(a=>{
+    const key = a.link!=='#' && a.link ? a.link : a.title;
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 function renderArticles(articles, colId='newsMainCol', append=false){
   const col=document.getElementById(colId);
   if(!col) return;
@@ -2500,8 +2611,9 @@ async function searchNews(){
     blogsCol.innerHTML = '<li class="news-loading">No results.</li>';
     return;
   }
-  renderArticles(all.slice(0, NEWS_PAGE_SIZE), 'newsMainCol');
-  renderArticles(all.slice(NEWS_PAGE_SIZE, NEWS_PAGE_SIZE*2), 'newsBlogsCol');
+  const mainSlice = all.slice(0, NEWS_PAGE_SIZE);
+  renderArticles(mainSlice, 'newsMainCol');
+  renderArticles(dedupeAgainst(all.slice(NEWS_PAGE_SIZE, NEWS_PAGE_SIZE*2), mainSlice), 'newsBlogsCol');
   document.getElementById('newsLoadMoreBtn').style.display = all.length > NEWS_PAGE_SIZE*2 ? '' : 'none';
   document.getElementById('newsSourceNote').textContent = `Source: ${source}`;
 }
@@ -2530,8 +2642,9 @@ async function loadNews(){
     if(cached && Date.now()-cached.ts < NEWS_CACHE_TTL){
       newsAllArticles = cached.main;
       newsPage = 1;
-      renderArticles(cached.main.slice(0, NEWS_PAGE_SIZE), 'newsMainCol');
-      renderArticles(cached.blogs, 'newsBlogsCol');
+      const cachedMainSlice = cached.main.slice(0, NEWS_PAGE_SIZE);
+      renderArticles(cachedMainSlice, 'newsMainCol');
+      renderArticles(dedupeAgainst(cached.blogs, cachedMainSlice), 'newsBlogsCol');
       document.getElementById('newsLoadMoreBtn').style.display = cached.main.length > NEWS_PAGE_SIZE ? '' : 'none';
       document.getElementById('newsSourceNote').textContent = `Source: ${cached.source || 'Google News'}`;
       return;
@@ -2551,8 +2664,9 @@ async function loadNews(){
     if(main.length || blogs.length){
       newsAllArticles = main;
       newsPage = 1;
-      renderArticles(main.slice(0, NEWS_PAGE_SIZE), 'newsMainCol');
-      renderArticles(blogs, 'newsBlogsCol');
+      const mainSlice = main.slice(0, NEWS_PAGE_SIZE);
+      renderArticles(mainSlice, 'newsMainCol');
+      renderArticles(dedupeAgainst(blogs, mainSlice), 'newsBlogsCol');
       document.getElementById('newsLoadMoreBtn').style.display = main.length > NEWS_PAGE_SIZE ? '' : 'none';
       document.getElementById('newsSourceNote').textContent = `Source: ${mainRes.source}`;
       try{ localStorage.setItem(cacheKey, JSON.stringify({ts:Date.now(), main, blogs, source:mainRes.source})); }catch(e){}
@@ -2676,6 +2790,57 @@ function aggregateGroups(){
   }));
 }
 
+// ---------- INSIDER TRADING ----------
+// Flattens each ticker's insiderTransactions (from data/screener.json, sourced from
+// yfinance's real SEC Form 4 filings — no synthesized rows) into one feed sorted by date.
+function renderInsider(){
+  const body = document.getElementById('insiderBody');
+  const rows = [];
+  stockData.forEach(s=>{
+    (s.insiderTransactions||[]).forEach(tx=> rows.push({...tx, ticker:s.ticker}));
+  });
+  if(!rows.length){
+    body.innerHTML = '<tr><td colspan="7" class="news-loading">No insider transaction data available in this snapshot.</td></tr>';
+    return;
+  }
+  rows.sort((a,b)=> new Date(b.date) - new Date(a.date));
+  body.innerHTML = rows.slice(0,200).map(r=>{
+    const isSale = /sale/i.test(r.transaction||'');
+    const isBuy = /purchase|buy/i.test(r.transaction||'');
+    const cls = isSale?'neg':isBuy?'pos':'';
+    const val = r.value!=null ? `$${Math.round(r.value).toLocaleString()}` : '—';
+    const dateStr = r.date ? new Date(r.date).toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}) : '';
+    return `<tr>
+      <td><a href="#" onclick="event.preventDefault();openModal('${r.ticker}')" style="color:var(--accent)">${r.ticker}</a></td>
+      <td>${r.insider||''}</td>
+      <td>${r.position||''}</td>
+      <td class="${cls}">${r.transaction||'—'}</td>
+      <td>${(r.shares||0).toLocaleString()}</td>
+      <td>${val}</td>
+      <td>${dateStr}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ---------- EARNINGS CALENDAR ----------
+// Scoped to FinSTR's own 126-ticker universe (yfinance's real Ticker.calendar per stock),
+// not a full market economic calendar — that needs a paid/keyed data source we don't have.
+function renderCalendar(){
+  const body = document.getElementById('calendarBody');
+  const rows = stockData.filter(s=> s.earningsDate).sort((a,b)=> new Date(a.earningsDate)-new Date(b.earningsDate));
+  if(!rows.length){
+    body.innerHTML = '<tr><td colspan="4" class="news-loading">No upcoming earnings dates in this snapshot.</td></tr>';
+    return;
+  }
+  const fmt = d=> d ? new Date(d).toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}) : '—';
+  body.innerHTML = rows.map(s=> `<tr>
+    <td><a href="#" onclick="event.preventDefault();openModal('${s.ticker}')" style="color:var(--accent)">${s.ticker}</a></td>
+    <td>${s.name}</td>
+    <td>${fmt(s.earningsDate)}</td>
+    <td>${fmt(s.exDividendDate)}</td>
+  </tr>`).join('');
+}
+
 function renderGroups(){
   const groups = aggregateGroups();
   const orderKey = document.getElementById('groupOrder')?.value||'name';
@@ -2742,6 +2907,11 @@ const FOREX_MAP = {
   'USD/CAD':'USDCAD=X','AUD/USD':'AUDUSD=X','USD/CHF':'USDCHF=X',
   'NZD/USD':'NZDUSD=X','EUR/GBP':'EURGBP=X','EUR/JPY':'EURJPY=X',
   'GBP/JPY':'GBPJPY=X','USD/CNY':'USDCNY=X','USD/MXN':'USDMXN=X'
+};
+const CRYPTO_MAP = {
+  'Bitcoin':'BTC-USD','Ethereum':'ETH-USD','Solana':'SOL-USD','XRP':'XRP-USD',
+  'Dogecoin':'DOGE-USD','Cardano':'ADA-USD','Litecoin':'LTC-USD','Polkadot':'DOT-USD',
+  'Avalanche':'AVAX-USD','Chainlink':'LINK-USD','Polygon':'MATIC-USD','Toncoin':'TON-USD'
 };
 
 async function fetchMktDirect(symbolMap){
@@ -2812,11 +2982,14 @@ function ftTile(f){
   </div>`;
 }
 
+function skeletonTiles(n=8){
+  return `<div class="skeleton-grid">${Array(n).fill('<div class="skeleton-tile"><div class="sk-line w60"></div><div class="sk-line w40"></div></div>').join('')}</div>`;
+}
 let futuresLoaded = false;
 async function loadFutures(){
   futuresLoaded = true;
   const wrap = document.getElementById('futuresGrid');
-  wrap.innerHTML = '<div class="news-loading">Loading futures…</div>';
+  wrap.innerHTML = skeletonTiles(12);
   let data = null;
   try{ const r=await fetch('/api/futures',{signal:AbortSignal.timeout(3000)}); if(r.ok) data=await r.json(); }catch(e){}
   if(data?.length){
@@ -2856,6 +3029,7 @@ let forexLoaded = false;
 async function loadForex(){
   forexLoaded = true;
   const grid = document.getElementById('forexGrid');
+  grid.innerHTML = skeletonTiles(12);
   let data = null;
   try{ const r=await fetch('/api/forex',{signal:AbortSignal.timeout(3000)}); if(r.ok) data=await r.json(); }catch(e){}
   if(!data) data = await fetchMktDirect(FOREX_MAP);
@@ -2888,6 +3062,16 @@ async function loadForex(){
     const el = document.getElementById(`fxspark${i}`);
     if(el && svg){ el.innerHTML=svg; el.querySelector('polyline').style.stroke=col; }
   });
+}
+
+let cryptoLoaded = false;
+async function loadCrypto(){
+  cryptoLoaded = true;
+  const wrap = document.getElementById('cryptoGrid');
+  wrap.innerHTML = skeletonTiles(12);
+  const data = await fetchMktDirect(CRYPTO_MAP);
+  if(!data?.length){ wrap.innerHTML='<div class="news-loading">No crypto data available.</div>'; return; }
+  wrap.innerHTML = `<div class="ft-tiles">${data.map(ftTile).join('')}</div>`;
 }
 
 // ---------- INIT ----------
@@ -2932,6 +3116,7 @@ async function init(){
       const live = await res.json();
       if(live && live.length > 0){
         stockData = live;
+        stockData.forEach(s=> s.hasRealFundamentals = true);
         usingLiveData = true;
         document.getElementById('dataBanner').innerHTML =
           '<b>📡 Live Data:</b> Fundamentals refreshed every 6 hours · Prices refresh every 60 seconds · <span id="lastUpdated"></span>';
@@ -2949,6 +3134,7 @@ async function init(){
         const snapshot = await res.json();
         if(snapshot && snapshot.length > 0){
           stockData = snapshot;
+          stockData.forEach(s=> s.hasRealFundamentals = true);
           usingLiveData = true;
           document.getElementById('dataBanner').innerHTML =
             '<b>📊 Automated Snapshot:</b> Fundamentals + news refreshed every 6 hours via GitHub Actions · <span id="lastUpdated"></span>';
@@ -2980,6 +3166,13 @@ async function init(){
   updateClock(); setInterval(updateClock, 1000);
   renderAll();
   if(state.view==='heatmap') renderHeatmap(getFilteredData());
+
+  // Deep link: #...&stock=AAPL opens that stock's modal directly, so individual stock
+  // links are shareable/bookmarkable instead of only ever pointing at the whole screener.
+  if(state.pendingStockDeepLink){
+    const ticker = state.pendingStockDeepLink.toUpperCase();
+    if(stockData.some(s=>s.ticker===ticker)) openModal(ticker);
+  }
 }
 init();
 </script>
