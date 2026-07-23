@@ -1,8 +1,8 @@
 # FinSTR — Knowledge Base for Next Session
 
-Read this before starting work. It captures what's true about this repo as of 2026-07-23,
-what was built this session, and what's still open — so the next session doesn't have to
-re-derive it.
+Read this before starting work. It captures what's true about this repo as of 2026-07-23
+(two sessions that day), what was built, and what's still open — so the next session
+doesn't have to re-derive it.
 
 ---
 
@@ -84,9 +84,65 @@ version first** before assuming Yahoo is blocking the CI runner's IP.
 
 ---
 
-## Design roadmap — not yet started
+## Session 2 (2026-07-23, later same day): UX audit + 10-task roadmap
 
-These are real next steps, not done this session. Ordered by leverage.
+Did a live user-journey audit of https://punch-k.github.io/FinSTR-app/ against real
+finviz.com, found concrete drop-off points, then implemented a 10-item roadmap. Findings
+and what got built:
+
+**Drop-off points found (ranked by how many visitors hit them):**
+1. Register/Login (top-right primary CTA position) were fully non-functional — silent
+   dead end for every visitor's first instinct.
+2. Portfolio nav item dead-ended to "run Python locally" with no warning.
+3. News page rendered near-duplicate headlines in both columns (root cause: the Yahoo
+   Finance fallback path returns overlapping top stories for two differently-worded
+   queries — not literally duplicated code, but no cross-column dedup existed).
+4. Futures/Forex showed plain "Loading…" text with no visual progress for ~5-8s
+   (client-side yfinance-via-proxy fetch, no server cache) — reads as broken before it
+   resolves.
+5. No global ticker search reachable from Home/Maps/Groups — only inside Screener/Charts.
+
+**Also found while reading COLUMN_DEFS (not part of the original 10, fixed anyway):**
+P/E, Forward P/E, PEG, ROE, Profit Margin, Dividend Yield, EPS, and Beta were all
+**hardcoded** with a static "~ Estimated, not live" column header, written back when the
+only data source was a client-side fetch blocked by Yahoo's auth wall. That's no longer
+true — Session 1's `data/screener.json` pipeline fetches these fields for real, server-side,
+via GitHub Actions. Fixed: `estTag(s)` now marks a row as estimated only when
+`s.hasRealFundamentals` is false (true for every row from `/api/screener` or
+`data/screener.json`; false only for the hardcoded SEED_DATA fallback). See `estTag()` and
+the `hasRealFundamentals` stamping in `init()` in `index.html`.
+
+**All 10 roadmap tasks — status:**
+
+| # | Task | Status |
+|---|---|---|
+| 1 | Fix News duplicate content | Done — `dedupeAgainst()` filters the Blogs column against whatever the main column already showed |
+| 2 | Loading skeleton for Futures/Forex | Done — `skeletonTiles()` + `.skeleton-tile` pulse animation |
+| 3 | "Demo" badges on Register/Portfolio | Done — `.demo-badge` pill + tooltip, so the dead-end is expected not a surprise |
+| 4 | Deep-linkable stock URLs | Done — `#...&stock=AAPL` opens that stock's modal on load; added a "Copy Link" button in the modal (reuses existing `copyShareLink()`) |
+| 5 | Watchlist persistence | Was already working via `localStorage('finstr_watchlist')` — added a one-time toast confirming it persists, since there's no account system to otherwise reassure the user |
+| 6 | Global ticker search | Done — search box in the top nav bar, visible on every view, jumps straight to a stock's modal |
+| 7 | Expand column presets | Done — added "Volume" (volume/avgVolume/relative volume — `avgVolume` was already fetched but never surfaced anywhere) and "All" (every real field in one view) |
+| 8 | Insider Trading tab | Done — new data field via `yfinance.Ticker(t).insider_transactions` (real SEC Form 4 data), new nav tab, flattened/sorted feed across all tickers |
+| 9 | Real accounts / server-side saved screeners | **Not done — blocked, needs a decision from the user.** This requires either standing up a real backend + auth (contradicts the "free GitHub Pages, no server" constraint the whole pipeline was built around) or picking a third-party service (Supabase/Firebase free tier, etc.) which needs credentials/account setup only the user can provide. Flagged rather than faked. |
+| 10 | Crypto + Calendar tabs | Done, split into two — **Crypto**: reuses the existing `fetchMktDirect()`/`ftTile()` pattern already used for Futures, real live prices via Yahoo chart endpoint, no new data source. **Calendar**: new `yfinance.Ticker(t).calendar` field (earnings date + ex-dividend date), explicitly labeled in the UI as scoped to FinSTR's own 126 tickers, not a full market economic calendar (that needs a paid/keyed API this project doesn't have) |
+
+**Data pipeline additions this session:** `insiderTransactions` (top 5 per ticker) and
+`earningsDate`/`exDividendDate` added to `scripts/fetch_data.py`'s `fetch_ticker_data()`,
+mirrored into `app.py` (imports `fetch_insider_transactions`/`fetch_calendar` from
+`scripts.fetch_data` rather than duplicating the logic). Re-ran the full fetch and verified
+124/126 tickers had insider data, 85/126 had an upcoming earnings date, before committing.
+
+**Still open for task 9:** ask the user which path they want — (a) add a real lightweight
+backend/auth service (their choice of provider, needs their credentials), or (b) skip
+accounts entirely and lean further into localStorage-based "this browser only" persistence
+patterns (already used for watchlist/theme), clearly labeled as such.
+
+---
+
+## Design roadmap — from Session 1, mostly still open
+
+These are earlier next steps not yet done. Ordered by leverage.
 
 ### 1. Close the loop on the news relevancy problem
 Per-ticker news currently comes from `yfinance.Ticker(t).news`, which is Yahoo's own
@@ -155,3 +211,16 @@ real backend or third-party auth service.
   ~30–60s; rapid successive commits cause GitHub to cancel intermediate in-flight
   deployments (shows as a red X — this is normal, not a real failure, only the *final*
   deployment in a rapid sequence needs to be checked for success).
+- **GitHub's upload-file commit message box shifts position after a file finishes
+  uploading/processing** — clicking a coordinate captured before the upload settled can
+  land on the wrong element entirely (hit the global "/" search shortcut and a Copilot
+  panel by accident this session). Always re-run `read_page` (or at least re-screenshot)
+  *after* the upload confirms, and click the textbox by its fresh element ref, not a
+  remembered coordinate.
+- **Verify JS syntax before pushing hand-edited `<script>` blocks**: `node -e "new
+  Function(...)"` against the extracted script content catches syntax errors for free
+  without needing a browser. Used this before every push this session.
+- When adding a new real data field to the pipeline, **re-run `scripts/fetch_data.py`
+  locally and spot-check the output JSON** before committing — this is what caught that
+  the P/E-etc. "estimated" labels were stale, and confirmed insider/calendar coverage
+  numbers (124/126, 85/126) before claiming the feature worked.
