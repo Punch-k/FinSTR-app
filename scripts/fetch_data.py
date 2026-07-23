@@ -29,6 +29,29 @@ MAX_WORKERS = 8
 NEWS_PER_TICKER = 3
 
 
+INSIDER_PER_TICKER = 5
+
+
+def fetch_insider_transactions(ticker):
+    try:
+        df = yfinance.Ticker(ticker).insider_transactions
+        if df is None or df.empty:
+            return []
+    except Exception:
+        return []
+    rows = []
+    for _, row in df.head(INSIDER_PER_TICKER).iterrows():
+        rows.append({
+            "insider": row.get("Insider", ""),
+            "position": row.get("Position", ""),
+            "transaction": row.get("Text", "") or row.get("Transaction", ""),
+            "shares": int(row["Shares"]) if row.get("Shares") == row.get("Shares") else 0,
+            "value": float(row["Value"]) if row.get("Value") == row.get("Value") else None,
+            "date": str(row.get("Start Date", "")),
+        })
+    return rows
+
+
 def fetch_news(ticker):
     try:
         raw = yfinance.Ticker(ticker).news or []
@@ -43,6 +66,20 @@ def fetch_news(ticker):
             "publishedAt": a.get("providerPublishTime", 0),
         })
     return articles
+
+
+def fetch_calendar(ticker):
+    try:
+        cal = yfinance.Ticker(ticker).calendar
+        if not cal:
+            return {}
+    except Exception:
+        return {}
+    earnings = cal.get("Earnings Date") or []
+    return {
+        "earningsDate": str(earnings[0]) if earnings else None,
+        "exDividendDate": str(cal["Ex-Dividend Date"]) if cal.get("Ex-Dividend Date") else None,
+    }
 
 
 def fetch_ticker_data(ticker):
@@ -75,6 +112,8 @@ def fetch_ticker_data(ticker):
             "volume": round((info.get("volume") or 0) / 1e6, 2),
             "avgVolume": round((info.get("averageVolume") or 0) / 1e6, 2),
             "news": fetch_news(ticker),
+            "insiderTransactions": fetch_insider_transactions(ticker),
+            **fetch_calendar(ticker),
         }
     except Exception as e:
         print(f"  [skip] {ticker}: {e}", file=sys.stderr)
