@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS quant_allocation (
     TargetWeight REAL NOT NULL,
     CurrentWeight REAL NOT NULL,
     Benchmark TEXT NOT NULL,
+    Method TEXT NOT NULL DEFAULT 'confidence-weighted-tilt',
     PRIMARY KEY (AsOf, Ticker)
 );
 
@@ -66,6 +67,7 @@ CREATE TABLE IF NOT EXISTS quant_forecast_outcomes (
     HorizonHours INTEGER NOT NULL,
     PredictedDirection TEXT NOT NULL,
     PredictedReturnPct REAL NOT NULL,
+    PriceAtForecast REAL NOT NULL,
     ActualReturnPct REAL,
     DirectionCorrect INTEGER,
     ScoredAt TEXT,
@@ -97,10 +99,33 @@ def get_connection(db_path=None):
         connection.close()
 
 
+# Columns added to an existing table after its first release. CREATE TABLE IF NOT
+# EXISTS above is a no-op against an already-existing table, so a column added here
+# needs an explicit migration or every insert against a pre-existing quant.db (e.g.
+# one already committed by a prior CI run) breaks with "no column named X".
+_COLUMN_MIGRATIONS = {
+    "quant_forecast_outcomes": [
+        ("PriceAtForecast", "REAL NOT NULL DEFAULT 0"),
+    ],
+    "quant_allocation": [
+        ("Method", "TEXT NOT NULL DEFAULT 'confidence-weighted-tilt'"),
+    ],
+}
+
+
+def _apply_column_migrations(connection):
+    for table, columns in _COLUMN_MIGRATIONS.items():
+        existing = {row[1] for row in connection.execute(f"PRAGMA table_info({table});")}
+        for name, coltype in columns:
+            if name not in existing:
+                connection.execute(f"ALTER TABLE {table} ADD COLUMN {name} {coltype};")
+
+
 def init_quant_schema(db_path=None):
     """Idempotent — safe to call on every run, like init_screener_cache() in app.py."""
     with get_connection(db_path) as connection:
         connection.executescript(SCHEMA)
+        _apply_column_migrations(connection)
         connection.commit()
 
 

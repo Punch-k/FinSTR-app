@@ -95,9 +95,19 @@ def _naive_tilt_allocate(tickers, prior_weights, forecasts):
     return {t: w / total for t, w in tilted.items()}
 
 
+METHOD_BLACK_LITTERMAN = "black-litterman"
+METHOD_NAIVE_TILT = "confidence-weighted-tilt"
+
+
 def allocate(tickers, prior_weights, forecasts, historical_returns_df=None):
     """
-    Returns {ticker: target_weight}, weights summing to ~1.0.
+    Returns (weights, method) — weights is {ticker: target_weight} summing to
+    ~1.0; method is one of METHOD_BLACK_LITTERMAN / METHOD_NAIVE_TILT,
+    reporting whichever path *actually produced* these weights (skfolio
+    unavailable, historical_returns_df missing/too short, or fit() raising
+    all fall through to the naive tilt). Callers must persist and surface
+    `method` rather than assuming Black-Litterman ran — the frontend
+    disclaimer must never claim a method that isn't the one on screen.
 
     Tries the real skfolio Black-Litterman path first (requires
     historical_returns_df); falls back to a simple confidence-weighted tilt
@@ -106,7 +116,7 @@ def allocate(tickers, prior_weights, forecasts, historical_returns_df=None):
     """
     if historical_returns_df is not None and len(tickers) >= 2:
         try:
-            return _try_skfolio_allocate(tickers, prior_weights, forecasts, historical_returns_df)
+            return _try_skfolio_allocate(tickers, prior_weights, forecasts, historical_returns_df), METHOD_BLACK_LITTERMAN
         except Exception:
             pass
-    return _naive_tilt_allocate(tickers, prior_weights, forecasts)
+    return _naive_tilt_allocate(tickers, prior_weights, forecasts), METHOD_NAIVE_TILT

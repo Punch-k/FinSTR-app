@@ -46,7 +46,7 @@ STATIC_SNAPSHOT_PATH = os.path.join(
 
 
 def _write_static_snapshot(generated_at, forecasts, target_weights, prior_weights, equity, new_cash,
-                            starting_equity, new_positions, prices):
+                            starting_equity, new_positions, prices, allocation_method):
     positions_payload = [
         {
             "ticker": t,
@@ -90,7 +90,7 @@ def _write_static_snapshot(generated_at, forecasts, target_weights, prior_weight
     snapshot = {
         "generated_at": generated_at,
         "forecasts": forecasts_payload,
-        "allocation": {"as_of": generated_at, "benchmark": "equal-weight", "positions": positions_payload},
+        "allocation": {"as_of": generated_at, "benchmark": "equal-weight", "method": allocation_method, "positions": positions_payload},
         "paper": {
             "as_of": generated_at,
             "equity": round(equity, 2),
@@ -132,6 +132,35 @@ def _latest_price(ohlcv_window):
     return ohlcv_window[-1]["close"]
 
 
+def _build_returns_df(ohlcv_by_ticker):
+    """
+    Wide daily-pct-change DataFrame (index=date, columns=ticker) for skfolio's
+    Black-Litterman prior estimator, built from the same OHLCV closes
+    run_cycle() already fetched per ticker — no second data pull.
+
+    Returns None if there isn't enough clean, aligned history to fit a
+    covariance matrix from (allocator.allocate() falls back to the naive
+    tilt in that case, same as if this were never called).
+    """
+    import pandas as pd
+
+    closes = {}
+    for ticker, window in ohlcv_by_ticker.items():
+        if len(window) < 2:
+            continue
+        closes[ticker] = pd.Series(
+            {bar["timestamp"]: bar["close"] for bar in window}
+        )
+    if len(closes) < 2:
+        return None
+
+    prices_df = pd.DataFrame(closes).sort_index()
+    returns_df = prices_df.pct_change().dropna(how="any")
+    if returns_df.empty or len(returns_df) < 10:
+        return None
+    return returns_df
+
+
 def _load_last_paper_state():
     account_rows = db.execute_query(
         "SELECT AsOf, Equity, Cash, StartingEquity FROM quant_paper_account ORDER BY AsOf DESC LIMIT 1;"
@@ -160,27 +189,23 @@ def score_due_forecasts():
     """
     due_cutoff = (datetime.now(timezone.utc) - timedelta(hours=HORIZON_HOURS)).strftime("%Y-%m-%dT%H:%M:%SZ")
     rows = db.execute_query(
-        """SELECT Ticker, GeneratedAt, HorizonHours, PredictedDirection, PredictedReturnPct
+        """SELECT Ticker, GeneratedAt, HorizonHours, PredictedDirection, PredictedReturnPct, PriceAtForecast
            FROM quant_forecast_outcomes
            WHERE ScoredAt IS NULL AND GeneratedAt <= ?;""",
         (due_cutoff,),
     )
     scored = 0
-    for ticker, generated_at, horizon_hours, predicted_direction, predicted_return_pct in rows:
+    for ticker, generated_at, horizon_hours, predicted_direction, predicted_return_pct, price_at_forecast in rows:
+        if not price_at_forecast:
+            continue  # can't compute a real return without a baseline price — never fall back to a placeholder
         window = _fetch_ohlcv(ticker, days=5)
         current_price = _latest_price(window)
         if current_price is None:
             continue
-        base_rows = db.execute_query(
-            "SELECT ExpectedReturnPct FROM quant_forecasts WHERE Ticker = ? AND GeneratedAt = ?;",
-            (ticker, generated_at),
-        )
-        if not base_rows:
-            continue
-        # Approximate "actual" by comparing the price now to the price at
-        # forecast time via the return implied at forecast generation; a
-        # production version would snapshot the exact forecast-time price.
-        actual_return_pct = predicted_return_pct  # placeholder until a price snapshot join is added
+        # Real realized return: the actual price move from the price recorded at
+        # forecast-generation time to the price now that the horizon has elapsed —
+        # not a copy of the prediction. See PriceAtForecast, written in run_cycle().
+        actual_return_pct = (current_price - price_at_forecast) / price_at_forecast * 100
         direction_correct = 1 if (actual_return_pct > 0) == (predicted_direction == "up") else 0
         db.execute_update(
             """UPDATE quant_forecast_outcomes
@@ -197,12 +222,14 @@ def run_cycle():
 
     forecasts = {}
     prices = {}
+    ohlcv_by_ticker = {}
     generated_at = now_iso()
 
     forecast_rows = []
     outcome_rows = []
     for ticker in QUANT_TICKERS:
         window = _fetch_ohlcv(ticker)
+        ohlcv_by_ticker[ticker] = window
         f = forecast_ticker(ticker, window)
         forecasts[ticker] = f
         price = _latest_price(window)
@@ -213,11 +240,16 @@ def run_cycle():
             ticker, generated_at, f["direction_confidence"], f["expected_return_pct"],
             f["interval_low_pct"], f["interval_high_pct"], f["volatility_forecast"], f["model_name"],
         ))
-        outcome_rows.append((
-            ticker, generated_at, HORIZON_HOURS,
-            "up" if f["expected_return_pct"] >= 0 else "down",
-            f["expected_return_pct"],
-        ))
+        # PriceAtForecast is the baseline score_due_forecasts() diffs against later —
+        # without it, scoring has no real price to compare to. Skip logging an outcome
+        # row entirely for a ticker with no price this cycle rather than recording one
+        # that can never be scored for real.
+        if price:
+            outcome_rows.append((
+                ticker, generated_at, HORIZON_HOURS,
+                "up" if f["expected_return_pct"] >= 0 else "down",
+                f["expected_return_pct"], price,
+            ))
 
     db.executemany_update(
         """INSERT OR REPLACE INTO quant_forecasts
@@ -227,14 +259,15 @@ def run_cycle():
     )
     db.executemany_update(
         """INSERT OR IGNORE INTO quant_forecast_outcomes
-           (Ticker, GeneratedAt, HorizonHours, PredictedDirection, PredictedReturnPct)
-           VALUES (?, ?, ?, ?, ?);""",
+           (Ticker, GeneratedAt, HorizonHours, PredictedDirection, PredictedReturnPct, PriceAtForecast)
+           VALUES (?, ?, ?, ?, ?, ?);""",
         outcome_rows,
     )
 
     tickers_with_prices = [t for t in QUANT_TICKERS if t in prices]
     prior_weights = equal_weight_prior(tickers_with_prices)
-    target_weights = allocate(tickers_with_prices, prior_weights, forecasts, historical_returns_df=None)
+    returns_df = _build_returns_df({t: ohlcv_by_ticker[t] for t in tickers_with_prices})
+    target_weights, allocation_method = allocate(tickers_with_prices, prior_weights, forecasts, historical_returns_df=returns_df)
 
     prior_state, current_positions = _load_last_paper_state()
     new_positions, new_cash = rebalance(
@@ -252,16 +285,17 @@ def run_cycle():
         [(generated_at, t, p["qty"], p["avg_price"], p["unrealized_pnl"]) for t, p in new_positions.items()],
     )
     db.executemany_update(
-        """INSERT OR REPLACE INTO quant_allocation (AsOf, Ticker, TargetWeight, CurrentWeight, Benchmark)
-           VALUES (?, ?, ?, ?, ?);""",
-        [(generated_at, t, target_weights.get(t, 0.0), prior_weights.get(t, 0.0), "equal-weight") for t in tickers_with_prices],
+        """INSERT OR REPLACE INTO quant_allocation (AsOf, Ticker, TargetWeight, CurrentWeight, Benchmark, Method)
+           VALUES (?, ?, ?, ?, ?, ?);""",
+        [(generated_at, t, target_weights.get(t, 0.0), prior_weights.get(t, 0.0), "equal-weight", allocation_method)
+         for t in tickers_with_prices],
     )
 
     scored = score_due_forecasts()
 
     _write_static_snapshot(
         generated_at, forecasts, target_weights, prior_weights, equity, new_cash,
-        prior_state["starting_equity"], new_positions, prices,
+        prior_state["starting_equity"], new_positions, prices, allocation_method,
     )
 
     print(f"[quant] cycle complete: {len(tickers_with_prices)} tickers forecast+allocated, "

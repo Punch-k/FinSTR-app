@@ -72,10 +72,10 @@ class QuantAllocation(Resource):
 
         as_of = latest[0][0] if latest and latest[0][0] else None
         if not as_of:
-            return _json_response({"as_of": None, "benchmark": None, "positions": []})
+            return _json_response({"as_of": None, "benchmark": None, "method": None, "positions": []})
 
         rows = db.execute_query(
-            """SELECT a.Ticker, a.TargetWeight, a.CurrentWeight, a.Benchmark, f.DirectionConfidence
+            """SELECT a.Ticker, a.TargetWeight, a.CurrentWeight, a.Benchmark, a.Method, f.DirectionConfidence
                FROM quant_allocation a
                LEFT JOIN (
                    SELECT Ticker, DirectionConfidence FROM quant_forecasts
@@ -88,6 +88,11 @@ class QuantAllocation(Resource):
             (as_of,),
         )
         benchmark = rows[0][3] if rows else None
+        # Reports whichever method actually produced these weights this cycle
+        # (black-litterman vs. confidence-weighted-tilt fallback) — see
+        # quant/allocator.py::allocate(). The frontend must render this, not
+        # assume Black-Litterman always ran.
+        method = rows[0][4] if rows else None
         positions = [
             {
                 "ticker": t,
@@ -96,9 +101,9 @@ class QuantAllocation(Resource):
                 "delta": round(target - current, 4),
                 "confidence": confidence if confidence is not None else None,
             }
-            for (t, target, current, _bench, confidence) in rows
+            for (t, target, current, _bench, _method, confidence) in rows
         ]
-        return _json_response({"as_of": as_of, "benchmark": benchmark, "positions": positions})
+        return _json_response({"as_of": as_of, "benchmark": benchmark, "method": method, "positions": positions})
 
 
 class QuantPaperPnl(Resource):
