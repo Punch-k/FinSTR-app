@@ -97,17 +97,21 @@ def test_allocate_output_sums_to_approximately_one():
         "MSFT": {"expected_return_pct": -1.0, "direction_confidence": 0.6, "model_name": "test"},
         "GOOGL": {"expected_return_pct": 0.5, "direction_confidence": 0.55, "model_name": "test"},
     }
-    weights = allocate(tickers, prior, forecasts, historical_returns_df=None)
+    weights, method = allocate(tickers, prior, forecasts, historical_returns_df=None)
     assert set(weights.keys()) == set(tickers)
     assert math.isclose(sum(weights.values()), 1.0, rel_tol=1e-6)
     assert all(w >= 0 for w in weights.values())
+    # historical_returns_df=None -> can never take the real Black-Litterman path;
+    # the returned method must say so, not silently claim it.
+    assert method == "confidence-weighted-tilt"
 
 
 def test_allocate_no_forecasts_returns_prior():
     tickers = ["AAPL", "MSFT"]
     prior = equal_weight_prior(tickers)
-    weights = allocate(tickers, prior, {}, historical_returns_df=None)
+    weights, method = allocate(tickers, prior, {}, historical_returns_df=None)
     assert weights == prior
+    assert method == "confidence-weighted-tilt"
 
 
 def test_paper_engine_rebalance_from_flat_start():
@@ -153,3 +157,92 @@ def test_paper_engine_never_touches_a_broker():
     forbidden = ["ib_insync", "alpaca", "interactive_brokers", "LiveExecClient", "live_execution"]
     for term in forbidden:
         assert term not in source, f"paper_engine.py must stay backtest/paper-only, found reference to {term!r}"
+
+
+# ---------- scoreboard: real price-based scoring (was a self-comparing placeholder) ----------
+
+def test_build_returns_df_shape_and_no_nans():
+    from quant.run_quant_cycle import _build_returns_df
+
+    dates = [f"2026-08-{d:02d}T00:00:00-04:00" for d in range(1, 21)]
+    window_a = [{"timestamp": d, "close": 100 + i * 0.5} for i, d in enumerate(dates)]
+    window_b = [{"timestamp": d, "close": 200 - i * 0.3} for i, d in enumerate(dates)]
+
+    df = _build_returns_df({"A": window_a, "B": window_b})
+    assert df is not None
+    assert list(df.columns) == ["A", "B"]
+    assert len(df) == len(dates) - 1  # pct_change drops the first row
+    assert not df.isna().any().any()
+
+
+def test_build_returns_df_too_little_history_returns_none():
+    from quant.run_quant_cycle import _build_returns_df
+
+    # Only one ticker, or too few bars -> not enough to fit a covariance matrix.
+    assert _build_returns_df({}) is None
+    assert _build_returns_df({"A": [{"timestamp": "2026-08-01", "close": 100}]}) is None
+
+
+def test_score_due_forecasts_uses_real_price_not_prediction(monkeypatch, tmp_path):
+    """
+    Regression test for the original bug: score_due_forecasts() used to set
+    actual_return_pct = predicted_return_pct (grading every forecast "correct"
+    against itself). This confirms it now computes a real return from
+    PriceAtForecast vs. the price fetched at scoring time.
+    """
+    import quant.db as qdb
+    import quant.run_quant_cycle as rqc
+
+    test_db = str(tmp_path / "quant_scoring_test.db")
+    qdb.SQLITE_DATABASE = test_db
+    qdb.init_quant_schema(test_db)
+
+    past = (rqc.datetime.now(rqc.timezone.utc) - rqc.timedelta(hours=48)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    qdb.execute_update(
+        """INSERT INTO quant_forecast_outcomes
+           (Ticker, GeneratedAt, HorizonHours, PredictedDirection, PredictedReturnPct, PriceAtForecast)
+           VALUES (?, ?, ?, ?, ?, ?);""",
+        ("TEST", past, 24, "up", 5.0, 100.0),  # predicted +5%, forecast-time price $100
+        db_path=test_db,
+    )
+
+    # Stub the network fetch: realized price is $110 -> real return should be +10%, not the predicted +5%.
+    monkeypatch.setattr(rqc, "_fetch_ohlcv", lambda ticker, days=5: [{"close": 110.0}])
+
+    scored = rqc.score_due_forecasts()
+    assert scored == 1
+
+    row = qdb.execute_query(
+        "SELECT ActualReturnPct, DirectionCorrect FROM quant_forecast_outcomes WHERE Ticker='TEST';",
+        db_path=test_db,
+    )
+    actual_return_pct, direction_correct = row[0]
+    assert math.isclose(actual_return_pct, 10.0, rel_tol=1e-6)  # real (100->110), not the predicted 5.0
+    assert direction_correct == 1
+
+
+def test_quant_schema_migration_adds_column_to_preexisting_db(tmp_path):
+    """
+    Regression test for a real deploy risk: CREATE TABLE IF NOT EXISTS is a
+    no-op against an already-existing table, so a pre-existing quant.db
+    (e.g. committed by an earlier CI run, before PriceAtForecast existed)
+    must still get the new column via migration, not break every insert.
+    """
+    import sqlite3
+    import quant.db as qdb
+
+    test_db = str(tmp_path / "quant_premigration.db")
+    conn = sqlite3.connect(test_db)
+    conn.execute("""CREATE TABLE quant_forecast_outcomes (
+        Ticker TEXT NOT NULL, GeneratedAt TEXT NOT NULL, HorizonHours INTEGER NOT NULL,
+        PredictedDirection TEXT NOT NULL, PredictedReturnPct REAL NOT NULL,
+        ActualReturnPct REAL, DirectionCorrect INTEGER, ScoredAt TEXT,
+        PRIMARY KEY (Ticker, GeneratedAt)
+    );""")
+    conn.commit()
+    conn.close()
+
+    qdb.init_quant_schema(test_db)
+
+    columns = {row[1] for row in qdb.execute_query("PRAGMA table_info(quant_forecast_outcomes);", db_path=test_db)}
+    assert "PriceAtForecast" in columns
