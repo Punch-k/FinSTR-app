@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS quant_allocation (
     TargetWeight REAL NOT NULL,
     CurrentWeight REAL NOT NULL,
     Benchmark TEXT NOT NULL,
+    Method TEXT NOT NULL DEFAULT 'confidence-weighted-tilt',
     PRIMARY KEY (AsOf, Ticker)
 );
 
@@ -115,6 +116,7 @@ CREATE TABLE IF NOT EXISTS quant_forecast_outcomes (
     HorizonHours INTEGER NOT NULL,
     PredictedDirection TEXT NOT NULL,
     PredictedReturnPct REAL NOT NULL,
+    PriceAtForecast REAL NOT NULL,
     ActualReturnPct REAL,
     DirectionCorrect INTEGER,
     ScoredAt TEXT,
