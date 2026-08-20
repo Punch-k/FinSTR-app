@@ -13,7 +13,9 @@
     --text:#e6e6e6; --dim:#8b94a3; --pos:#26a65b; --neg:#ef5350; --accent:#4f8cff;
   }
   :root[data-theme="light"]{
-    --bg:#f4f6fa; --panel:#ffffff; --panel2:#eef1f7; --border:#dde2ec;
+    /* Pale warm skin-tone palette instead of stark white — pure #fff panels on a bright
+       display read as glare/blinding, especially over large areas like the top nav. */
+    --bg:#f2e4d8; --panel:#faf1e8; --panel2:#eeddcc; --border:#ddc7ae;
     --text:#1c2331; --dim:#6b7280; --pos:#1e8e3e; --neg:#d32f2f; --accent:#3366ff;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
@@ -68,7 +70,7 @@
     background:linear-gradient(90deg,#16213a,#131722); border:1px solid var(--border);
     border-radius:8px; padding:10px 14px; font-size:12.5px; color:var(--dim); margin-bottom:10px;
   }
-  :root[data-theme="light"] .banner{background:linear-gradient(90deg,#e8edfb,#f4f6fa);}
+  :root[data-theme="light"] .banner{background:linear-gradient(90deg,#f5e6d8,#f2e4d8);}
   .banner b{color:var(--text);}
 
   .panel-box{background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px; overflow-x:auto; margin-bottom:10px;}
@@ -169,7 +171,7 @@
 
   /* ===== HOME SECTION ===== */
   .home-hero{background:linear-gradient(135deg,#0d1b2a 0%,#131722 60%,#1a1f2e 100%);border:1px solid var(--border);border-radius:12px;padding:48px 40px 40px;margin-bottom:20px;text-align:center;}
-  :root[data-theme="light"] .home-hero{background:linear-gradient(135deg,#e8edfb 0%,#f4f6fa 100%);}
+  :root[data-theme="light"] .home-hero{background:linear-gradient(135deg,#f5e6d8 0%,#f2e4d8 100%);}
   .home-hero h1{font-size:36px;font-weight:800;margin-bottom:10px;letter-spacing:-1px;}
   .home-hero p{font-size:15px;color:var(--dim);max-width:640px;margin:0 auto 28px;line-height:1.7;}
   .hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
@@ -522,7 +524,7 @@
         <label class="theme-switch"><input type="checkbox" id="themeSwitchInput" onchange="toggleTheme()"><span class="switch-track"><span class="switch-thumb">🌙</span></span></label>
         <button class="nav-ghost-btn" onclick="navClick('Help')">Help</button>
         <button class="nav-ghost-btn" onclick="navClick('Login')" title="Not available on this hosted demo">Login<span class="demo-badge">Demo</span></button>
-        <button class="nav-cta-btn" onclick="navClick('Register')" title="Not available on this hosted demo">Register<span class="demo-badge">Demo</span></button>
+        <button class="nav-cta-btn" onclick="openSurvey()">Register</button>
       </div>
     </div>
   </div>
@@ -814,10 +816,12 @@
 
   <!-- ===================== INSIDER SECTION ===================== -->
   <div id="insiderSection" style="display:none;">
-    <table class="gl-table" id="insiderTable" style="width:100%">
-      <thead><tr><th>Ticker</th><th>Insider</th><th>Position</th><th>Transaction</th><th>Shares</th><th>Value</th><th>Date</th></tr></thead>
-      <tbody id="insiderBody"><tr><td colspan="7" class="news-loading">Loading insider transactions…</td></tr></tbody>
-    </table>
+    <div style="overflow-x:auto;">
+      <table class="gl-table" id="insiderTable" style="width:100%;min-width:720px;">
+        <thead><tr><th>Ticker</th><th>Insider</th><th>Position</th><th>Transaction</th><th>Shares</th><th>Value</th><th>Date</th></tr></thead>
+        <tbody id="insiderBody"><tr><td colspan="7" class="news-loading">Loading insider transactions…</td></tr></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- ===================== CALENDAR SECTION ===================== -->
@@ -825,10 +829,12 @@
     <div class="news-loading" style="padding:12px 0;text-align:left;font-size:12px;">
       Upcoming earnings dates for FinSTR's tracked tickers only — not a full market economic calendar.
     </div>
-    <table class="gl-table" id="calendarTable" style="width:100%">
-      <thead><tr><th>Ticker</th><th>Company</th><th>Earnings Date</th><th>Ex-Dividend Date</th></tr></thead>
-      <tbody id="calendarBody"><tr><td colspan="4" class="news-loading">Loading calendar…</td></tr></tbody>
-    </table>
+    <div style="overflow-x:auto;">
+      <table class="gl-table" id="calendarTable" style="width:100%;min-width:520px;">
+        <thead><tr><th>Ticker</th><th>Company</th><th>Earnings Date</th><th>Ex-Dividend Date</th></tr></thead>
+        <tbody id="calendarBody"><tr><td colspan="4" class="news-loading">Loading calendar…</td></tr></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- ===================== QUANT DESK SECTION ===================== -->
@@ -852,23 +858,29 @@
     </div>
 
     <div class="news-col-title" style="margin-top:18px;">Open Paper Positions <span class="sim-tag">(simulated fills)</span></div>
-    <table class="gl-table" id="quantPositionsTable" style="width:100%">
-      <thead><tr><th>Ticker</th><th>Qty</th><th>Avg Price</th><th>Unrealized P&amp;L</th></tr></thead>
-      <tbody id="quantPositionsBody"><tr><td colspan="4" class="news-loading">Loading positions…</td></tr></tbody>
-    </table>
+    <div style="overflow-x:auto;">
+      <table class="gl-table" id="quantPositionsTable" style="width:100%;min-width:480px;">
+        <thead><tr><th>Ticker</th><th>Qty</th><th>Avg Price</th><th>Unrealized P&amp;L</th></tr></thead>
+        <tbody id="quantPositionsBody"><tr><td colspan="4" class="news-loading">Loading positions…</td></tr></tbody>
+      </table>
+    </div>
 
     <div class="news-col-title" style="margin-top:18px;">Target Allocation <span class="sim-tag">(Kronos view + Black-Litterman)</span></div>
-    <table class="gl-table" id="quantAllocationTable" style="width:100%">
-      <thead><tr><th>Ticker</th><th>Confidence</th><th>Current Weight</th><th>Target Weight</th><th>Delta</th></tr></thead>
-      <tbody id="quantAllocationBody"><tr><td colspan="5" class="news-loading">Loading allocation…</td></tr></tbody>
-    </table>
+    <div style="overflow-x:auto;">
+      <table class="gl-table" id="quantAllocationTable" style="width:100%;min-width:600px;">
+        <thead><tr><th>Ticker</th><th>Confidence</th><th>Current Weight</th><th>Target Weight</th><th>Delta</th></tr></thead>
+        <tbody id="quantAllocationBody"><tr><td colspan="5" class="news-loading">Loading allocation…</td></tr></tbody>
+      </table>
+    </div>
 
     <div class="news-col-title" style="margin-top:18px;">Forecast Accuracy Scoreboard <span class="sim-tag" title="Direction-only accuracy vs. realized outcome, scored automatically once each forecast's horizon has elapsed. Not investment advice.">(public, self-graded)</span></div>
     <div id="quantScoreboardSummary" class="news-loading" style="padding:6px 0;">Loading scoreboard…</div>
-    <table class="gl-table" id="quantScoreboardTable" style="width:100%">
-      <thead><tr><th>Ticker</th><th>Scored Forecasts</th><th>Direction Accuracy</th></tr></thead>
-      <tbody id="quantScoreboardBody"></tbody>
-    </table>
+    <div style="overflow-x:auto;">
+      <table class="gl-table" id="quantScoreboardTable" style="width:100%;min-width:420px;">
+        <thead><tr><th>Ticker</th><th>Scored Forecasts</th><th>Direction Accuracy</th></tr></thead>
+        <tbody id="quantScoreboardBody"></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- ===================== HEATMAP SECTION ===================== -->
@@ -932,6 +944,39 @@
     <button class="modal-close" onclick="closeCompare()">✕</button>
     <h2 style="margin-bottom:14px;">📊 Compare Stocks</h2>
     <div id="compareBody" style="overflow-x:auto;"></div>
+  </div>
+</div>
+
+<!-- Register interest survey modal -->
+<div class="modal-overlay" id="surveyOverlay">
+  <div class="modal-panel" style="max-width:420px;">
+    <button class="modal-close" onclick="closeSurvey()">✕</button>
+    <h2 style="margin-bottom:6px;">Interested in FinSTR accounts?</h2>
+    <div class="sim-tag" style="display:block;margin-bottom:16px;">
+      This hosted demo has no account system yet. Answer a couple of quick questions and
+      we'll send your interest straight to the person building it — no account created, no data stored.
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">Your email (optional, so we can follow up)</label>
+        <input type="email" id="surveyEmail" placeholder="you@example.com" style="width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;">
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">What would you use a FinSTR account for?</label>
+        <select id="surveyUseCase" style="width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;">
+          <option>Tracking my own portfolio (MyShare)</option>
+          <option>Saving custom screener filters/watchlists</option>
+          <option>Following the Quant Desk paper account</option>
+          <option>Just curious / exploring</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">Anything else? (optional)</label>
+        <textarea id="surveyNote" rows="3" placeholder="Feature requests, feedback, etc." style="width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;resize:vertical;"></textarea>
+      </div>
+      <button class="live-btn" style="justify-content:center;" onclick="submitSurvey()">Send</button>
+    </div>
   </div>
 </div>
 
@@ -1490,7 +1535,36 @@ function closeCompare(){ document.getElementById('compareOverlay').classList.rem
 function createAlertDemo(){ showToast('🔔 Alerts need a backend to send notifications — see chat for how to wire this up.'); }
 
 // ---------- NAV / THEME / CLOCK ----------
-function navClick(section){ showToast(`"${section}" isn't part of this demo — built to showcase Screener + Maps. Ask in chat to add more.`); closeMobileMenu(); }
+function navClick(section){ showToast(`"${section}" isn't part of this demo — built to showcase Screener + Maps.`); closeMobileMenu(); }
+
+function openSurvey(){
+  document.getElementById('surveyOverlay').classList.add('show');
+  closeMobileMenu();
+}
+function closeSurvey(){ document.getElementById('surveyOverlay').classList.remove('show'); }
+
+// No backend on this static (GitHub Pages) deploy, so "sending" the survey means handing
+// off to the visitor's own email client via a mailto: link — no third-party form service,
+// no credentials, no data stored anywhere. Recipient is fixed; this isn't a general contact
+// form, just a lightweight signal for register-interest.
+const SURVEY_RECIPIENT = 'prapanch.kokkalemada@gmail.com';
+function submitSurvey(){
+  const email = document.getElementById('surveyEmail').value.trim();
+  const useCase = document.getElementById('surveyUseCase').value;
+  const note = document.getElementById('surveyNote').value.trim();
+
+  const subject = 'FinSTR — Register interest';
+  const bodyLines = [
+    `Use case: ${useCase}`,
+    email ? `Follow-up email: ${email}` : `Follow-up email: (not provided)`,
+    note ? `Note: ${note}` : null,
+  ].filter(Boolean);
+  const body = bodyLines.join('\n');
+
+  window.location.href = `mailto:${SURVEY_RECIPIENT}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  closeSurvey();
+  showToast('Opening your email client to send this — thanks for the interest!');
+}
 function toggleTheme(){
   const html = document.documentElement;
   const isLight = html.dataset.theme === 'light';
@@ -2158,13 +2232,17 @@ const PROXY_LIST = [
   { base: 'https://corsproxy.io/?',          encode: false },
   { base: 'https://api.allorigins.win/raw?url=', encode: true  }
 ];
+// Per-proxy timeout kept short (4s, was 9s): fetchMktDirect batches tickers with
+// Promise.all, so one bad symbol falling through both proxies could block the whole
+// batch — and the whole Futures/Forex grid — for up to 18s before. 4s x 2 proxies caps
+// the worst case at 8s per symbol instead.
 
 async function fetchWithProxy(url){
   for(const {base, encode} of PROXY_LIST){
     try{
       const proxyUrl = base + (encode ? encodeURIComponent(url) : url);
       const ctrl = new AbortController();
-      const tid = setTimeout(()=>ctrl.abort(), 9000);
+      const tid = setTimeout(()=>ctrl.abort(), 4000);
       const res = await fetch(proxyUrl, {signal: ctrl.signal});
       clearTimeout(tid);
       if(res.ok) return await res.json();
@@ -2178,7 +2256,7 @@ async function fetchTextWithProxy(url){
     try{
       const proxyUrl = base + (encode ? encodeURIComponent(url) : url);
       const ctrl = new AbortController();
-      const tid = setTimeout(()=>ctrl.abort(), 9000);
+      const tid = setTimeout(()=>ctrl.abort(), 4000);
       const res = await fetch(proxyUrl, {signal: ctrl.signal});
       clearTimeout(tid);
       if(res.ok) return await res.text();
@@ -2501,11 +2579,13 @@ async function loadHome(){
   await Promise.all(Object.entries(INDEX_SYMBOLS).map(([id,{sym,label}])=>loadIndexCard(id,sym,label)));
   renderBreadth();
   renderGainersLosers();
-  // Load headline from news
+  // Load headline from news. Reuses the same Google-News-first fetchNews() path (and its
+  // press-release spam filter) as the News page's "Market News" tab, rather than a raw
+  // Yahoo search hit for "market+today" — that endpoint's relevance ranking for a broad
+  // query occasionally surfaced completely unrelated (non-financial) top stories.
   try{
-    const url=`https://query2.finance.yahoo.com/v1/finance/search?q=market+today&newsCount=1&quotesCount=0`;
-    const data=await fetchWithProxy(url);
-    const item=data?.news?.[0];
+    const { articles } = await fetchNews(['market today','stock market'], 1);
+    const item = articles[0];
     if(item) document.getElementById('homeHeadlineText').innerHTML=
       `<a href="${item.link}" target="_blank" style="color:var(--accent);text-decoration:none">${item.title}</a>`;
   }catch(e){}
@@ -2533,6 +2613,16 @@ let newsAllArticles = [];
 // unlike the Google Custom Search JSON API. This is now the primary news source; Yahoo
 // Finance search stays as a fallback only if the Google RSS fetch comes back empty
 // (e.g. proxy failure), so results are Google-sourced whenever possible.
+// Queries like "market analysis"/"market outlook" pull in a flood of generic PR-newswire
+// "industry research report" spam from Google News RSS (e.g. "Widget Market Size, Share
+// & Growth Report, 2033") — keyword-stuffed to match those exact search terms, unrelated
+// to actual financial news. Filtering by title pattern rather than tightening the query
+// itself, since the queries still need to match real market-analysis journalism too.
+const PRESS_RELEASE_SPAM_PATTERN = /\bmarket (size|share|research|analysis|report)\b.*\b(report|forecast|trends?|insights?|growth)\b|\btrends? and insights?\b|\bforecast,?\s*20\d{2}\b/i;
+function isPressReleaseSpam(title){
+  return PRESS_RELEASE_SPAM_PATTERN.test(title || '');
+}
+
 async function fetchGoogleNews(queries, count=30){
   const seen = new Set();
   const articles = [];
@@ -2551,7 +2641,7 @@ async function fetchGoogleNews(queries, count=30){
         const dashIdx = title.lastIndexOf(' - ');
         const headline = dashIdx > 0 ? title.slice(0, dashIdx) : title;
         const key = link || title;
-        if(title && !seen.has(key)){
+        if(title && !seen.has(key) && !isPressReleaseSpam(headline)){
           seen.add(key);
           articles.push({
             title:     headline,
@@ -2575,7 +2665,7 @@ async function fetchYahooNews(queries, count=30){
       const url=`https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&newsCount=10&quotesCount=0`;
       const data=await fetchWithProxy(url);
       (data?.news||[]).forEach(a=>{
-        if(!seen.has(a.uuid)&&a.title){
+        if(!seen.has(a.uuid)&&a.title&&!isPressReleaseSpam(a.title)){
           seen.add(a.uuid);
           articles.push({
             title:     a.title,
@@ -2899,7 +2989,13 @@ function renderInsider(){
 // not a full market economic calendar — that needs a paid/keyed data source we don't have.
 function renderCalendar(){
   const body = document.getElementById('calendarBody');
-  const rows = stockData.filter(s=> s.earningsDate).sort((a,b)=> new Date(a.earningsDate)-new Date(b.earningsDate));
+  // "Upcoming" means upcoming — the underlying data snapshot is only refreshed every 6h,
+  // so without this filter, earnings dates that already passed since the last refresh
+  // would sit at the top of a list titled "Upcoming earnings dates."
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const rows = stockData
+    .filter(s=> s.earningsDate && new Date(s.earningsDate) >= todayStart)
+    .sort((a,b)=> new Date(a.earningsDate)-new Date(b.earningsDate));
   if(!rows.length){
     body.innerHTML = '<tr><td colspan="4" class="news-loading">No upcoming earnings dates in this snapshot.</td></tr>';
     return;
@@ -3326,7 +3422,8 @@ async function init(){
 
   document.getElementById('modalOverlay').addEventListener('click', (e)=>{ if(e.target.id==='modalOverlay') closeModal(); });
   document.getElementById('compareOverlay').addEventListener('click', (e)=>{ if(e.target.id==='compareOverlay') closeCompare(); });
-  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ closeModal(); closeCompare(); } });
+  document.getElementById('surveyOverlay').addEventListener('click', (e)=>{ if(e.target.id==='surveyOverlay') closeSurvey(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ closeModal(); closeCompare(); closeSurvey(); } });
   document.getElementById('screenerSection').setAttribute('tabindex','0');
   document.getElementById('screenerSection').addEventListener('keydown', handleTableKeydown);
   window.addEventListener('resize', ()=>{ if(state.view==='heatmap') renderHeatmap(getFilteredData()); });
