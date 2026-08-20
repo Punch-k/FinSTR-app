@@ -1,8 +1,10 @@
 # FinSTR — Knowledge Base for Next Session
 
-Read this before starting work. It captures what's true about this repo as of 2026-07-23
-(two sessions that day), what was built, and what's still open — so the next session
-doesn't have to re-derive it.
+Read this before starting work. It captures what's true about this repo as of 2026-08-20
+(sessions from 2026-07-23 and 2026-08-20), what was built, and what's still open — so the
+next session doesn't have to re-derive it. **Read Session 3 (bottom of this file) first**
+— it's the most recent and has the most load-bearing open item (confirm the Kronos
+branch-name fix actually works on the next CI run).
 
 ---
 
@@ -224,3 +226,120 @@ real backend or third-party auth service.
   locally and spot-check the output JSON** before committing — this is what caught that
   the P/E-etc. "estimated" labels were stale, and confirmed insider/calendar coverage
   numbers (124/126, 85/126) before claiming the feature worked.
+
+---
+
+## Session 3 (2026-08-20): Quant Desk built, UI/UX overhaul, three gaps closed
+
+Biggest session yet. Four sub-phases, in order: (1) built the whole Quant Desk subsystem
+from scratch, (2) delivered a code-quality report, (3) did a live-site UI/UX audit and
+fixed everything found, (4) closed three explicitly-flagged gaps in Quant Desk. Repo went
+from `ab3fbb6` to `e4135b8` (8 commits this session, all via GitHub web-upload UI per
+the existing convention — see below for two new upload-UI failure modes hit this time).
+
+### Quant Desk (Kronos → skfolio → NautilusTrader) — new subsystem
+
+Full writeup lives in `QUANT_DESK.md` — read that first, this is just the pointer.
+Short version: `quant/` package generates a per-ticker directional forecast (Kronos),
+turns it into portfolio weights (skfolio Black-Litterman, with a naive confidence-tilt
+fallback), and simulates paper-only fills (NautilusTrader `BacktestEngine`) on the same
+6-hour cron as `scripts/fetch_data.py`. New `database/quant.db` (separate from the
+gitignored `MyShare.db` — quant data is public, user data isn't) and `data/quant_snapshot.json`
+(GitHub-Pages fallback, same two-tier pattern as `data/screener.json`). First blueprint
+in the codebase (`quant/routes.py`), first test suite in the repo (`tests/test_quant.py`,
+16 tests). New "Quant Desk" nav section + forecast card in the stock modal, all labeled
+"paper/simulated, not real money."
+
+### Three gaps closed this session (were flagged live on the site)
+
+1. **Forecast-accuracy scoreboard was comparing predictions to themselves.** Fixed:
+   `PriceAtForecast` is now recorded at forecast-generation time; `score_due_forecasts()`
+   diffs the *real* realized price against it once the 24h horizon elapses. Old
+   `quant.db` rows (if any existed) get a safe schema migration
+   (`quant/db.py::_apply_column_migrations`) rather than breaking on the new column.
+2. **Allocator was hard-coded to the naive fallback, never real skfolio Black-Litterman.**
+   Fixed: `run_cycle()` now builds a real historical-returns DataFrame from the OHLCV
+   already fetched and passes it to `allocate()`. `allocate()` now returns
+   `(weights, method)` and the actual method used ("black-litterman" or
+   "confidence-weighted-tilt") is persisted (`quant_allocation.Method`) and rendered live
+   in the UI disclaimer — it no longer unconditionally claims Black-Litterman ran.
+3. **CI dependency install was never confirmed.** Ran the workflow manually and read
+   the logs — found a real bug: `pip install git+https://github.com/shiyu-coder/Kronos.git@main`
+   fails because that repo's default branch is `master`, not `main` (confirmed via
+   WebFetch against the actual repo, not assumed). Fixed the pin in three places
+   (`.github/workflows/update-data.yml`, `requirements.txt`'s comment, `QUANT_DESK.md`).
+   Also caught and fixed a second real bug while verifying: `skfolio==0.6.1` in
+   `requirements.txt` doesn't exist as a published version — corrected to `0.20.2`
+   (verified against PyPI, not guessed). **torch/transformers/nautilus_trader all
+   installed successfully in CI** (confirmed via the run #112 logs — "Install Quant Desk
+   dependencies" step succeeded in ~2 min) — only the Kronos git-branch pin was broken.
+   With that fixed and pushed (`e4135b8`), **the next scheduled run (or a manual
+   dispatch) should be the first to actually exercise the real Kronos + skfolio paths**;
+   this has not yet been reconfirmed after the fix — check the next run's logs for the
+   "Install Kronos" and "Run Quant Desk cycle" steps before assuming it's working.
+   Manual `workflow_dispatch` clicks were unreliable via browser automation this session
+   (silently no-op'd twice before firing) — if triggering by hand, verify a new run
+   actually appears in the Actions list before assuming the click landed.
+
+### Code quality report
+
+Delivered as `FinSTR_Code_Quality_Report.md`. Headline: SQL-injection-safe, passwords
+hashed, no leaked secrets — but MyShare auth is param-based (password resent every
+request, no session tokens), no rate limiting on login, and this session's test suite
+was the first ever in the repo. Not addressed this session (separate, already-tracked
+list — do not conflate with Quant Desk work).
+
+### UI/UX audit + fixes (live-site walkthrough)
+
+Found and fixed on the hosted demo:
+- Light theme was pure white (`#ffffff`) panels — replaced with a pale warm palette
+  (`:root[data-theme="light"]` in `index.html`'s `<style>`).
+- Register was permanently gated as "Demo" with no path forward — now opens a 3-question
+  survey modal (`openSurvey()`/`submitSurvey()`) that hands off to a `mailto:` link
+  addressed to the user — no backend, no third-party form service, fits the static-site
+  constraint.
+- Calendar showed already-passed earnings dates under "Upcoming" — `renderCalendar()`
+  now filters to `>= today`.
+- Futures/Forex could hang 15+ seconds because one bad ticker (VIX=F, DX=F) blocked the
+  whole grid — `fetchWithProxy`/`fetchTextWithProxy` timeout cut 9s→4s per proxy attempt.
+- Insider/Calendar/Quant tables overflowed the page width with no scroll container —
+  wrapped in `overflow-x:auto` divs.
+- News "Blogs & Analysis" column was flooded with generic PR-newswire spam ("Widget
+  Market Size, Share & Growth Report") — added `isPressReleaseSpam()` title filter.
+- Home page headline pulled an unrelated non-financial story from a raw Yahoo search hit
+  — switched to the same Google-News-first `fetchNews()` path the News page uses.
+
+### Nav restructure (explicit user request)
+
+- Removed "Portfolio" and "Login" nav items — both were permanent dead-ends on the
+  hosted demo (Portfolio's `openPortfolio()` function was also deleted, now truly dead
+  since nothing called it). Register stayed since it now does something real (survey).
+- Grouped the 8 secondary views (Maps, Futures, Forex, Crypto, Charts, Groups, Insider,
+  Calendar) into two dropdown menus — "Markets" and "Analytics" — via new
+  `.nav-dropdown`/`.nav-dropdown-menu` CSS and `toggleNavDropdown()`/
+  `NAV_DROPDOWN_GROUPS` JS. Home, Screener, News, Quant Desk stayed top-level.
+  Dropdown toggle itself gets the `.active` highlight when the current view is one of
+  its children (see `setView()` and `syncFilterUIFromState()` — both were updated,
+  there are two places that sync nav active-state, don't forget the second one).
+- Decluttering the nav down to ~6 top-level items let the existing
+  `justify-content:space-between` flex layout on `.topnav-body` naturally put nav links
+  and the Update-Prices-button-and-controls row on one line instead of wrapping to two —
+  no explicit "merge the rows" logic was needed, just fewer items.
+
+### New browser-automation failure modes hit this session (add to the existing list)
+
+- **Manual `workflow_dispatch` clicks can silently no-op.** Clicking the green "Run
+  workflow" button in the dropdown sometimes did nothing (page looked unchanged, no new
+  run appeared in the list) — happened twice. Always verify a new run actually shows up
+  (fresh `run_number`, "now"/"in progress") before assuming the dispatch fired; don't
+  trust the click alone.
+- **`git stash pop` after a `git pull --ff-only` on files that were already pushed
+  earlier in the same session produces spurious whole-file conflicts** (every line shows
+  as changed) purely from CRLF vs LF — not real content differences. Diagnose with
+  `git diff -w --stat` (or extract both conflict-marker halves and `diff -w` them
+  directly) before resolving; if `-w` shows no difference, just take `--ours` (already
+  on origin, no need to re-push) rather than fighting the conflict markers by hand.
+  This happened three separate times this session from the same root cause: editing
+  files locally *after* already pushing them via browser upload, without pulling first.
+  **Habit to build:** `git pull --ff-only` at the start of any local edit session, not
+  just before committing.
