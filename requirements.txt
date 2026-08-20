@@ -17,7 +17,7 @@ nautilus_trader==1.208.0
 pandas>=2.0,<3.0
 # Kronos ships as source, not a PyPI package (its `model` module is imported
 # directly from the repo — see quant/kronos_client.py) — install with:
-#   pip install git+https://github.com/shiyu-coder/Kronos.git@main
+#   pip install git+https://github.com/shiyu-coder/Kronos.git@master
 # Pinned to a commit rather than a tag/version since the project has no
 # tagged releases as of this writing; re-pin to a specific commit SHA before
 # relying on this in CI so upstream changes can't silently change behavior.

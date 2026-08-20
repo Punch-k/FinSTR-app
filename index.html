@@ -42,6 +42,19 @@
   .nav-link{font-size:12.5px; color:var(--dim); cursor:pointer; padding:4px 2px; white-space:nowrap;}
   .nav-link:hover{color:var(--text);}
   .nav-link.active{color:var(--accent); font-weight:700; border-bottom:2px solid var(--accent);}
+  /* Grouped nav dropdowns (Markets / Analytics) — same nav-link look, with a small
+     absolute-positioned menu instead of navigating to a view directly. */
+  .nav-dropdown{position:relative;}
+  .nav-dropdown-menu{display:none; position:absolute; top:100%; left:0; margin-top:6px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:6px; flex-direction:column; gap:2px; min-width:130px; z-index:600; box-shadow:0 8px 24px rgba(0,0,0,0.25);}
+  .nav-dropdown.open .nav-dropdown-menu{display:flex;}
+  .nav-dropdown-menu .nav-link{padding:7px 10px; border-radius:5px;}
+  .nav-dropdown-menu .nav-link:hover{background:var(--panel2);}
+  .nav-dropdown-menu .nav-link.active{border-bottom:none; background:var(--panel2);}
+  @media (max-width:720px){
+    .nav-dropdown-menu{position:static; display:flex; margin-top:0; border:none; padding:0 0 0 12px; box-shadow:none;}
+    .nav-dropdown .nav-dropdown-menu{display:none;}
+    .nav-dropdown.open .nav-dropdown-menu{display:flex;}
+  }
   .topnav-right{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   .live-clock{font-size:11px; color:var(--dim); white-space:nowrap;}
   .sim-btn{background:var(--accent); color:#fff; border:none; padding:8px 14px; border-radius:6px; font-weight:600; cursor:pointer; font-size:12.5px; white-space:nowrap;}
@@ -505,17 +518,26 @@
       <div class="nav-links">
         <span class="nav-link" data-nav="home" onclick="setView('home')">Home</span>
         <span class="nav-link active" data-nav="screener" onclick="setView('screener')">Screener</span>
-        <span class="nav-link" data-nav="heatmap" onclick="setView('heatmap')">Maps</span>
         <span class="nav-link" data-nav="news" onclick="setView('news')">News</span>
-        <span class="nav-link" data-nav="charts" onclick="setView('charts')">Charts</span>
-        <span class="nav-link" data-nav="groups" onclick="setView('groups')">Groups</span>
-        <span class="nav-link" data-nav="futures" onclick="setView('futures')">Futures</span>
-        <span class="nav-link" data-nav="forex" onclick="setView('forex')">Forex</span>
-        <span class="nav-link" data-nav="crypto" onclick="setView('crypto')">Crypto</span>
-        <span class="nav-link" data-nav="insider" onclick="setView('insider')">Insider</span>
-        <span class="nav-link" data-nav="calendar" onclick="setView('calendar')">Calendar</span>
+        <div class="nav-dropdown" id="navDropdownMarkets">
+          <span class="nav-link nav-dropdown-toggle" onclick="toggleNavDropdown('navDropdownMarkets', event)">Markets ▾</span>
+          <div class="nav-dropdown-menu">
+            <span class="nav-link" data-nav="heatmap" onclick="setView('heatmap')">Maps</span>
+            <span class="nav-link" data-nav="futures" onclick="setView('futures')">Futures</span>
+            <span class="nav-link" data-nav="forex" onclick="setView('forex')">Forex</span>
+            <span class="nav-link" data-nav="crypto" onclick="setView('crypto')">Crypto</span>
+          </div>
+        </div>
+        <div class="nav-dropdown" id="navDropdownAnalytics">
+          <span class="nav-link nav-dropdown-toggle" onclick="toggleNavDropdown('navDropdownAnalytics', event)">Analytics ▾</span>
+          <div class="nav-dropdown-menu">
+            <span class="nav-link" data-nav="charts" onclick="setView('charts')">Charts</span>
+            <span class="nav-link" data-nav="groups" onclick="setView('groups')">Groups</span>
+            <span class="nav-link" data-nav="insider" onclick="setView('insider')">Insider</span>
+            <span class="nav-link" data-nav="calendar" onclick="setView('calendar')">Calendar</span>
+          </div>
+        </div>
         <span class="nav-link" data-nav="quant" onclick="setView('quant')">Quant Desk<span class="demo-badge" title="Kronos forecast -> skfolio allocation -> NautilusTrader paper fills. Simulated, not real money.">Paper</span></span>
-        <span class="nav-link" onclick="openPortfolio()" title="Requires running the Flask backend locally — not available on this hosted demo">Portfolio<span class="demo-badge">Local only</span></span>
       </div>
       <div class="topnav-right">
         <span id="lastUpdated"></span>
@@ -523,7 +545,6 @@
         <span id="liveClock" class="live-clock"></span>
         <label class="theme-switch"><input type="checkbox" id="themeSwitchInput" onchange="toggleTheme()"><span class="switch-track"><span class="switch-thumb">🌙</span></span></label>
         <button class="nav-ghost-btn" onclick="navClick('Help')">Help</button>
-        <button class="nav-ghost-btn" onclick="navClick('Login')" title="Not available on this hosted demo">Login<span class="demo-badge">Demo</span></button>
         <button class="nav-cta-btn" onclick="openSurvey()">Register</button>
       </div>
     </div>
@@ -1659,6 +1680,21 @@ function hideAutocomplete(){ document.getElementById('autocompleteBox').style.di
 
 // ---------- VIEW SWITCH ----------
 const ALL_SECTIONS = ['home','screener','heatmap','news','charts','groups','futures','forex','crypto','insider','calendar','quant'];
+// Grouped nav dropdowns (Markets / Analytics) — declutters the top nav from 12 flat
+// links down to a handful, per user request to "club the analytics into dropdowns."
+const NAV_DROPDOWN_GROUPS = {
+  navDropdownMarkets: ['heatmap','futures','forex','crypto'],
+  navDropdownAnalytics: ['charts','groups','insider','calendar'],
+};
+function toggleNavDropdown(id, event){
+  event.stopPropagation();
+  const el = document.getElementById(id);
+  const wasOpen = el.classList.contains('open');
+  document.querySelectorAll('.nav-dropdown.open').forEach(d=> d.classList.remove('open'));
+  if(!wasOpen) el.classList.add('open');
+}
+document.addEventListener('click', ()=> document.querySelectorAll('.nav-dropdown.open').forEach(d=> d.classList.remove('open')));
+
 function setView(view){
   state.view = view;
   ALL_SECTIONS.forEach(s=>{
@@ -1666,6 +1702,11 @@ function setView(view){
     if(el) el.style.display = s===view ? 'block':'none';
   });
   document.querySelectorAll('.nav-link[data-nav]').forEach(el=> el.classList.toggle('active', el.dataset.nav===view));
+  document.querySelectorAll('.nav-dropdown').forEach(d=>{
+    d.classList.remove('open');
+    const inGroup = (NAV_DROPDOWN_GROUPS[d.id]||[]).includes(view);
+    d.querySelector('.nav-dropdown-toggle')?.classList.toggle('active', inGroup);
+  });
   if(view==='heatmap') renderHeatmap(getFilteredData());
   if(view==='home' && !homeLoaded) loadHome();
   if(view==='news' && !newsLoaded) loadNews();
@@ -2388,20 +2429,6 @@ function startPriceRefresh(){
   if(priceRefreshInterval) return;
   refreshPrices();
   priceRefreshInterval = setInterval(refreshPrices, 60000);
-}
-
-// ---------- PORTFOLIO ----------
-function openPortfolio(){
-  // /myshare/* only exists when this Flask app itself is serving the page (i.e. running
-  // locally via `python app.py`). On GitHub Pages there is no backend at that path, so
-  // usingLiveData (screener prices working) is not a reliable signal that Portfolio works too.
-  const runningOnOwnBackend = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-  if(runningOnOwnBackend){
-    window.open('/myshare/home','_blank');
-  } else {
-    showToast('Portfolio requires the local Flask backend — run python app.py then visit http://localhost:1817/myshare/home');
-  }
-  closeMobileMenu();
 }
 
 // ---------- HOME ----------
@@ -3374,6 +3401,10 @@ function syncFilterUIFromState(){
   document.getElementById('watchlistToggle').classList.toggle('active', !!state.watchlistOnly);
   document.querySelectorAll('.ctab').forEach(t=> t.classList.toggle('active', t.dataset.view===state.columnView));
   document.querySelectorAll('.nav-link[data-nav]').forEach(el=> el.classList.toggle('active', el.dataset.nav===state.view));
+  document.querySelectorAll('.nav-dropdown').forEach(d=>{
+    const inGroup = (NAV_DROPDOWN_GROUPS[d.id]||[]).includes(state.view);
+    d.querySelector('.nav-dropdown-toggle')?.classList.toggle('active', inGroup);
+  });
   ALL_SECTIONS.forEach(s=>{
     const el = document.getElementById(s+'Section');
     if(el) el.style.display = s===state.view ? 'block':'none';

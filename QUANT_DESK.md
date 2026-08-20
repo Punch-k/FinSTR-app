@@ -109,7 +109,7 @@ unscored rather than fabricating a result.
 pip install -r requirements.txt
 
 # 2. Install Kronos (not on PyPI — installed from source)
-pip install "git+https://github.com/shiyu-coder/Kronos.git@main"
+pip install "git+https://github.com/shiyu-coder/Kronos.git@master"
 
 # 3. Run one cycle by hand
 python -m quant.run_quant_cycle
