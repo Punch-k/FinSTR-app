@@ -25,6 +25,8 @@ from flask import send_from_directory
 import time
 from scripts.tickers import SCREENER_TICKERS
 from scripts.fetch_data import fetch_insider_transactions, fetch_calendar
+from quant.routes import quant_bp
+from quant.db import init_quant_schema
 
 # Load credentials from environment variables (never hardcode secrets)
 ADMIN_EMAIL_ADDRESS = os.environ.get('ADMIN_EMAIL_ADDRESS', '')
@@ -2125,6 +2127,7 @@ class LivePrice(Resource):
 
 app = Flask(__name__)
 myShare = Api(app)
+app.register_blueprint(quant_bp)
 
 @app.route('/')
 @app.route('/screener')
@@ -2174,4 +2177,5 @@ myShare.add_resource(ForexData, "/api/forex")
 
 if __name__ == '__main__':
     init_screener_cache()
+    init_quant_schema()
     app.run(port=1817)

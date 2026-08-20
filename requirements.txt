@@ -5,3 +5,19 @@ lxml
 yahoo_fin
 yfinance>=1.5.1
 yagmail
+
+# Quant Desk (quant/) — pinned per project convention (see code quality
+# report finding: most of this file was previously unpinned). CPU-only
+# torch build keeps CI installs small and matches the "no GPU access
+# assumed" requirement for Kronos inference.
+torch==2.4.1
+transformers==4.44.2
+skfolio==0.6.1
+nautilus_trader==1.208.0
+pandas>=2.0,<3.0
+# Kronos ships as source, not a PyPI package (its `model` module is imported
+# directly from the repo — see quant/kronos_client.py) — install with:
+#   pip install git+https://github.com/shiyu-coder/Kronos.git@main
+# Pinned to a commit rather than a tag/version since the project has no
+# tagged releases as of this writing; re-pin to a specific commit SHA before
+# relying on this in CI so upstream changes can't silently change behavior.

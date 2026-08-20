@@ -512,6 +512,7 @@
         <span class="nav-link" data-nav="crypto" onclick="setView('crypto')">Crypto</span>
         <span class="nav-link" data-nav="insider" onclick="setView('insider')">Insider</span>
         <span class="nav-link" data-nav="calendar" onclick="setView('calendar')">Calendar</span>
+        <span class="nav-link" data-nav="quant" onclick="setView('quant')">Quant Desk<span class="demo-badge" title="Kronos forecast -> skfolio allocation -> NautilusTrader paper fills. Simulated, not real money.">Paper</span></span>
         <span class="nav-link" onclick="openPortfolio()" title="Requires running the Flask backend locally — not available on this hosted demo">Portfolio<span class="demo-badge">Local only</span></span>
       </div>
       <div class="topnav-right">
@@ -830,6 +831,46 @@
     </table>
   </div>
 
+  <!-- ===================== QUANT DESK SECTION ===================== -->
+  <div id="quantSection" style="display:none;">
+    <div class="news-loading" style="padding:12px 0;text-align:left;font-size:12px;">
+      <b>Paper trading — simulated, not real money.</b> Kronos (HuggingFace K-line forecasting model)
+      generates a per-ticker directional view, skfolio blends it into a Black-Litterman allocation
+      against an equal-weight prior, and NautilusTrader's <code>BacktestEngine</code> simulates the
+      resulting fills against a fictitious paper account. No live broker connection exists anywhere
+      in this pipeline. Refreshed on the same 6-hour schedule as the screener. See
+      <a href="https://github.com/Punch-k/FinSTR-app/blob/main/QUANT_DESK.md" target="_blank" rel="noopener">QUANT_DESK.md</a>
+      for the full architecture.
+    </div>
+
+    <div class="modal-rec" id="quantPnlCard" style="margin-bottom:14px;">
+      <div id="quantPnlHeadline" class="news-loading">Loading paper account…</div>
+    </div>
+    <div class="modal-spark-row">
+      <div class="modal-spark-label">Paper Equity Curve <span class="sim-tag">(simulated fills, not real money)</span></div>
+      <svg width="100%" height="60" viewBox="0 0 300 60"><polyline id="quantEquitySpark" points="" fill="none" stroke-width="2" stroke="var(--accent)"/></svg>
+    </div>
+
+    <div class="news-col-title" style="margin-top:18px;">Open Paper Positions <span class="sim-tag">(simulated fills)</span></div>
+    <table class="gl-table" id="quantPositionsTable" style="width:100%">
+      <thead><tr><th>Ticker</th><th>Qty</th><th>Avg Price</th><th>Unrealized P&amp;L</th></tr></thead>
+      <tbody id="quantPositionsBody"><tr><td colspan="4" class="news-loading">Loading positions…</td></tr></tbody>
+    </table>
+
+    <div class="news-col-title" style="margin-top:18px;">Target Allocation <span class="sim-tag">(Kronos view + Black-Litterman)</span></div>
+    <table class="gl-table" id="quantAllocationTable" style="width:100%">
+      <thead><tr><th>Ticker</th><th>Confidence</th><th>Current Weight</th><th>Target Weight</th><th>Delta</th></tr></thead>
+      <tbody id="quantAllocationBody"><tr><td colspan="5" class="news-loading">Loading allocation…</td></tr></tbody>
+    </table>
+
+    <div class="news-col-title" style="margin-top:18px;">Forecast Accuracy Scoreboard <span class="sim-tag" title="Direction-only accuracy vs. realized outcome, scored automatically once each forecast's horizon has elapsed. Not investment advice.">(public, self-graded)</span></div>
+    <div id="quantScoreboardSummary" class="news-loading" style="padding:6px 0;">Loading scoreboard…</div>
+    <table class="gl-table" id="quantScoreboardTable" style="width:100%">
+      <thead><tr><th>Ticker</th><th>Scored Forecasts</th><th>Direction Accuracy</th></tr></thead>
+      <tbody id="quantScoreboardBody"></tbody>
+    </table>
+  </div>
+
   <!-- ===================== HEATMAP SECTION ===================== -->
   <div id="heatmapSection" style="display:none;">
     <div class="heatmap-layout">
@@ -913,6 +954,11 @@
       <svg width="100%" height="50" viewBox="0 0 300 50"><polyline id="modalSparkLine" points="" fill="none" stroke-width="2"/></svg>
     </div>
     <div class="modal-rec" id="modalRecCard"><div id="modalRec"></div><div id="modalScore"></div><div id="modalNote"></div></div>
+    <div class="modal-rec" id="modalQuantCard" style="display:none;">
+      <div id="modalQuantHeadline"></div>
+      <div id="modalQuantRange" style="font-size:12px;"></div>
+      <div id="modalQuantModel" class="sim-tag" style="font-size:11px;"></div>
+    </div>
     <div class="assumptions-row">
       <div class="assumption-box"><label>Growth Rate: <span id="growthDisplay"></span>%</label><input type="range" id="growthInput" min="-10" max="45" step="0.5" value="8" oninput="recalcModal()"></div>
       <div class="assumption-box"><label>Discount Rate: <span id="discountDisplay"></span>%</label><input type="range" id="discountInput" min="5" max="15" step="0.5" value="9" oninput="recalcModal()"></div>
@@ -1535,7 +1581,7 @@ function selectAutocomplete(ticker){
 function hideAutocomplete(){ document.getElementById('autocompleteBox').style.display='none'; }
 
 // ---------- VIEW SWITCH ----------
-const ALL_SECTIONS = ['home','screener','heatmap','news','charts','groups','futures','forex','crypto','insider','calendar'];
+const ALL_SECTIONS = ['home','screener','heatmap','news','charts','groups','futures','forex','crypto','insider','calendar','quant'];
 function setView(view){
   state.view = view;
   ALL_SECTIONS.forEach(s=>{
@@ -1553,6 +1599,7 @@ function setView(view){
   if(view==='crypto' && !cryptoLoaded) loadCrypto();
   if(view==='insider') renderInsider();
   if(view==='calendar') renderCalendar();
+  if(view==='quant' && !quantLoaded) loadQuantDesk();
   encodeStateToHash();
   closeMobileMenu();
 }
@@ -1939,7 +1986,32 @@ function openModal(ticker){
   document.getElementById('modalInvestment').value = 10000;
   recalcModal();
   loadModalNews(s);
+  loadModalQuantForecast(s.ticker);
   encodeStateToHash();
+}
+
+let modalQuantRequestId = 0;
+async function loadModalQuantForecast(ticker){
+  const card = document.getElementById('modalQuantCard');
+  card.style.display = 'none';
+  const requestId = ++modalQuantRequestId;
+  const forecast = await fetchQuantJSON(`/api/quant/forecast/${ticker}`, snap => snap.forecasts && snap.forecasts[ticker]);
+  if(requestId !== modalQuantRequestId || !modalTicker || modalTicker !== ticker) return; // stale response guard, same pattern as loadModalNews
+  if(!forecast) return; // no forecast for this ticker yet — leave the card hidden rather than showing empty state
+  card.style.display = '';
+  const dir = forecast.expected_return_pct >= 0 ? 'up' : 'down';
+  const cls = forecast.expected_return_pct >= 0 ? 'pos' : 'neg';
+  document.getElementById('modalQuantHeadline').innerHTML =
+    `Quant Desk forecast: <span class="${cls}">${forecast.expected_return_pct>=0?'+':''}${forecast.expected_return_pct.toFixed(2)}%</span>
+     over ${forecast.horizon_hours}h · confidence ${(forecast.direction_confidence*100).toFixed(0)}%`;
+  document.getElementById('modalQuantRange').textContent =
+    `Range: ${forecast.interval_low_pct.toFixed(2)}% to ${forecast.interval_high_pct.toFixed(2)}% · volatility ${(forecast.volatility_forecast*100).toFixed(2)}%`;
+  // Honesty labeling, same pattern as estTag()/hasRealFundamentals: never let a
+  // heuristic fallback forecast render indistinguishably from a real Kronos one.
+  document.getElementById('modalQuantModel').textContent =
+    forecast.model === 'Kronos-mini'
+      ? `Model: Kronos-mini (HuggingFace) — simulated paper trade, not investment advice`
+      : `Model: statistical fallback (Kronos unavailable this cycle) — simulated paper trade, not investment advice`;
 }
 function closeModal(){
   document.getElementById('modalOverlay').classList.remove('show');
@@ -2841,6 +2913,101 @@ function renderCalendar(){
   </tr>`).join('');
 }
 
+// ---------- QUANT DESK ----------
+// Same fallback-chain pattern as init()'s screener fetch: try the live Flask
+// API first (/api/quant/*, only reachable when running app.py locally), and
+// fall back to the static JSON snapshot quant/run_quant_cycle.py writes on
+// GitHub Pages (no server there — same reason data/screener.json exists).
+async function fetchQuantJSON(apiPath, snapshotPicker){
+  try{
+    const res = await fetch(apiPath, {cache:'no-store'});
+    if(res.ok) return await res.json();
+  }catch(e){}
+  try{
+    const res = await fetch('data/quant_snapshot.json', {cache:'no-store'});
+    if(res.ok){
+      const snapshot = await res.json();
+      return snapshotPicker(snapshot);
+    }
+  }catch(e){}
+  return null;
+}
+
+function quantEquitySparkPoints(history, w, h){
+  if(!history || history.length < 2) return '';
+  const vals = history.map(pt=>pt.equity);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = (max-min) || (vals[0]*0.01) || 1;
+  const stepX = w/(vals.length-1);
+  return vals.map((v,i)=> `${(i*stepX).toFixed(1)},${(h - ((v-min)/range)*h).toFixed(1)}`).join(' ');
+}
+
+async function loadQuantDesk(){
+  quantLoaded = true;
+
+  const [allocation, pnl, scoreboard] = await Promise.all([
+    fetchQuantJSON('/api/quant/allocation', snap => snap.allocation),
+    fetchQuantJSON('/api/quant/paper/pnl', snap => snap.paper),
+    fetchQuantJSON('/api/quant/scoreboard', () => null), // scoreboard has no static-snapshot equivalent yet
+  ]);
+
+  // Paper P&L headline + equity curve
+  const pnlHeadEl = document.getElementById('quantPnlHeadline');
+  if(pnl && pnl.equity != null){
+    const sign = pnl.pnl_pct >= 0 ? '+' : '';
+    const cls = pnl.pnl_pct >= 0 ? 'pos' : 'neg';
+    pnlHeadEl.innerHTML = `<div>Paper Equity: <b>$${pnl.equity.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</b></div>
+      <div class="${cls}">${sign}${pnl.pnl_pct.toFixed(2)}% vs. $${pnl.starting_equity.toLocaleString()} paper start</div>`;
+    const spark = document.getElementById('quantEquitySpark');
+    spark.setAttribute('points', quantEquitySparkPoints(pnl.history, 300, 60));
+  } else {
+    pnlHeadEl.textContent = 'No paper account snapshot yet — the scheduled Quant Desk cycle hasn\'t run.';
+  }
+
+  // Open positions
+  const posBody = document.getElementById('quantPositionsBody');
+  const openPositions = (pnl && pnl.open_positions) || [];
+  posBody.innerHTML = openPositions.length ? openPositions.map(p=>{
+    const cls = p.unrealized_pnl >= 0 ? 'pos' : 'neg';
+    return `<tr>
+      <td><a href="#" onclick="event.preventDefault();openModal('${p.ticker}')" style="color:var(--accent)">${p.ticker}</a></td>
+      <td>${p.qty.toFixed(4)}</td>
+      <td>$${p.avg_price.toFixed(2)}</td>
+      <td class="${cls}">${p.unrealized_pnl>=0?'+':''}$${p.unrealized_pnl.toFixed(2)}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="4" class="news-loading">No open paper positions yet.</td></tr>';
+
+  // Target allocation
+  const allocBody = document.getElementById('quantAllocationBody');
+  const positions = (allocation && allocation.positions) || [];
+  allocBody.innerHTML = positions.length ? positions.map(p=>{
+    const cls = p.delta >= 0 ? 'pos' : 'neg';
+    const conf = p.confidence != null ? `${(p.confidence*100).toFixed(0)}%` : '—';
+    return `<tr>
+      <td><a href="#" onclick="event.preventDefault();openModal('${p.ticker}')" style="color:var(--accent)">${p.ticker}</a></td>
+      <td>${conf}</td>
+      <td>${(p.current_weight*100).toFixed(2)}%</td>
+      <td>${(p.target_weight*100).toFixed(2)}%</td>
+      <td class="${cls}">${p.delta>=0?'+':''}${(p.delta*100).toFixed(2)}%</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="5" class="news-loading">No allocation snapshot yet.</td></tr>';
+
+  // Forecast accuracy scoreboard (live-API only — no static fallback for this endpoint yet)
+  const summaryEl = document.getElementById('quantScoreboardSummary');
+  const scoreBody = document.getElementById('quantScoreboardBody');
+  if(scoreboard && scoreboard.scored_forecasts > 0){
+    const acc = scoreboard.overall_direction_accuracy;
+    summaryEl.innerHTML = `${scoreboard.scored_forecasts} forecasts scored so far · overall direction accuracy: <b>${(acc*100).toFixed(1)}%</b>`;
+    scoreBody.innerHTML = scoreboard.by_ticker.map(t=> `<tr>
+      <td>${t.ticker}</td><td>${t.scored_forecasts}</td>
+      <td>${t.direction_accuracy!=null ? (t.direction_accuracy*100).toFixed(1)+'%' : '—'}</td>
+    </tr>`).join('');
+  } else {
+    summaryEl.textContent = 'No forecasts have completed their 24h horizon yet — check back after the pipeline has run a few cycles.';
+    scoreBody.innerHTML = '';
+  }
+}
+
 function renderGroups(){
   const groups = aggregateGroups();
   const orderKey = document.getElementById('groupOrder')?.value||'name';
@@ -3065,6 +3232,7 @@ async function loadForex(){
 }
 
 let cryptoLoaded = false;
+let quantLoaded = false;
 async function loadCrypto(){
   cryptoLoaded = true;
   const wrap = document.getElementById('cryptoGrid');

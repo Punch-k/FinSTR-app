@@ -17,3 +17,7 @@ Thumbs.db
 
 # SQLite database (contains user data at runtime — never commit)
 database/*.db
+# Exception: quant.db holds only public, model-derived Quant Desk data (no
+# user accounts/holdings) and is committed by .github/workflows/update-data.yml
+# so the hosted GitHub Pages demo and local Flask app can read it back.
+!database/quant.db

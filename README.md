@@ -75,6 +75,10 @@ python scripts/fetch_data.py
 | `database/create.sql` | Schema definition |
 | `templates/` | Jinja2 HTML pages for the MyShare portfolio section |
 | `static/` | CSS and JS for the MyShare portfolio section |
+| `quant/` | Quant Desk — Kronos forecast -> skfolio allocation -> NautilusTrader paper-fill simulation. See `QUANT_DESK.md` |
+| `database/quant.db` | Public, model-derived Quant Desk state (forecasts/allocation/paper account) — committed, unlike `MyShare.db` |
+| `data/quant_snapshot.json` | Static Quant Desk snapshot for GitHub Pages, refreshed every 6 hours alongside `data/screener.json` |
+| `tests/test_quant.py` | pytest suite for `quant/` — the first automated tests in this repo |
 
 ---
 
@@ -88,6 +92,10 @@ python scripts/fetch_data.py
 | `/myshare/user/lots` | GET/POST/PATCH/DELETE | Buy lot management |
 | `/myshare/user/sell-lots` | GET/POST/PATCH/DELETE | Sell lot management |
 | `/myshare/user/holdings` | GET | Aggregated portfolio holdings with P&L |
+| `/api/quant/forecast/<ticker>` | GET | Latest Kronos forecast for a ticker (public, read-only) |
+| `/api/quant/allocation` | GET | Latest target vs. current portfolio weights |
+| `/api/quant/paper/pnl` | GET | Paper (simulated) account equity, history, open positions |
+| `/api/quant/scoreboard` | GET | Public forecast-accuracy scoreboard (direction accuracy vs. realized outcomes) |
 
 ---
 
