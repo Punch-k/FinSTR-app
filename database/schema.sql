@@ -53,3 +53,76 @@ CREATE INDEX IF NOT EXISTS idx_holdings_selllotid ON Holdings(SellLotID);
 CREATE INDEX IF NOT EXISTS idx_holdings_shareid ON Holdings(ShareID);
 CREATE INDEX IF NOT EXISTS idx_holdings_user_symbol ON Holdings(User, Symbol);
 CREATE INDEX IF NOT EXISTS idx_holdings_user_selllotid ON Holdings(User, SellLotID);
+
+-- ============================================================
+-- Quant Desk tables (Kronos forecast -> skfolio allocation ->
+-- NautilusTrader paper-fill simulation). See QUANT_DESK.md and
+-- quant/db.py — quant/db.py's init_quant_schema() creates these
+-- same tables at runtime via executescript(), so this file and
+-- quant/db.py's SCHEMA string must be kept in sync; this copy
+-- exists so the full DB shape is visible in one place alongside
+-- the MyShare tables above.
+-- ============================================================
+
+-- Per-ticker forecast snapshots (one row per ticker per cycle run)
+CREATE TABLE IF NOT EXISTS quant_forecasts (
+    Ticker TEXT NOT NULL,
+    GeneratedAt TEXT NOT NULL,
+    DirectionConfidence REAL NOT NULL,
+    ExpectedReturnPct REAL NOT NULL,
+    IntervalLowPct REAL NOT NULL,
+    IntervalHighPct REAL NOT NULL,
+    VolatilityForecast REAL NOT NULL,
+    ModelName TEXT NOT NULL,
+    PRIMARY KEY (Ticker, GeneratedAt)
+);
+
+-- Target vs. current allocation weights per cycle run
+CREATE TABLE IF NOT EXISTS quant_allocation (
+    AsOf TEXT NOT NULL,
+    Ticker TEXT NOT NULL,
+    TargetWeight REAL NOT NULL,
+    CurrentWeight REAL NOT NULL,
+    Benchmark TEXT NOT NULL,
+    PRIMARY KEY (AsOf, Ticker)
+);
+
+-- Paper (simulated, no real money) account equity/cash snapshots
+CREATE TABLE IF NOT EXISTS quant_paper_account (
+    AsOf TEXT PRIMARY KEY,
+    Equity REAL NOT NULL,
+    Cash REAL NOT NULL,
+    StartingEquity REAL NOT NULL
+);
+
+-- Paper position snapshots, one row per ticker per cycle run
+CREATE TABLE IF NOT EXISTS quant_paper_positions (
+    AsOf TEXT NOT NULL,
+    Ticker TEXT NOT NULL,
+    Qty REAL NOT NULL,
+    AvgPrice REAL NOT NULL,
+    UnrealizedPnl REAL NOT NULL,
+    PRIMARY KEY (AsOf, Ticker)
+);
+
+-- Forecast-accuracy scoreboard: each forecast is scored against its
+-- realized outcome once HorizonHours has elapsed (see
+-- quant/run_quant_cycle.py::score_due_forecasts). Powers the public
+-- "was Kronos actually right?" scoreboard described in QUANT_DESK.md.
+CREATE TABLE IF NOT EXISTS quant_forecast_outcomes (
+    Ticker TEXT NOT NULL,
+    GeneratedAt TEXT NOT NULL,
+    HorizonHours INTEGER NOT NULL,
+    PredictedDirection TEXT NOT NULL,
+    PredictedReturnPct REAL NOT NULL,
+    ActualReturnPct REAL,
+    DirectionCorrect INTEGER,
+    ScoredAt TEXT,
+    PRIMARY KEY (Ticker, GeneratedAt)
+);
+
+-- Indexes for Quant Desk tables
+CREATE INDEX IF NOT EXISTS idx_quant_forecasts_ticker ON quant_forecasts(Ticker);
+CREATE INDEX IF NOT EXISTS idx_quant_allocation_asof ON quant_allocation(AsOf);
+CREATE INDEX IF NOT EXISTS idx_quant_paper_positions_asof ON quant_paper_positions(AsOf);
+CREATE INDEX IF NOT EXISTS idx_quant_outcomes_scored ON quant_forecast_outcomes(ScoredAt);
