@@ -12,7 +12,7 @@ yagmail
 # assumed" requirement for Kronos inference.
 torch==2.4.1
 transformers==4.44.2
-skfolio==0.6.1
+skfolio==0.20.2
 nautilus_trader==1.208.0
 pandas>=2.0,<3.0
 # Kronos ships as source, not a PyPI package (its `model` module is imported

@@ -841,10 +841,13 @@
   <div id="quantSection" style="display:none;">
     <div class="news-loading" style="padding:12px 0;text-align:left;font-size:12px;">
       <b>Paper trading — simulated, not real money.</b> Kronos (HuggingFace K-line forecasting model)
-      generates a per-ticker directional view, skfolio blends it into a Black-Litterman allocation
-      against an equal-weight prior, and NautilusTrader's <code>BacktestEngine</code> simulates the
-      resulting fills against a fictitious paper account. No live broker connection exists anywhere
-      in this pipeline. Refreshed on the same 6-hour schedule as the screener. See
+      generates a per-ticker directional view, which is meant to blend into a skfolio Black-Litterman
+      allocation against an equal-weight prior — see <span id="quantMethodStatus">the current cycle's
+      allocation method below</span> for whether that's the method actually producing today's numbers,
+      since it falls back to a simpler confidence-weighted tilt when skfolio or enough price history
+      isn't available. NautilusTrader's <code>BacktestEngine</code> then simulates the resulting fills
+      against a fictitious paper account — no live broker connection exists anywhere in this pipeline.
+      Refreshed on the same 6-hour schedule as the screener. See
       <a href="https://github.com/Punch-k/FinSTR-app/blob/main/QUANT_DESK.md" target="_blank" rel="noopener">QUANT_DESK.md</a>
       for the full architecture.
     </div>
@@ -865,7 +868,7 @@
       </table>
     </div>
 
-    <div class="news-col-title" style="margin-top:18px;">Target Allocation <span class="sim-tag">(Kronos view + Black-Litterman)</span></div>
+    <div class="news-col-title" style="margin-top:18px;">Target Allocation <span class="sim-tag" id="quantAllocationMethodTag">(loading method…)</span></div>
     <div style="overflow-x:auto;">
       <table class="gl-table" id="quantAllocationTable" style="width:100%;min-width:600px;">
         <thead><tr><th>Ticker</th><th>Confidence</th><th>Current Weight</th><th>Target Weight</th><th>Delta</th></tr></thead>
@@ -3087,6 +3090,22 @@ async function loadQuantDesk(){
       <td class="${cls}">${p.delta>=0?'+':''}${(p.delta*100).toFixed(2)}%</td>
     </tr>`;
   }).join('') : '<tr><td colspan="5" class="news-loading">No allocation snapshot yet.</td></tr>';
+
+  // Honesty labeling for the allocation method, same pattern as estTag()/hasRealFundamentals:
+  // the disclaimer text above and this tag must reflect whichever method actually produced
+  // these weights (see quant/allocator.py::allocate()), never assume Black-Litterman ran.
+  const methodTag = document.getElementById('quantAllocationMethodTag');
+  const methodStatus = document.getElementById('quantMethodStatus');
+  const method = allocation && allocation.method;
+  if(method === 'black-litterman'){
+    methodTag.textContent = '(Kronos view + skfolio Black-Litterman)';
+    if(methodStatus) methodStatus.textContent = 'skfolio Black-Litterman is the method that produced this cycle\'s numbers';
+  } else if(method === 'confidence-weighted-tilt'){
+    methodTag.textContent = '(confidence-weighted tilt — Black-Litterman unavailable this cycle)';
+    if(methodStatus) methodStatus.textContent = 'a simpler confidence-weighted tilt (not Black-Litterman) produced this cycle\'s numbers';
+  } else {
+    methodTag.textContent = '(no allocation snapshot yet)';
+  }
 
   // Forecast accuracy scoreboard (live-API only — no static fallback for this endpoint yet)
   const summaryEl = document.getElementById('quantScoreboardSummary');

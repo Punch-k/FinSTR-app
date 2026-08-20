@@ -89,14 +89,18 @@ outcome once its horizon (24h) has elapsed — no manual curation, no cherry-pic
 `GET /api/quant/scoreboard` and the "Forecast Accuracy Scoreboard" panel in the
 Quant Desk UI surface the running direction-accuracy rate, overall and per ticker.
 
-**Current limitation, tracked honestly rather than hidden:** the outcome scorer
-compares the forecast's *predicted* return to itself as a placeholder for the
-*actual* realized return (see the `actual_return_pct = predicted_return_pct`
-placeholder in `score_due_forecasts()`). A correct implementation needs a price
-snapshot taken at forecast-generation time to diff against the price 24h later —
-that join isn't wired yet. Until it is, treat the scoreboard's numbers as
-structurally present but not yet trustworthy; this is the first thing to fix before
-leaning on the scoreboard for anything real.
+**Fixed:** the scorer used to compare each forecast's *predicted* return to itself
+(`actual_return_pct = predicted_return_pct`), which graded every forecast "correct"
+against itself. `run_cycle()` now records `PriceAtForecast` — the real price at the
+moment the forecast was generated, from the same OHLCV pull already happening —
+into `quant_forecast_outcomes`, and `score_due_forecasts()` computes
+`actual_return_pct` as the real `(price_now - price_at_forecast) / price_at_forecast`
+once the 24h horizon has elapsed. Regression-tested in
+`tests/test_quant.py::test_score_due_forecasts_uses_real_price_not_prediction`.
+A schema migration (`quant/db.py::_apply_column_migrations`) adds the new column to
+any `quant.db` that predates this fix, so old rows aren't silently broken — they're
+simply un-scoreable (no baseline price was ever recorded for them) and stay
+unscored rather than fabricating a result.
 
 ## Running it locally
 
@@ -144,21 +148,33 @@ here is public market data plus a locally-loaded, CPU-only model.
 
 ## Known gaps / next steps
 
-1. Wire the price-snapshot-at-forecast-time join so the accuracy scoreboard reflects
-   real outcomes (see "Current limitation" above) — this is the priority before the
-   scoreboard is trustworthy.
-2. `QUANT_TICKERS` in `run_quant_cycle.py` is capped at the first 20 of
+**Fixed this pass:** (1) the scoreboard's outcome scorer now diffs a real recorded
+`PriceAtForecast` against the realized price instead of comparing a forecast to
+itself — see the "Fixed" note above. (2) `run_cycle()` now builds a real historical
+daily-returns DataFrame from the OHLCV already fetched per ticker
+(`_build_returns_df()`) and passes it into `allocator.allocate()`, so the real
+skfolio Black-Litterman path executes whenever skfolio is installed and there's
+enough clean history — no longer permanently hard-coded to `historical_returns_df=None`.
+`allocate()` now returns `(weights, method)`, and both the DB (`quant_allocation.Method`)
+and the static snapshot persist which method actually produced each cycle's numbers;
+the frontend disclaimer and the "Target Allocation" tag read that value live rather
+than asserting Black-Litterman unconditionally — if skfolio isn't available or a fit
+fails, the UI says "confidence-weighted tilt" instead. (3) the previously-fabricated
+`skfolio==0.6.1` requirements.txt pin — that version doesn't exist — is corrected to
+`0.20.2`, a real published release.
+
+**Still open:**
+1. `QUANT_TICKERS` in `run_quant_cycle.py` is capped at the first 20 of
    `SCREENER_TICKERS` to keep each CI run's runtime/inference cost bounded — expand
    once real Kronos inference latency is measured in CI (the "Install Kronos" and
    "Run Quant Desk cycle" workflow steps both run with `continue-on-error: true`
    today specifically because that latency hasn't been measured yet).
-3. `quant/allocator.py`'s Black-Litterman prior defaults to equal-weight, not a real
+2. `quant/allocator.py`'s Black-Litterman prior defaults to equal-weight, not a real
    60/40 or market-cap benchmark — `marketcap_weights()` exists and is ready to wire
    in once `run_quant_cycle.py` passes it real market caps from the screener data.
-4. skfolio's Black-Litterman path in `allocator.py` needs a historical returns
-   DataFrame to fit a covariance matrix; `run_quant_cycle.py` currently calls
-   `allocate()` with `historical_returns_df=None`, so it always takes the naive
-   confidence-weighted-tilt fallback today, not the real skfolio posterior. Wiring
-   in `yfinance`'s historical closes (already fetched per-ticker in
-   `_fetch_ohlcv()`) into a wide returns DataFrame is the next step to exercise the
-   real skfolio path in production.
+3. The real skfolio import segfaulted in local ad-hoc testing during this session
+   (likely a package-version clash specific to that sandbox, not necessarily CI —
+   see the workflow run referenced below). Until a clean CI run is confirmed green
+   on the "Install Kronos" and "Run Quant Desk cycle" steps, treat the
+   Black-Litterman path as code-complete but operationally unverified; the
+   `continue-on-error: true` on both steps stays in place until that's confirmed.
