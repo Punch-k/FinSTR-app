@@ -28,7 +28,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Install Kronos (best-effort; heuristic fallback engages if this fails)
-        run: pip install "git+https://github.com/shiyu-coder/Kronos.git@main"
+        run: pip install "git+https://github.com/shiyu-coder/Kronos.git@master"
         continue-on-error: true
 
       - name: Run Quant Desk cycle (forecast -> allocate -> paper-simulate)
