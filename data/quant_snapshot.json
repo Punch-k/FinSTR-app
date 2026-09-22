@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-21T21:39:37Z",
+  "generated_at": "2026-09-22T03:03:50Z",
   "forecasts": {
     "MSFT": {
       "ticker": "MSFT",
@@ -10,7 +10,7 @@
       "interval_high_pct": 5.28,
       "volatility_forecast": 0.02553,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "ORCL": {
       "ticker": "ORCL",
@@ -21,7 +21,7 @@
       "interval_high_pct": 7.445,
       "volatility_forecast": 0.03898,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "CRM": {
       "ticker": "CRM",
@@ -32,7 +32,7 @@
       "interval_high_pct": 7.816,
       "volatility_forecast": 0.03748,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "ADBE": {
       "ticker": "ADBE",
@@ -43,7 +43,7 @@
       "interval_high_pct": 6.26,
       "volatility_forecast": 0.03137,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "INTU": {
       "ticker": "INTU",
@@ -54,7 +54,7 @@
       "interval_high_pct": 7.285,
       "volatility_forecast": 0.03791,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "NOW": {
       "ticker": "NOW",
@@ -65,7 +65,7 @@
       "interval_high_pct": 8.973,
       "volatility_forecast": 0.04269,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "NVDA": {
       "ticker": "NVDA",
@@ -76,18 +76,18 @@
       "interval_high_pct": 5.115,
       "volatility_forecast": 0.02587,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "AVGO": {
       "ticker": "AVGO",
       "horizon_hours": 24,
       "direction_confidence": 0.517,
-      "expected_return_pct": -0.105,
-      "interval_low_pct": -6.22,
-      "interval_high_pct": 6.01,
-      "volatility_forecast": 0.0312,
+      "expected_return_pct": -0.103,
+      "interval_low_pct": -6.222,
+      "interval_high_pct": 6.016,
+      "volatility_forecast": 0.03122,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "AMD": {
       "ticker": "AMD",
@@ -98,7 +98,7 @@
       "interval_high_pct": 9.449,
       "volatility_forecast": 0.04582,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "TXN": {
       "ticker": "TXN",
@@ -109,7 +109,7 @@
       "interval_high_pct": 5.424,
       "volatility_forecast": 0.02815,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "QCOM": {
       "ticker": "QCOM",
@@ -120,7 +120,7 @@
       "interval_high_pct": 7.77,
       "volatility_forecast": 0.03972,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "INTC": {
       "ticker": "INTC",
@@ -131,7 +131,7 @@
       "interval_high_pct": 9.994,
       "volatility_forecast": 0.05028,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "AAPL": {
       "ticker": "AAPL",
@@ -142,7 +142,7 @@
       "interval_high_pct": 3.72,
       "volatility_forecast": 0.01817,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "HPQ": {
       "ticker": "HPQ",
@@ -153,7 +153,7 @@
       "interval_high_pct": 7.679,
       "volatility_forecast": 0.03621,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "DELL": {
       "ticker": "DELL",
@@ -164,7 +164,7 @@
       "interval_high_pct": 13.052,
       "volatility_forecast": 0.06076,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "CSCO": {
       "ticker": "CSCO",
@@ -175,7 +175,7 @@
       "interval_high_pct": 5.334,
       "volatility_forecast": 0.0265,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "IBM": {
       "ticker": "IBM",
@@ -186,7 +186,7 @@
       "interval_high_pct": 8.213,
       "volatility_forecast": 0.04096,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "ADI": {
       "ticker": "ADI",
@@ -197,7 +197,7 @@
       "interval_high_pct": 5.135,
       "volatility_forecast": 0.02668,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "MU": {
       "ticker": "MU",
@@ -208,7 +208,7 @@
       "interval_high_pct": 12.473,
       "volatility_forecast": 0.0612,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     },
     "AMAT": {
       "ticker": "AMAT",
@@ -219,11 +219,11 @@
       "interval_high_pct": 9.61,
       "volatility_forecast": 0.04808,
       "model": "heuristic-fallback",
-      "generated_at": "2026-09-21T21:39:37Z"
+      "generated_at": "2026-09-22T03:03:50Z"
     }
   },
   "allocation": {
-    "as_of": "2026-09-21T21:39:37Z",
+    "as_of": "2026-09-22T03:03:50Z",
     "benchmark": "equal-weight",
     "method": "black-litterman",
     "positions": [
@@ -370,7 +370,7 @@
     ]
   },
   "paper": {
-    "as_of": "2026-09-21T21:39:37Z",
+    "as_of": "2026-09-22T03:03:50Z",
     "equity": 103722.35,
     "starting_equity": 100000.0,
     "pnl_pct": 3.722,
@@ -866,6 +866,10 @@
       {
         "date": "2026-09-21T21:39:37Z",
         "equity": 103722.35
+      },
+      {
+        "date": "2026-09-22T03:03:50Z",
+        "equity": 103722.35
       }
     ],
     "open_positions": [
@@ -891,13 +895,13 @@
         "ticker": "ADBE",
         "qty": 0.0,
         "avg_price": 272.47,
-        "unrealized_pnl": -0.0
+        "unrealized_pnl": 0.0
       },
       {
         "ticker": "INTU",
         "qty": 0.0,
         "avg_price": 362.47,
-        "unrealized_pnl": -0.0
+        "unrealized_pnl": 0.0
       },
       {
         "ticker": "NOW",
@@ -969,7 +973,7 @@
         "ticker": "IBM",
         "qty": 0.0,
         "avg_price": 237.16,
-        "unrealized_pnl": -0.0
+        "unrealized_pnl": 0.0
       },
       {
         "ticker": "ADI",
