@@ -1,6 +1,9 @@
 {
-  "generatedAt": 1791025264,
-  "tickerCount": 126,
+  "generatedAt": 1791041859,
+  "tickerCount": 124,
   "requestedCount": 126,
-  "errors": []
+  "errors": [
+    "CRWD",
+    "NFLX"
+  ]
 }
