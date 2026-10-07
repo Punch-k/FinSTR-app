@@ -1,6 +1,8 @@
 {
-  "generatedAt": 1791376385,
-  "tickerCount": 126,
+  "generatedAt": 1791412540,
+  "tickerCount": 125,
   "requestedCount": 126,
-  "errors": []
+  "errors": [
+    "FCX"
+  ]
 }
