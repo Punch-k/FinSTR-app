@@ -141,6 +141,8 @@ def move_context(rows, as_of_ts, today, threshold=MOVE_MIN):
                     kind = "peers"
             elif not same_way and abs(peer) >= 0.5:
                 parts.append(f"Moved against its {level} ({group_name} {peer:+.1f}% on average), so this looks company-specific.")
+            elif abs(peer) < 0.05:
+                parts.append(f"Its {level} was flat ({group_name}), so this looks company-specific.")
             else:
                 parts.append(f"Its {level} moved {peer:+.1f}% ({group_name}), so this looks company-specific.")
 
