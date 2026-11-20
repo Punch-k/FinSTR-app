@@ -26,7 +26,10 @@ Source: Yahoo Finance via yfinance and Yahoo Finance RSS. Educational use; not i
 
 ## Portfolio file format
 
-The Portfolio page exports JSON: {"version":1, "name":..., "holdings":[{"ticker":"AAPL","shares":20,"cost":201.7,"date":"2025-06-02"}], "prefs":{"weekly":true,"daily":false,"alerts":true}}
+The Portfolio page exports JSON: {"version":1, "name":..., "holdings":[{"ticker":"AAPL","shares":20,"cost":201.7,"date":"2025-06-02"}], "prefs":{"weekly":true,"daily":false,"alerts":true}, "screens":[{"id":"s1","name":"Strong signal on a pullback","rules":[["signal",">=",80],["rsi","<",40]]}]}
+
+Screen rules are [field, op, a, b?] over screener.json fields. ops: < <= > >= (missing values never pass), abs<=, eq, in (list),
+falsy, text (ticker or name contains), days (date field within a..b days from now), >f >=f <f (compare with another field).
 
 ## Guidance for agents
 

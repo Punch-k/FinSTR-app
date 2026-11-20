@@ -95,7 +95,9 @@ LLM_BASE_URL=http://localhost:11434/v1 LLM_MODEL=llama3.2 python pipeline/digest
 ```
 
 Alerts fire when a holding falls 7% or more in a day, crosses its 200-day average, reports earnings within 3 days,
-or its signal label changes. Ideas skip companies that report earnings within 5 days.
+or its signal label changes. Screen alerts: in the Screener press **🔔 Alert** to save the current filters; the
+Portfolio page and the digest then report each stock that newly enters that screen. Ideas skip companies that
+report earnings within 5 days.
 
 ## For AI agents and automation
 

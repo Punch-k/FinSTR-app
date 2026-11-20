@@ -10,7 +10,7 @@ Inputs
   --portfolio   the JSON file exported from the FinSTR Portfolio page (or env PORTFOLIO_JSON with its contents)
   --data        where to read FinSTR data: the live site URL (default) or a local folder with data/
   --mode        weekly | daily | alerts | auto (auto = what the portfolio's email preferences ask for today)
-  --state       optional JSON file remembering last run's signals, to detect signal flips
+  --state       optional JSON file remembering last run's signals and screen matches (for "changed" alerts)
 
 AI write-up (optional): set LLM_BASE_URL to any OpenAI-compatible endpoint, e.g.
   http://localhost:11434/v1 (Ollama), plus LLM_MODEL (default llama3.2) and LLM_API_KEY if needed.
@@ -157,22 +157,70 @@ def analyse(pf, rows, bench, base):
             "alerts": alerts, "considerations": cons, "ideas": ideas, "earnings": upcoming}
 
 
-def signal_flips(A, state_path):
-    if not state_path:
-        return []
-    prev = {}
-    if os.path.exists(state_path):
-        with open(state_path, encoding="utf-8") as f:
-            prev = json.load(f)
-    flips, now = [], {}
+def load_state(path):
+    if not path or not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as f:
+        st = json.load(f)
+    return st if "labels" in st or "screens" in st else {"labels": st}   # older files held labels only
+
+
+def signal_flips(A, state):
+    prev, now, flips = state.get("labels", {}), {}, []
     for r in A["holdings"]:
         t, lab = r["s"]["ticker"], r["s"].get("signalLabel")
         now[t] = lab
         if prev.get(t) and lab and prev[t] != lab:
             flips.append(f"{t} signal changed from {prev[t]} to {lab} ({r['s'].get('signal')}).")
-    with open(state_path, "w", encoding="utf-8") as f:
-        json.dump(now, f)
+    state["labels"] = now
     return flips
+
+
+def rule_ok(s, r):
+    """Same rule format and meaning as the site (index.html, ruleOk): a missing value never passes."""
+    f, op = r[0], r[1]
+    a = r[2] if len(r) > 2 else None
+    b = r[3] if len(r) > 3 else None
+    v = s.get(f)
+    if op == "text":
+        q = str(a).lower()
+        return q in s["ticker"].lower() or q in (s.get("name") or "").lower()
+    if op == "in":
+        return isinstance(a, list) and v in a
+    if op == "eq":
+        return v == a
+    if op == "falsy":
+        return not v
+    if op == "days":
+        try:
+            d = dt.datetime.combine(dt.date.fromisoformat(v), dt.time(12))
+        except (TypeError, ValueError):
+            return False
+        return a <= (d - dt.datetime.now()).total_seconds() / 86400 <= b
+    if not isnum(v):
+        return False
+    if op.endswith("f"):
+        w = s.get(a)
+        return isnum(w) and (v > w if op == ">f" else v >= w if op == ">=f" else v < w)
+    return {"<": v < a, "<=": v <= a, ">": v > a, ">=": v >= a, "abs<=": abs(v) <= a}.get(op, False)
+
+
+def screen_alerts(pf, rows, state):
+    """Saved screener filters (Portfolio > Screen alerts): report stocks that entered since the last run."""
+    prev, now, out = state.get("screens", {}), {}, []
+    for sc in (pf.get("screens") or [])[:20]:
+        rules = sc.get("rules") or []
+        if not rules or not sc.get("id"):
+            continue
+        hits = sorted(r["ticker"] for r in rows if all(rule_ok(r, x) for x in rules))
+        now[sc["id"]] = hits
+        if sc["id"] in prev:
+            new = [t for t in hits if t not in prev[sc["id"]]]
+            if new:
+                more = f" and {len(new) - 8} more" if len(new) > 8 else ""
+                out.append(f'New in your screen "{sc.get("name", "screen")}": {", ".join(new[:8])}{more} ({len(hits)} match now).')
+    state["screens"] = now
+    return out
 
 
 # ───────────────────────── optional AI write-up ─────────────────────────
@@ -491,7 +539,11 @@ def main():
     except Exception:  # noqa: BLE001
         bench = None
     A = analyse(pf, rows, bench, a.data)
-    flips = signal_flips(A, a.state)
+    state = load_state(a.state)
+    flips = signal_flips(A, state) + screen_alerts(pf, rows, state)
+    if a.state:
+        with open(a.state, "w", encoding="utf-8") as f:
+            json.dump(state, f)
     as_of = dt.datetime.fromtimestamp(meta["generatedAt"], dt.timezone.utc).strftime("%b %d, %Y %H:%M UTC")
     modes = resolve_mode(a.mode, pf.get("prefs") or {}, a.slot)
     if not modes:

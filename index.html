@@ -741,6 +741,8 @@
   .pf-add .dim-note{font-size:11px;}
   .pf-empty{border:1px dashed var(--border);border-radius:8px;padding:18px;font-size:13.5px;line-height:1.6;margin-bottom:12px;}
   .pf-empty button{margin-top:10px;}
+  .alert-save{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin:0 0 10px;font-size:13px;}
+  .alert-save input{flex:1 1 220px;min-width:0;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 9px;}
   .pf-since{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px;font-size:12.5px;}
   .pf-chip{border:1px solid var(--border);border-radius:12px;padding:2px 9px;}
   .pf-chip.pos{border-color:rgba(38,166,91,.5);} .pf-chip.neg{border-color:rgba(239,83,80,.5);}
@@ -879,9 +881,16 @@
       <span class="ctrl-divider"></span>
       <button class="reset-btn" onclick="exportCSV()">⬇️ CSV</button>
       <button class="reset-btn" onclick="copyShareLink()">🔗 Share</button>
+      <button class="reset-btn" onclick="openSaveAlert()" title="Get told when a new stock enters this screen">🔔 Alert</button>
       <button class="reset-btn" onclick="resetFilters()">Reset</button>
     </div>
 
+    <div id="alertSave" class="alert-save" style="display:none">
+      <b>Save this screen as an alert</b>
+      <input id="alertName" maxlength="60" placeholder="Name, e.g. Strong signal on a pullback" onkeydown="if(event.key==='Enter')saveAlert()">
+      <button class="live-btn" onclick="saveAlert()">Save</button><button class="q-ico" onclick="closeSaveAlert()">Cancel</button>
+      <span class="dim-note" id="alertSaveNote"></span>
+    </div>
     <div id="filtersPanel" class="filters-panel" style="display:none;">
       <div class="filter-tabs">
         <div class="ftab active" data-tab="descriptive" onclick="setFilterTab('descriptive')">Descriptive</div>
@@ -1167,6 +1176,10 @@
       </div>
       <div class="dim-note" id="pfEmailNote"></div>
     </div>
+    <div class="sg-card" id="pfScreensCard">
+      <h3>Screen alerts <span class="dim-note">saved screener filters; new entries show here and in your digest</span></h3>
+      <div class="q-table-wrap" id="pfScreens"></div>
+    </div>
   </div>
 
   <!-- ===================== SIGNALS PAGE ===================== -->
@@ -1423,30 +1436,81 @@ function newsFromRow(s){
 // ---------- EXTRA FILTERS (Finviz-style, declarative) ----------
 // Each filter: id, group (Descriptive/Fundamental/Technical), label, options [value, text, test].
 // A missing value never passes a filter.
-const XN = v => isNum(v);
+// Rule format shared with pipeline/digest.py (screen alerts): [field, op, a, b?]
+//   ops: < <= > >= (numbers; missing fails) · abs<= · eq · in · falsy · text (ticker/name contains)
+//        days (date field within a..b days from now) · >f >=f <f (field vs another field)
 const inDays = (d, a, b) => { if(!d) return false; const t = (Date.parse(d+'T12:00:00') - Date.now())/864e5; return t >= a && t <= b; };
+function ruleOk(s, r){
+  const [f, op, a, b] = r, v = s[f];
+  switch(op){
+    case 'text': { const q = String(a).toLowerCase(); return s.ticker.toLowerCase().includes(q) || (s.name||'').toLowerCase().includes(q); }
+    case 'in': return Array.isArray(a) && a.includes(v);
+    case 'eq': return v === a;
+    case 'falsy': return !v;
+    case 'days': return inDays(v, a, b);
+  }
+  if(!isNum(v)) return false;
+  if(op.endsWith('f')){ const w = s[a]; if(!isNum(w)) return false; return op==='>f' ? v>w : op==='>=f' ? v>=w : v<w; }
+  switch(op){ case '<': return v<a; case '<=': return v<=a; case '>': return v>a; case '>=': return v>=a; case 'abs<=': return Math.abs(v)<=a; }
+  return false;
+}
+const rulesOk = (s, rules) => rules.every(r => ruleOk(s, r));
+const R = (f, op, a, b) => [f, op, a, b].filter(x => x !== undefined);
 const XF = [
-  ['xRec','Descriptive','Analyst Recom.',[['sb','Strong Buy (≤1.5)',s=>XN(s.recMean)&&s.recMean<=1.5],['b','Buy or better (≤2.5)',s=>XN(s.recMean)&&s.recMean<=2.5],['h','Hold (2.5–3.5)',s=>XN(s.recMean)&&s.recMean>2.5&&s.recMean<=3.5],['s','Sell or worse (>3.5)',s=>XN(s.recMean)&&s.recMean>3.5]]],
-  ['xEarn','Descriptive','Earnings Date',[['tw','Next 7 days',s=>inDays(s.earningsDate,-1,7)],['nw','In 8–14 days',s=>inDays(s.earningsDate,8,14)],['m','Next 30 days',s=>inDays(s.earningsDate,-1,30)]]],
-  ['xUp','Descriptive','Target Price',[['a10','10%+ above price',s=>XN(s.upside)&&s.upside>=10],['a20','20%+ above price',s=>XN(s.upside)&&s.upside>=20],['a50','50%+ above price',s=>XN(s.upside)&&s.upside>=50],['below','Below price',s=>XN(s.upside)&&s.upside<0]]],
-  ['xFpe','Fundamental','Forward P/E',[['lt15','Under 15',s=>XN(s.forwardPE)&&s.forwardPE>0&&s.forwardPE<15],['15to25','15–25',s=>XN(s.forwardPE)&&s.forwardPE>=15&&s.forwardPE<=25],['gt25','Over 25',s=>XN(s.forwardPE)&&s.forwardPE>25]]],
-  ['xPs','Fundamental','P/S',[['lt2','Under 2',s=>XN(s.ps)&&s.ps<2],['lt5','Under 5',s=>XN(s.ps)&&s.ps<5],['gt10','Over 10',s=>XN(s.ps)&&s.ps>10]]],
-  ['xEpsNY','Fundamental','EPS growth next Y',[['pos','Positive',s=>XN(s.epsNextYGrowth)&&s.epsNextYGrowth>0],['o10','Over 10%',s=>XN(s.epsNextYGrowth)&&s.epsNextYGrowth>10],['o20','Over 20%',s=>XN(s.epsNextYGrowth)&&s.epsNextYGrowth>20],['neg','Negative',s=>XN(s.epsNextYGrowth)&&s.epsNextYGrowth<0]]],
-  ['xSalesQ','Fundamental','Sales growth Q/Q',[['pos','Positive',s=>XN(s.salesGrowthQ)&&s.salesGrowthQ>0],['o10','Over 10%',s=>XN(s.salesGrowthQ)&&s.salesGrowthQ>10],['o25','Over 25%',s=>XN(s.salesGrowthQ)&&s.salesGrowthQ>25],['neg','Negative',s=>XN(s.salesGrowthQ)&&s.salesGrowthQ<0]]],
-  ['xDebt','Fundamental','Debt/Equity',[['lt05','Under 0.5',s=>XN(s.debtEq)&&s.debtEq<0.5],['lt1','Under 1',s=>XN(s.debtEq)&&s.debtEq<1],['gt1','Over 1',s=>XN(s.debtEq)&&s.debtEq>1]]],
-  ['xGm','Fundamental','Gross Margin',[['o40','Over 40%',s=>XN(s.grossMargin)&&s.grossMargin>40],['o60','Over 60%',s=>XN(s.grossMargin)&&s.grossMargin>60],['u20','Under 20%',s=>XN(s.grossMargin)&&s.grossMargin<20]]],
-  ['xIns','Fundamental','Insider Own',[['o5','Over 5%',s=>XN(s.insiderOwn)&&s.insiderOwn>5],['o10','Over 10%',s=>XN(s.insiderOwn)&&s.insiderOwn>10]]],
-  ['xShort','Fundamental','Short Float',[['u2','Under 2%',s=>XN(s.shortFloat)&&s.shortFloat<2],['o5','Over 5%',s=>XN(s.shortFloat)&&s.shortFloat>5],['o10','Over 10%',s=>XN(s.shortFloat)&&s.shortFloat>10]]],
-  ['xSig','Technical','FinSTR Signal',[['s','Strong (80+)',s=>XN(s.signal)&&s.signal>=80],['p','Positive or better (60+)',s=>XN(s.signal)&&s.signal>=60],['n','Neutral (40–59)',s=>XN(s.signal)&&s.signal>=40&&s.signal<60],['w','Weak or worse (<40)',s=>XN(s.signal)&&s.signal<40],['vw','Very Weak (<20)',s=>XN(s.signal)&&s.signal<20]]],
-  ['xPerfW','Technical','Performance (week)',[['up','Up',s=>XN(s.perfW)&&s.perfW>0],['o5','Up 5%+',s=>XN(s.perfW)&&s.perfW>=5],['dn','Down',s=>XN(s.perfW)&&s.perfW<0],['u5','Down 5%+',s=>XN(s.perfW)&&s.perfW<=-5]]],
-  ['xPerfYTD','Technical','Performance (YTD)',[['up','Up',s=>XN(s.perfYTD)&&s.perfYTD>0],['o25','Up 25%+',s=>XN(s.perfYTD)&&s.perfYTD>=25],['dn','Down',s=>XN(s.perfYTD)&&s.perfYTD<0],['u20','Down 20%+',s=>XN(s.perfYTD)&&s.perfYTD<=-20]]],
-  ['xPerfY','Technical','Performance (year)',[['o20','Up 20%+',s=>XN(s.perfY)&&s.perfY>=20],['o50','Up 50%+',s=>XN(s.perfY)&&s.perfY>=50],['dn','Down',s=>XN(s.perfY)&&s.perfY<0]]],
-  ['xRsi','Technical','RSI (14)',[['ob','Overbought (>70)',s=>XN(s.rsi)&&s.rsi>70],['o60','Above 60',s=>XN(s.rsi)&&s.rsi>60],['u40','Below 40',s=>XN(s.rsi)&&s.rsi<40],['os','Oversold (<30)',s=>XN(s.rsi)&&s.rsi<30]]],
-  ['xSma200','Technical','Price vs SMA200',[['above','Above',s=>XN(s.vsSma200)&&s.vsSma200>=0],['below','Below',s=>XN(s.vsSma200)&&s.vsSma200<0],['near','Within 2%',s=>XN(s.vsSma200)&&Math.abs(s.vsSma200)<=2],['gc','SMA50 above SMA200',s=>XN(s.sma50)&&XN(s.sma200)&&s.sma50>s.sma200]]],
-  ['xHigh','Technical','52-Week High/Low',[['nh','New high (within 1%)',s=>XN(s.fromHigh52)&&s.fromHigh52>=-1],['n5','Within 5% of high',s=>XN(s.fromHigh52)&&s.fromHigh52>=-5],['b20','20%+ below high',s=>XN(s.fromHigh52)&&s.fromHigh52<=-20],['nl','New low (within 1%)',s=>XN(s.fromLow52)&&s.fromLow52<=1]]],
-  ['xVol','Technical','Volatility (month)',[['lo','Low (<1.5%/day)',s=>XN(s.volM)&&s.volM<1.5],['hi','High (>3%/day)',s=>XN(s.volM)&&s.volM>3]]],
-  ['xRelVol','Technical','Relative Volume',[['o15','Over 1.5',s=>XN(s.relVol)&&s.relVol>1.5],['o2','Over 2',s=>XN(s.relVol)&&s.relVol>2],['u05','Under 0.5',s=>XN(s.relVol)&&s.relVol<0.5]]],
+  ['xRec','Descriptive','Analyst Recom.',[['sb','Strong Buy (≤1.5)',[R('recMean','<=',1.5)]],['b','Buy or better (≤2.5)',[R('recMean','<=',2.5)]],['h','Hold (2.5–3.5)',[R('recMean','>',2.5),R('recMean','<=',3.5)]],['s','Sell or worse (>3.5)',[R('recMean','>',3.5)]]]],
+  ['xEarn','Descriptive','Earnings Date',[['tw','Next 7 days',[R('earningsDate','days',-1,7)]],['nw','In 8–14 days',[R('earningsDate','days',8,14)]],['m','Next 30 days',[R('earningsDate','days',-1,30)]]]],
+  ['xUp','Descriptive','Target Price',[['a10','10%+ above price',[R('upside','>=',10)]],['a20','20%+ above price',[R('upside','>=',20)]],['a50','50%+ above price',[R('upside','>=',50)]],['below','Below price',[R('upside','<',0)]]]],
+  ['xFpe','Fundamental','Forward P/E',[['lt15','Under 15',[R('forwardPE','>',0),R('forwardPE','<',15)]],['15to25','15–25',[R('forwardPE','>=',15),R('forwardPE','<=',25)]],['gt25','Over 25',[R('forwardPE','>',25)]]]],
+  ['xPs','Fundamental','P/S',[['lt2','Under 2',[R('ps','<',2)]],['lt5','Under 5',[R('ps','<',5)]],['gt10','Over 10',[R('ps','>',10)]]]],
+  ['xEpsNY','Fundamental','EPS growth next Y',[['pos','Positive',[R('epsNextYGrowth','>',0)]],['o10','Over 10%',[R('epsNextYGrowth','>',10)]],['o20','Over 20%',[R('epsNextYGrowth','>',20)]],['neg','Negative',[R('epsNextYGrowth','<',0)]]]],
+  ['xSalesQ','Fundamental','Sales growth Q/Q',[['pos','Positive',[R('salesGrowthQ','>',0)]],['o10','Over 10%',[R('salesGrowthQ','>',10)]],['o25','Over 25%',[R('salesGrowthQ','>',25)]],['neg','Negative',[R('salesGrowthQ','<',0)]]]],
+  ['xDebt','Fundamental','Debt/Equity',[['lt05','Under 0.5',[R('debtEq','<',0.5)]],['lt1','Under 1',[R('debtEq','<',1)]],['gt1','Over 1',[R('debtEq','>',1)]]]],
+  ['xGm','Fundamental','Gross Margin',[['o40','Over 40%',[R('grossMargin','>',40)]],['o60','Over 60%',[R('grossMargin','>',60)]],['u20','Under 20%',[R('grossMargin','<',20)]]]],
+  ['xIns','Fundamental','Insider Own',[['o5','Over 5%',[R('insiderOwn','>',5)]],['o10','Over 10%',[R('insiderOwn','>',10)]]]],
+  ['xShort','Fundamental','Short Float',[['u2','Under 2%',[R('shortFloat','<',2)]],['o5','Over 5%',[R('shortFloat','>',5)]],['o10','Over 10%',[R('shortFloat','>',10)]]]],
+  ['xSig','Technical','FinSTR Signal',[['s','Strong (80+)',[R('signal','>=',80)]],['p','Positive or better (60+)',[R('signal','>=',60)]],['n','Neutral (40–59)',[R('signal','>=',40),R('signal','<',60)]],['w','Weak or worse (<40)',[R('signal','<',40)]],['vw','Very Weak (<20)',[R('signal','<',20)]]]],
+  ['xPerfW','Technical','Performance (week)',[['up','Up',[R('perfW','>',0)]],['o5','Up 5%+',[R('perfW','>=',5)]],['dn','Down',[R('perfW','<',0)]],['u5','Down 5%+',[R('perfW','<=',-5)]]]],
+  ['xPerfYTD','Technical','Performance (YTD)',[['up','Up',[R('perfYTD','>',0)]],['o25','Up 25%+',[R('perfYTD','>=',25)]],['dn','Down',[R('perfYTD','<',0)]],['u20','Down 20%+',[R('perfYTD','<=',-20)]]]],
+  ['xPerfY','Technical','Performance (year)',[['o20','Up 20%+',[R('perfY','>=',20)]],['o50','Up 50%+',[R('perfY','>=',50)]],['dn','Down',[R('perfY','<',0)]]]],
+  ['xRsi','Technical','RSI (14)',[['ob','Overbought (>70)',[R('rsi','>',70)]],['o60','Above 60',[R('rsi','>',60)]],['u40','Below 40',[R('rsi','<',40)]],['os','Oversold (<30)',[R('rsi','<',30)]]]],
+  ['xSma200','Technical','Price vs SMA200',[['above','Above',[R('vsSma200','>=',0)]],['below','Below',[R('vsSma200','<',0)]],['near','Within 2%',[R('vsSma200','abs<=',2)]],['gc','SMA50 above SMA200',[R('sma50','>f','sma200')]]]],
+  ['xHigh','Technical','52-Week High/Low',[['nh','New high (within 1%)',[R('fromHigh52','>=',-1)]],['n5','Within 5% of high',[R('fromHigh52','>=',-5)]],['b20','20%+ below high',[R('fromHigh52','<=',-20)]],['nl','New low (within 1%)',[R('fromLow52','<=',1)]]]],
+  ['xVol','Technical','Volatility (month)',[['lo','Low (<1.5%/day)',[R('volM','<',1.5)]],['hi','High (>3%/day)',[R('volM','>',3)]]]],
+  ['xRelVol','Technical','Relative Volume',[['o15','Over 1.5',[R('relVol','>',1.5)]],['o2','Over 2',[R('relVol','>',2)]],['u05','Under 0.5',[R('relVol','<',0.5)]]]],
 ];
+// The original filters and the Signal menu, in the same rule format (used to save a screen as an alert).
+const LEGACY_RULES = {
+  cap:{mega:[R('marketCap','>',200)], large:[R('marketCap','>=',10),R('marketCap','<=',200)], mid:[R('marketCap','>=',2),R('marketCap','<',10)], small:[R('marketCap','<',2)]},
+  pe:{lt15:[R('pe','>',0),R('pe','<',15)], '15to25':[R('pe','>=',15),R('pe','<=',25)], gt25:[R('pe','>',25)]},
+  peg:{lt1:[R('peg','>',0),R('peg','<',1)], '1to2':[R('peg','>=',1),R('peg','<=',2)], gt2:[R('peg','>',2)]},
+  divYield:{none:[R('dividendYield','falsy')], lt2:[R('dividendYield','>',0),R('dividendYield','<',2)], gt2:[R('dividendYield','>=',2)]},
+  roe:{lt10:[R('roe','<',10)], '10to20':[R('roe','>=',10),R('roe','<=',20)], gt20:[R('roe','>',20)]},
+  margin:{neg:[R('profitMargin','<',0)], '0to15':[R('profitMargin','>=',0),R('profitMargin','<=',15)], gt15:[R('profitMargin','>',15)]},
+  maPos:{above:[R('price','>=f','ma50')], below:[R('price','<f','ma50')]},
+  beta:{lt1:[R('beta','<',1)], gt1:[R('beta','>=',1)]},
+};
+const SIGNAL_RULES = {
+  new_high:[R('fromHigh52','>=',-1)], new_low:[R('fromLow52','<=',1)], above_ma50:[R('vsSma50','>=',0)], below_ma50:[R('vsSma50','<',0)],
+  above_ma200:[R('vsSma200','>=',0)], below_ma200:[R('vsSma200','<',0)], overbought:[R('rsi','>=',70)], oversold:[R('rsi','<=',30)],
+  unusual_volume:[R('relVol','>=',1.5)], earnings_week:[R('earningsDate','days',-1,7)], sig_strong:[R('signal','>=',80)],
+  sig_weak:[R('signal','<',20)], sig_turn:[R('signal','>=',70), R('rsi','<=',40)],
+};
+// Current screen -> rules. Returns null (with a reason) when part of it is rank-based (e.g. "Top Gainers").
+function screenToRules(){
+  const rules = [];
+  if(state.sector!=='All') rules.push(R('sector','eq',state.sector));
+  if(state.industry!=='All') rules.push(R('industry','eq',state.industry));
+  for(const k of Object.keys(LEGACY_RULES)) if(state[k] && state[k]!=='All') rules.push(...LEGACY_RULES[k][state[k]]);
+  for(const [id, v] of Object.entries(state.xf||{})){ const f = XF_BY[id], o = f && f[3].find(x=>x[0]===v); if(o) rules.push(...o[2]); }
+  if(state.watchlistOnly) rules.push(R('ticker','in',[...watchlist]));
+  if(state.search.trim()) rules.push(R('ticker','text',state.search.trim()));
+  if(state.signal && state.signal!=='none'){
+    if(!SIGNAL_RULES[state.signal]) return {rules:null, why:'Ranked lists such as Top Gainers or Most Active change every day, so they cannot be saved as an alert. Pick a filter-based signal instead.'};
+    rules.push(...SIGNAL_RULES[state.signal]);
+  }
+  if(!rules.length) return {rules:null, why:'Set at least one filter first: an alert on all 500 stocks would fire every day.'};
+  return {rules};
+}
 const XF_BY = Object.fromEntries(XF.map(f=>[f[0], f]));
 function buildExtraFilters(){
   for(const [id, grp, label, opts] of XF){
@@ -1463,7 +1527,7 @@ function onExtraFilter(id){
 function passesExtraFilters(s){
   for(const [id, v] of Object.entries(state.xf||{})){
     const f = XF_BY[id]; const o = f && f[3].find(x=>x[0]===v);
-    if(o && !o[2](s)) return false;
+    if(o && !rulesOk(s, o[2])) return false;
   }
   return true;
 }
@@ -1518,7 +1582,7 @@ function passesFilters(s){
   if(state.roe==='10to20' && !(s.roe>=10 && s.roe<=20)) return false;
   if(state.roe==='gt20' && !(s.roe>20)) return false;
   if(state.margin==='neg' && !(n(s.profitMargin) && s.profitMargin<0)) return false;
-  if(state.margin==='0to15' && !(s.profitMargin>=0 && s.profitMargin<=15)) return false;
+  if(state.margin==='0to15' && !(n(s.profitMargin) && s.profitMargin>=0 && s.profitMargin<=15)) return false;
   if(state.margin==='gt15' && !(s.profitMargin>15)) return false;
   if(state.maPos==='above' && !(n(s.ma50) && s.price>=s.ma50)) return false;
   if(state.maPos==='below' && !(n(s.ma50) && s.price<s.ma50)) return false;
@@ -1865,6 +1929,7 @@ async function renderPortfolio(){
   document.getElementById('pfTickers').innerHTML = stockData.map(s=>`<option value="${s.ticker}">${s.name}</option>`).join('');
   const p = pf.prefs || {}; document.getElementById('pfWeekly').checked = !!p.weekly; document.getElementById('pfDaily').checked = !!p.daily; document.getElementById('pfAlerts').checked = !!p.alerts;
   pfPrefsNote();
+  renderScreens();
   const has = pf.holdings.length > 0;
   document.getElementById('pfEmpty').style.display = has ? 'none' : '';
   document.getElementById('pfBody').style.display = has ? '' : 'none';
@@ -1909,6 +1974,55 @@ async function renderPortfolio(){
     ideas.map(s=>`<tr onclick="openModal('${s.ticker}')" style="cursor:pointer"><td><b class="tk">${s.ticker}</b> <span class="dim-note">${s.name}</span></td><td>${s.sector}</td><td class="r">${weightOf(s.sector).toFixed(1)}%</td><td>${scoreBadge(s.signal)}</td><td class="dim-note">${why(s)}</td></tr>`).join('')+'</tbody>'
     : '<tr><td class="dim-note">No strong-signal ideas outside your sectors right now.</td></tr>';
 }
+
+// ---------- SCREEN ALERTS ----------
+function openSaveAlert(){
+  const r = screenToRules(), box = document.getElementById('alertSave');
+  if(!r.rules){ showToast(r.why); return; }
+  const n = stockData.filter(s=> rulesOk(s, r.rules)).length;
+  document.getElementById('alertSaveNote').textContent = `${n} stock${n===1?'':'s'} match today. You will be told when a new one enters (on the Portfolio page, and by the digest if you switch it on).`;
+  box.style.display = 'flex'; const inp = document.getElementById('alertName'); inp.value = ''; inp.focus();
+}
+function closeSaveAlert(){ document.getElementById('alertSave').style.display = 'none'; }
+function saveAlert(){
+  const r = screenToRules(); if(!r.rules){ showToast(r.why); return; }
+  const name = document.getElementById('alertName').value.trim() || 'My screen';
+  encodeStateToHash();
+  pf.screens = pf.screens || [];
+  if(pf.screens.length >= 20){ showToast('Up to 20 saved screens. Remove one on the Portfolio page first.'); return; }
+  pf.screens.push({id: 's'+Date.now().toString(36), name, hash: location.hash.replace(/^#/,''), rules: r.rules});
+  pfStore(); closeSaveAlert();
+  showToast(`Saved "${name}". See it under Portfolio > Screen alerts; export your portfolio file to include it in email digests.`);
+}
+function pfScreenOpen(id){
+  const sc = (pf.screens||[]).find(x=>x.id===id); if(!sc) return;
+  location.hash = sc.hash; resetFiltersSilent(); decodeStateFromHash(); state.view = 'screener';
+  syncFilterUIFromState(); setView('screener'); renderAll();
+}
+function pfScreenDelete(id){ pf.screens = (pf.screens||[]).filter(x=>x.id!==id); pfStore(); renderScreens(); }
+const SC_SEEN = 'finstr_screens_seen_v1';
+function renderScreens(){
+  const el = document.getElementById('pfScreens'); if(!el) return;
+  const list = pf.screens || [];
+  if(!list.length){ el.innerHTML = '<div class="dim-note">No saved screens yet. In the Screener, set filters and press <b>🔔 Alert</b>: FinSTR then tells you when a new stock enters that screen.</div>'; return; }
+  const at = dataMeta ? dataMeta.generatedAt : 0;
+  const cur = {}; list.forEach(sc=> cur[sc.id] = stockData.filter(s=> rulesOk(s, sc.rules)).map(s=>s.ticker));
+  let st = {}; try{ st = JSON.parse(localStorage.getItem(SC_SEEN)||'{}') || {}; }catch(e){}
+  if(st.at !== at){ st = {at, prev: st.cur||null, cur}; } else { st.cur = Object.assign({}, cur, st.cur); }
+  try{ localStorage.setItem(SC_SEEN, JSON.stringify(st)); }catch(e){}
+  el.innerHTML = '<table class="q-table"><thead><tr><th>Screen</th><th class="r">Matches</th><th>New since the previous data</th><th></th></tr></thead><tbody>' +
+    list.map(sc=>{
+      const now = cur[sc.id], before = st.prev && st.prev[sc.id];
+      const fresh = before ? now.filter(t=> !before.includes(t)) : null;
+      const freshTxt = fresh === null ? '<span class="dim-note">tracking from now</span>'
+        : fresh.length ? fresh.slice(0,8).map(t=>`<a href="#" onclick="openModal('${t}');return false"><b class="tk">${t}</b></a>`).join(' ') + (fresh.length>8?` <span class="dim-note">+${fresh.length-8}</span>`:'')
+        : '<span class="dim-note">none</span>';
+      return `<tr><td><a href="#" onclick="pfScreenOpen('${sc.id}');return false">${escapeHtml(sc.name)}</a></td><td class="r">${now.length}</td><td>${freshTxt}</td>
+        <td class="pf-row-act"><button class="q-ico" onclick="pfScreenDelete('${sc.id}')" title="Remove">✕</button></td></tr>`;
+    }).join('') + '</tbody></table>';
+}
+function escapeHtml(t){ return String(t).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
 // Portfolio value over time vs the same cash flows invested in SPY on each purchase date.
 async function pfPerfChart(P){
   const card = document.getElementById('pfPerfCard'), el = document.getElementById('pfPerf');
