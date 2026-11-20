@@ -13,7 +13,7 @@ import json
 import os
 from datetime import datetime, timezone
 
-SITE = "https://punch-k.github.io/FinSTR-app"
+SITE = os.environ.get("FINSTR_SITE", "https://punch-k.github.io/FinSTR-app").rstrip("/")
 
 
 def fmt(v, nd=2, suf=""):
@@ -62,6 +62,7 @@ def page(s, as_of):
 <link rel="canonical" href="{SITE}/stock/{t}/">
 <meta property="og:title" content="{e(t)} {e(name)} | FinSTR"><meta property="og:description" content="{e(desc)}">
 <meta property="og:type" content="website"><meta property="og:url" content="{SITE}/stock/{t}/">
+<meta property="og:image" content="{SITE}/assets/img/finstr-og.jpg"><meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="../../assets/img/finstr-logo.png">
 <script type="application/ld+json">{json.dumps(ld)}</script>
 <style>
@@ -117,6 +118,7 @@ def index_page(rows, as_of):
 <title>All S&amp;P 500 Stocks by Sector | FinSTR</title>
 <meta name="description" content="Every S&amp;P 500 company by sector with today's change and its FinSTR Signal (0-100). Each links to a page with valuation, technicals and analyst targets.">
 <link rel="canonical" href="{SITE}/stock/"><link rel="icon" href="../assets/img/finstr-logo.png">
+<meta property="og:title" content="All S&amp;P 500 Stocks | FinSTR"><meta property="og:image" content="{SITE}/assets/img/finstr-og.jpg"><meta name="twitter:card" content="summary_large_image">
 <style>
 :root{{--bg:#0b0e14;--panel:#131722;--b:#232838;--t:#e6e6e6;--d:#8b94a3;--a:#4f8cff}}
 @media (prefers-color-scheme: light){{:root{{--bg:#f6f7f9;--panel:#fff;--b:#e3e6ec;--t:#1c2331;--d:#6b7280}}}}

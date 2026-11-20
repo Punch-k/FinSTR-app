@@ -42,10 +42,16 @@ jobs:
       - name: Install pipeline dependencies
         run: pip install -r pipeline/requirements.txt
 
+      - name: Work out this site's address (so forks publish under their own)
+        env:
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+        run: echo "FINSTR_SITE=https://${OWNER,,}.github.io/${REPO}" >> "$GITHUB_ENV"
+
       - name: Fetch market data (S&P 500, markets, news)
         env:
           # keep-last-good: tickers that fail this run reuse the currently published values
-          FINSTR_PREVIOUS_URL: https://punch-k.github.io/FinSTR-app
+          FINSTR_PREVIOUS_URL: ${{ env.FINSTR_SITE }}
         run: python pipeline/fetch.py
 
       - name: Assemble site

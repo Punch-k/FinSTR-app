@@ -2,6 +2,8 @@
 
 **Live site: [punch-k.github.io/FinSTR-app](https://punch-k.github.io/FinSTR-app/)**
 
+[![FinSTR market map](assets/img/finstr-og.jpg)](https://punch-k.github.io/FinSTR-app/)
+
 FinSTR is a Finviz-style stock research tool for the S&P 500. It screens all ~500 companies
 across valuation, financial, ownership, performance, technical and analyst views, maps the
 market by sector, and opens a full quote page for any stock. A Python pipeline rebuilds the
@@ -117,12 +119,26 @@ ready-made prompt with your holdings and their data for any AI assistant.
 | `server/` | Optional local Flask app: MyShare portfolio/lot tracker (adapted from Vlad Litvak's MyShare) and the experimental Quant Desk. Not part of the live site. |
 | `docs/` | Project notes and the earlier code-quality report |
 
+## Run your own copy
+
+Everything runs on a free GitHub account; there is no server or paid data feed.
+
+1. Fork this repository.
+2. In the fork: **Settings > Pages > Build and deployment > Source = GitHub Actions**.
+3. **Actions > Build and deploy FinSTR > Run workflow**. About 5 minutes later the site is live at
+   `https://<your-user>.github.io/FinSTR-app/` and refreshes on its own schedule. The workflow detects its own
+   address, so nothing needs editing.
+4. Optional: switch on [portfolio digests](#email-digests-self-hosted) in the same fork.
+
+To track a different list of stocks, edit `pipeline/universe.csv` (ticker, name, sector, industry).
+
 ## Run it locally
 
 ```bash
 pip install -r pipeline/requirements.txt
 python pipeline/fetch.py            # about 5 minutes for the full S&P 500
 python pipeline/fetch.py --limit 25 # quick test run
+python pipeline/pages.py --out .    # optional: per-stock pages and sitemap
 python -m http.server 8000          # then open http://localhost:8000
 ```
 
