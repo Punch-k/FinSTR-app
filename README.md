@@ -1,106 +1,75 @@
-# FinSTR — Stock Screener & Portfolio Manager
+# FinSTR: S&P 500 Screener, Maps and Quote Pages
 
-### [🌐 Live Demo (GitHub Pages)](https://punch-k.github.io/FinSTR-app/)
+**Live site: [punch-k.github.io/FinSTR-app](https://punch-k.github.io/FinSTR-app/)**
 
-> **Note:** The live demo has no server, but it isn't static-only either — `.github/workflows/update-data.yml` runs on a 6-hour schedule, pulls fresh fundamentals + news for all 126 tickers via `scripts/fetch_data.py`, and commits `data/screener.json` back to the repo. The frontend fetches that file when no local Flask backend is present. Run the Flask backend locally (see setup below) for true real-time data instead.
+FinSTR is a Finviz-style stock research tool for the S&P 500. It screens all ~500 companies
+across valuation, financial, ownership, performance, technical and analyst views, maps the
+market by sector, and opens a full quote page for any stock. A Python pipeline rebuilds the
+data several times each US trading day and publishes it as a static site: no server, no
+paid data, no API keys.
 
----
-
-### FEATURES
-
-**Screener** (`/api/screener` locally, `data/screener.json` on GitHub Pages)
-- 126 large-cap stocks across all 11 GICS sectors with fundamentals pulled from Yahoo Finance via `yfinance`
-- Filters: Sector, Industry, Market Cap, P/E, PEG, Dividend Yield, ROE, Profit Margin, Beta, 50D MA
-- Signals: Top Gainers / Losers, Unusual Volume, Above/Below 50D MA, New High/Low
-- Sort by any column · 6 column view presets (Overview, Valuation, Financial, Performance, Technical, Custom)
-- Per-ticker news (top 3 headlines) bundled into the same snapshot, sourced from Yahoo Finance's own ticker-scoped news feed
-- Locally: data cached in SQLite for 6 hours. On GitHub Pages: refreshed by the scheduled Action instead
-
-**Maps**
-- Treemap and bubble chart heatmap grouped by sector/industry
-- Color-coded by % change · size = market cap
-- Click any tile to open the stock detail panel
-
-**Stock Detail Modal**
-- Buy/Hold/Sell scoring with DCF fair-value estimate
-- Interactive growth & discount rate sliders
-- 5-year investment projection table
-- Live price fetch from Yahoo Finance (via backend) or Alpha Vantage (demo key fallback)
-
-**Portfolio Manager** (MyShare — runs on same Flask app)
-- Full user auth, lot tracking, sell lot tracking, P&L calculations
-- Available at `/myshare/home`
+Built by [Prapanch Kokkalemada](https://punch-k.github.io/Portfolio/).
 
 ---
 
-### LOCAL SETUP
+## What it does
 
-```bash
-# 1. Clone the repo
-git clone https://github.com/Punch-k/FinSTR-app.git
-cd FinSTR-app
-
-# 2. Install dependencies
-pip install flask flask-restful passlib yahoo_fin yfinance yagmail lxml
-
-# 3. Run the app
-python app.py
-
-# 4. Open in browser
-#    Screener:  http://localhost:1817/
-#    Portfolio: http://localhost:1817/myshare/home
-```
-
-On first run, `/api/screener` fetches live data for all 126 tickers in parallel (may take ~30–60s). Subsequent calls use the 6-hour SQLite cache.
-
-To regenerate the static snapshot used by GitHub Pages yourself:
-
-```bash
-python scripts/fetch_data.py
-# writes data/screener.json and data/meta.json
-```
-
----
-
-### FILE STRUCTURE
-
-| File | Purpose |
+| Area | Features |
 |---|---|
-| `app.py` | Flask app — screener API + MyShare portfolio API + serves index.html |
-| `index.html` | FinSTR frontend — tries `/api/screener`, then `data/screener.json`, then a hardcoded seed as last resort |
-| `scripts/tickers.py` | Shared 126-ticker universe used by both `app.py` and `scripts/fetch_data.py` |
-| `scripts/fetch_data.py` | Standalone fetch script (no Flask/SQLite) that writes `data/screener.json` for GitHub Pages |
-| `.github/workflows/update-data.yml` | Runs `fetch_data.py` every 6 hours and commits the refreshed JSON |
-| `database/MyShare.db` | SQLite database (users, holdings, stock cache) |
-| `database/create.sql` | Schema definition |
-| `templates/` | Jinja2 HTML pages for the MyShare portfolio section |
-| `static/` | CSS and JS for the MyShare portfolio section |
-| `quant/` | Quant Desk — Kronos forecast -> skfolio allocation -> NautilusTrader paper-fill simulation. See `QUANT_DESK.md` |
-| `database/quant.db` | Public, model-derived Quant Desk state (forecasts/allocation/paper account) — committed, unlike `MyShare.db` |
-| `data/quant_snapshot.json` | Static Quant Desk snapshot for GitHub Pages, refreshed every 6 hours alongside `data/screener.json` |
-| `tests/test_quant.py` | pytest suite for `quant/` — the first automated tests in this repo |
+| **Screener** | 70+ fields per stock · 12 column views (Overview, Valuation, Financial, Ownership, Performance, Technical, Analysts, …) · filters by sector, industry, market cap, P/E, PEG, dividend, ROE, margin, moving average, beta · 16 signals (52-week highs/lows, unusual volume, RSI overbought/oversold, earnings this week, …) · presets, watchlist, CSV export, shareable links |
+| **Maps** | Market-cap treemap and bubble view, coloured by 1-day, 1-week, 1-month, 3-month, 6-month, YTD or 1-year performance |
+| **Quote panel** | 2-year price chart with 50/200-day moving averages · 72-field snapshot table · company profile · analyst targets · headlines · valuation sandbox (your own growth and discount assumptions) |
+| **Markets** | Index cards, 26 futures, 12 currency pairs, 11 crypto assets |
+| **Analytics** | Candlestick charts, sector and industry groups, insider transactions, earnings and ex-dividend calendar, news by topic |
 
----
+## Data and method
 
-### API ENDPOINTS
+- **Source:** Yahoo Finance via [`yfinance`](https://github.com/ranaroussi/yfinance) (prices, fundamentals, ownership, analyst data, insider trades) and Yahoo Finance RSS (headlines). Universe: S&P 500 constituents with official GICS sectors.
+- **Computed consistently for every stock** from daily prices: performance (week to year, YTD), SMA 20/50/200 and distance from each, RSI (14, Wilder), volatility (std. dev. of daily returns), ATR (14), 52-week high/low, relative volume.
+- **No invented numbers.** A field Yahoo does not report shows as "-", never as zero. There is no synthetic fallback data.
+- **Keep-last-good.** If a ticker fails on a run, its previous values are carried over and flagged, so one bad run never blanks the site.
+- **Freshness.** The site shows the snapshot time on every page. It refreshes several times per trading day; it is not a live feed.
+- **Not investment advice.** The FinSTR Score and valuation sandbox are transparent, assumption-driven illustrations.
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/screener` | GET | Returns JSON array of all 74 stocks with fundamentals |
-| `/api/price?ticker=AAPL` | GET | Returns current live price for a ticker |
-| `/myshare/user` | GET/POST/PATCH/DELETE | User account management |
-| `/myshare/user/lots` | GET/POST/PATCH/DELETE | Buy lot management |
-| `/myshare/user/sell-lots` | GET/POST/PATCH/DELETE | Sell lot management |
-| `/myshare/user/holdings` | GET | Aggregated portfolio holdings with P&L |
-| `/api/quant/forecast/<ticker>` | GET | Latest Kronos forecast for a ticker (public, read-only) |
-| `/api/quant/allocation` | GET | Latest target vs. current portfolio weights |
-| `/api/quant/paper/pnl` | GET | Paper (simulated) account equity, history, open positions |
-| `/api/quant/scoreboard` | GET | Public forecast-accuracy scoreboard (direction accuracy vs. realized outcomes) |
+## How it works
 
----
+```
+GitHub Actions (schedule / push)
+  └─ pipeline/fetch.py ──► data/*.json  (screener, markets, groups, news, meta, quote/<TICKER>.json)
+        └─ index.html + assets/ + data/ ──► GitHub Pages artifact ──► live site
+```
 
-<div align="center">
-  <br>
-  <h2>Screener Demo</h2>
-  <img src="demos/Holdings.gif" alt="Holdings">
-</div>
+The data is generated on every deploy and published with the site, so it is never committed
+to the repository.
+
+## Repository layout
+
+| Path | What it is |
+|---|---|
+| `index.html` | The site (screener, maps, quote panel, markets, analytics) |
+| `assets/` | Images (logo) |
+| `pipeline/` | `fetch.py` data builder, `universe.csv` (S&P 500 list), `requirements.txt` |
+| `.github/workflows/deploy.yml` | Scheduled build and GitHub Pages deploy |
+| `server/` | Optional local Flask app: MyShare portfolio/lot tracker (adapted from Vlad Litvak's MyShare) and the experimental Quant Desk. Not part of the live site. |
+| `docs/` | Project notes and the earlier code-quality report |
+
+## Run it locally
+
+```bash
+pip install -r pipeline/requirements.txt
+python pipeline/fetch.py            # about 5 minutes for the full S&P 500
+python pipeline/fetch.py --limit 25 # quick test run
+python -m http.server 8000          # then open http://localhost:8000
+```
+
+Optional local portfolio manager (MyShare):
+
+```bash
+cd server
+pip install -r requirements.txt
+python app.py                       # http://localhost:1817/myshare/home
+```
+
+## Tech
+
+Python (pandas, yfinance) · GitHub Actions · GitHub Pages · vanilla JavaScript · D3 (treemap) · TradingView Lightweight Charts

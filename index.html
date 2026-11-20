@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <title>FinSTR — Stock Screener &amp; Maps</title>
-<link rel="icon" type="image/png" href="static/img/finstr-logo.png">
+<link rel="icon" type="image/png" href="assets/img/finstr-logo.png">
 <style>
   :root{
     --bg:#0b0e14; --panel:#131722; --panel2:#171c28; --border:#232838;
@@ -494,6 +494,7 @@
     #screenerTable td[data-col="price"], #screenerTable td[data-col="changePercent"]{ order:-1; font-size:15px; font-weight:700; }
     #screenerTable td[data-col="price"]::before, #screenerTable td[data-col="changePercent"]::before{ content:none; }
     #screenerTable td.star-cell{ position:absolute; top:12px; right:40px; font-size:20px; }
+    #screenerTable td.star-cell::before, #screenerTable td.cmp-cell::before{ content:none; }
     #screenerTable td.cmp-cell{ position:absolute; top:12px; right:12px; font-size:18px; }
   }
 
@@ -502,6 +503,75 @@
     .topnav .topnav-right, .banner, .controls-row, .filters-panel, .column-tabs, .compare-bar, .modal-overlay, .autocomplete-box{display:none !important;}
     .panel-box{border:1px solid #ccc; box-shadow:none;}
   }
+
+  /* ───────── 2026-11 refresh: Finviz-style density and the quote panel ───────── */
+  .brand-word{font-family:'Segoe UI',Inter,system-ui,sans-serif;font-size:19px;font-weight:800;letter-spacing:-.3px;color:var(--text);display:flex;align-items:center;gap:7px;text-decoration:none;}
+  .brand-word .bw-dot{width:11px;height:11px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ff6b6b,#d61f1f);box-shadow:0 0 8px rgba(239,83,80,.55);}
+  .brand-word b{color:var(--accent);font-weight:800;}
+  .banner a{color:var(--accent);text-decoration:none;}
+  .banner a:hover{text-decoration:underline;}
+  .banner-warn{border-left:3px solid #e0a800 !important;}
+  .banner-error{border-left:3px solid var(--neg) !important;}
+  .na{color:var(--dim);opacity:.7;}
+  .dim-note{color:var(--dim);font-size:.86em;font-weight:400;}
+  .tk{color:var(--accent);font-weight:700;}
+  /* denser screener table, alternating rows, right-aligned numbers */
+  #screenerTable{font-size:12.5px;font-variant-numeric:tabular-nums;}
+  #screenerTable th{padding:7px 8px;font-size:10.5px;background:var(--panel2);position:sticky;top:0;z-index:1;}
+  #screenerTable td{padding:6px 8px;}
+  #screenerTable tbody tr:nth-child(even){background:color-mix(in srgb,var(--panel2) 55%,transparent);}
+  #screenerTable tbody tr:hover{background:var(--panel2);}
+  #screenerTable td[data-col]:not([data-col=ticker]):not([data-col=name]):not([data-col=sector]):not([data-col=industry]):not([data-col=country]):not([data-col=insight]),
+  #screenerTable th[data-key]:not([data-key=ticker]):not([data-key=name]):not([data-key=sector]):not([data-key=industry]):not([data-key=country]):not([data-key=insight]){text-align:right;}
+  #screenerTable td[data-col=name]{max-width:220px;overflow:hidden;text-overflow:ellipsis;}
+  .ctab{padding:6px 11px;font-size:12px;}
+  /* quote panel */
+  .modal-panel{max-width:1040px;}
+  .qp-chart{margin:12px 0 10px;border:1px solid var(--border);border-radius:8px;padding:8px 10px 4px;background:var(--panel2);}
+  .qp-chart-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-size:12px;color:var(--dim);margin-bottom:4px;}
+  .qp-chart-title{color:var(--text);font-weight:600;}
+  .qp-legend i{display:inline-block;width:12px;height:2px;margin:0 4px 3px 8px;vertical-align:middle;}
+  .qp-legend .lg-price{background:var(--pos);} .qp-legend .lg-50{background:#4f8cff;} .qp-legend .lg-200{background:#f5a623;}
+  .qp-range{margin-left:auto;display:flex;gap:2px;}
+  .qp-range button{background:transparent;border:1px solid var(--border);color:var(--dim);font-size:11px;padding:2px 8px;border-radius:4px;cursor:pointer;}
+  .qp-range button.on,.qp-range button:hover{color:var(--text);border-color:var(--accent);}
+  .qp-chart-body{height:230px;overflow:hidden;}
+  .qp-chart{overflow:hidden;}
+  .qp-snapshot-wrap{margin:10px 0 12px;border:1px solid var(--border);border-radius:6px;overflow-x:auto;}
+  .qp-snapshot{width:100%;border-collapse:collapse;font-size:11.5px;font-variant-numeric:tabular-nums;}
+  .qp-snapshot td{padding:3px 5px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:default;}
+  .qp-snapshot tr:nth-child(even) td{background:color-mix(in srgb,var(--panel2) 60%,transparent);}
+  .qp-snapshot td.sl{color:var(--dim);}
+  .qp-snapshot td.sv{text-align:right;font-weight:600;border-right:1px solid var(--border);}
+  .qp-snapshot td.sv:last-child{border-right:none;}
+  .qp-snapshot tr:hover td{background:transparent;}
+  .qp-profile{font-size:12.5px;line-height:1.55;color:var(--dim);margin:0 0 12px;}
+  .qp-profile p{margin:0 0 4px;color:var(--text);opacity:.9;}
+  .qp-profile a{color:var(--accent);text-decoration:none;}
+  .qp-prof-meta{font-size:11.5px;}
+  .qp-section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--dim);margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--border);}
+  .modal-news-section .news-headline{color:var(--text);text-decoration:none;}
+  .modal-news-section .news-headline:hover{color:var(--accent);}
+  /* About panel */
+  .about-panel{max-width:720px;font-size:13px;line-height:1.6;}
+  .about-panel h2{margin:0 0 4px;font-size:20px;}
+  .about-panel h3{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--dim);margin:18px 0 6px;}
+  .about-panel ul{margin:0;padding-left:18px;}
+  .about-panel li{margin:3px 0;}
+  .about-panel a{color:var(--accent);}
+  .about-kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12.5px;}
+  .about-kv span:nth-child(odd){color:var(--dim);}
+  @media (max-width: 760px){
+    .qp-snapshot{font-size:11px;}
+    .qp-snapshot tr{display:grid;grid-template-columns:auto 1fr auto 1fr;}
+    .qp-snapshot td{border-bottom:1px solid var(--border);}
+    .qp-snapshot td.sv{border-right:none;}
+    .qp-chart-body{height:190px;}
+    .qp-range{margin-left:0;}
+    #screenerTable td[data-col],#screenerTable th[data-key]{text-align:left !important;}
+    .modal-proj-table th{white-space:normal;line-height:1.25;}
+    .modal-proj-table th,.modal-proj-table td{padding:6px 6px;font-size:12px;}
+  }
 </style>
 </head>
 <body>
@@ -509,7 +579,7 @@
 
   <div class="topnav">
     <div class="topnav-bar">
-      <span class="brand"><img src="static/img/finstr-logo.png" alt="FinSTR" class="brand-logo"></span>
+      <a class="brand brand-word" href="#" onclick="setView('screener');return false" aria-label="FinSTR home"><span class="bw-dot"></span><span>Fin<b>STR</b></span></a>
       <input id="globalSearchInput" class="global-search" type="text" placeholder="Search ticker or company…" maxlength="40"
         onkeydown="if(event.key==='Enter')globalTickerJump()">
       <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()">☰</button>
@@ -537,21 +607,18 @@
             <span class="nav-link" data-nav="calendar" onclick="setView('calendar')">Calendar</span>
           </div>
         </div>
-        <span class="nav-link" data-nav="quant" onclick="setView('quant')">Quant Desk<span class="demo-badge" title="Kronos forecast -> skfolio allocation -> NautilusTrader paper fills. Simulated, not real money.">Paper</span></span>
       </div>
       <div class="topnav-right">
         <span id="lastUpdated"></span>
-        <button class="sim-btn" id="simUpdateBtn" onclick="simOrUpdate()">🔄 Update Prices</button>
         <span id="liveClock" class="live-clock"></span>
         <label class="theme-switch"><input type="checkbox" id="themeSwitchInput" onchange="toggleTheme()"><span class="switch-track"><span class="switch-thumb">🌙</span></span></label>
-        <button class="nav-ghost-btn" onclick="navClick('Help')">Help</button>
-        <button class="nav-cta-btn" onclick="openSurvey()">Register</button>
+        <button class="nav-ghost-btn" onclick="openAbout()">About</button>
       </div>
     </div>
   </div>
 
   <div class="banner" id="dataBanner">
-    <b>⏳ Loading:</b> Fetching live data from Yahoo Finance… <span style="color:var(--dim)">(fallback to demo if unavailable)</span>
+    <b>Loading</b> market snapshot…
   </div>
 
   <!-- ===================== SCREENER SECTION ===================== -->
@@ -585,12 +652,19 @@
         <option value="none">Signal: None (all stocks)</option>
         <option value="top_gainers">Top Gainers</option>
         <option value="top_losers">Top Losers</option>
-        <option value="new_high">New High (vs 50D MA)</option>
-        <option value="new_low">New Low (vs 50D MA)</option>
-        <option value="above_ma50">Above 50-Day MA</option>
-        <option value="below_ma50">Below 50-Day MA</option>
+        <option value="new_high">New 52-Week High</option>
+        <option value="new_low">New 52-Week Low</option>
+        <option value="most_active">Most Active</option>
         <option value="unusual_volume">Unusual Volume</option>
-        <option value="most_volatile">Most Volatile</option>
+        <option value="most_volatile">Most Volatile (1W)</option>
+        <option value="overbought">Overbought (RSI ≥ 70)</option>
+        <option value="oversold">Oversold (RSI ≤ 30)</option>
+        <option value="above_ma50">Above 50-Day SMA</option>
+        <option value="below_ma50">Below 50-Day SMA</option>
+        <option value="above_ma200">Above 200-Day SMA</option>
+        <option value="below_ma200">Below 200-Day SMA</option>
+        <option value="earnings_week">Earnings This Week</option>
+        <option value="upgrades_room">Largest Upside to Analyst Target</option>
       </select>
       <span class="ctrl-divider"></span>
       <div class="search-wrap">
@@ -617,9 +691,6 @@
         <div class="filter-field"><label>Sector</label>
           <select id="sectorFilter" onchange="onFilterChange()">
             <option value="All">All Sectors</option>
-            <option>Technology</option><option>Communication Services</option><option>Consumer Discretionary</option>
-            <option>Consumer Staples</option><option>Financials</option><option>Healthcare</option>
-            <option>Industrials</option><option>Energy</option><option>Utilities</option><option>Real Estate</option><option>Materials</option>
           </select>
         </div>
         <div class="filter-field"><label>Industry</label><select id="industryFilter" onchange="onFilterChange()"></select></div>
@@ -681,8 +752,10 @@
       <div class="ctab active" data-view="overview" onclick="setColumnView('overview')">Overview</div>
       <div class="ctab" data-view="valuation" onclick="setColumnView('valuation')">Valuation</div>
       <div class="ctab" data-view="financial" onclick="setColumnView('financial')">Financial</div>
+      <div class="ctab" data-view="ownership" onclick="setColumnView('ownership')">Ownership</div>
       <div class="ctab" data-view="performance" onclick="setColumnView('performance')">Performance</div>
       <div class="ctab" data-view="technical" onclick="setColumnView('technical')">Technical</div>
+      <div class="ctab" data-view="analyst" onclick="setColumnView('analyst')">Analysts</div>
       <div class="ctab" data-view="insights" onclick="setColumnView('insights')">Insights</div>
       <div class="ctab" data-view="finstr" onclick="setColumnView('finstr')">FinSTR Score</div>
       <div class="ctab" data-view="volume" onclick="setColumnView('volume')">Volume</div>
@@ -693,7 +766,7 @@
     <div class="panel-box" style="border-top-left-radius:0;">
       <div class="table-toolbar">
         <span id="rowRangeInfo"></span>
-        <span class="toolbar-links"><a onclick="openCompareFromView()">Open in Compare</a> | <a onclick="createAlertDemo()">Create Alert</a></span>
+        <span class="toolbar-links"><a onclick="openCompareFromView()" title="Compares the stocks you ticked (☐), or the top 3 in this view">Open in Compare</a></span>
         <span class="page-nav"><button onclick="prevPage()">‹</button><span id="pageInfo"></span><button onclick="nextPage()">›</button></span>
       </div>
       <table id="screenerTable">
@@ -778,7 +851,7 @@
         <option value="3mo">3 Months</option>
         <option value="6mo">6 Months</option>
         <option value="1y">1 Year</option>
-        <option value="5y">5 Years</option>
+        <option value="2y">2 Years</option>
       </select>
       <select id="chartIntervalSel" onchange="loadChart()">
         <option value="1d" selected>Daily</option>
@@ -848,61 +921,12 @@
   <!-- ===================== CALENDAR SECTION ===================== -->
   <div id="calendarSection" style="display:none;">
     <div class="news-loading" style="padding:12px 0;text-align:left;font-size:12px;">
-      Upcoming earnings dates for FinSTR's tracked tickers only — not a full market economic calendar.
+      Upcoming earnings and ex-dividend dates for S&amp;P 500 companies, from Yahoo Finance.
     </div>
     <div style="overflow-x:auto;">
       <table class="gl-table" id="calendarTable" style="width:100%;min-width:520px;">
         <thead><tr><th>Ticker</th><th>Company</th><th>Earnings Date</th><th>Ex-Dividend Date</th></tr></thead>
         <tbody id="calendarBody"><tr><td colspan="4" class="news-loading">Loading calendar…</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ===================== QUANT DESK SECTION ===================== -->
-  <div id="quantSection" style="display:none;">
-    <div class="news-loading" style="padding:12px 0;text-align:left;font-size:12px;">
-      <b>Paper trading — simulated, not real money.</b> Kronos (HuggingFace K-line forecasting model)
-      generates a per-ticker directional view, which is meant to blend into a skfolio Black-Litterman
-      allocation against an equal-weight prior — see <span id="quantMethodStatus">the current cycle's
-      allocation method below</span> for whether that's the method actually producing today's numbers,
-      since it falls back to a simpler confidence-weighted tilt when skfolio or enough price history
-      isn't available. NautilusTrader's <code>BacktestEngine</code> then simulates the resulting fills
-      against a fictitious paper account — no live broker connection exists anywhere in this pipeline.
-      Refreshed on the same 6-hour schedule as the screener. See
-      <a href="https://github.com/Punch-k/FinSTR-app/blob/main/QUANT_DESK.md" target="_blank" rel="noopener">QUANT_DESK.md</a>
-      for the full architecture.
-    </div>
-
-    <div class="modal-rec" id="quantPnlCard" style="margin-bottom:14px;">
-      <div id="quantPnlHeadline" class="news-loading">Loading paper account…</div>
-    </div>
-    <div class="modal-spark-row">
-      <div class="modal-spark-label">Paper Equity Curve <span class="sim-tag">(simulated fills, not real money)</span></div>
-      <svg width="100%" height="60" viewBox="0 0 300 60"><polyline id="quantEquitySpark" points="" fill="none" stroke-width="2" stroke="var(--accent)"/></svg>
-    </div>
-
-    <div class="news-col-title" style="margin-top:18px;">Open Paper Positions <span class="sim-tag">(simulated fills)</span></div>
-    <div style="overflow-x:auto;">
-      <table class="gl-table" id="quantPositionsTable" style="width:100%;min-width:480px;">
-        <thead><tr><th>Ticker</th><th>Qty</th><th>Avg Price</th><th>Unrealized P&amp;L</th></tr></thead>
-        <tbody id="quantPositionsBody"><tr><td colspan="4" class="news-loading">Loading positions…</td></tr></tbody>
-      </table>
-    </div>
-
-    <div class="news-col-title" style="margin-top:18px;">Target Allocation <span class="sim-tag" id="quantAllocationMethodTag">(loading method…)</span></div>
-    <div style="overflow-x:auto;">
-      <table class="gl-table" id="quantAllocationTable" style="width:100%;min-width:600px;">
-        <thead><tr><th>Ticker</th><th>Confidence</th><th>Current Weight</th><th>Target Weight</th><th>Delta</th></tr></thead>
-        <tbody id="quantAllocationBody"><tr><td colspan="5" class="news-loading">Loading allocation…</td></tr></tbody>
-      </table>
-    </div>
-
-    <div class="news-col-title" style="margin-top:18px;">Forecast Accuracy Scoreboard <span class="sim-tag" title="Direction-only accuracy vs. realized outcome, scored automatically once each forecast's horizon has elapsed. Not investment advice.">(public, self-graded)</span></div>
-    <div id="quantScoreboardSummary" class="news-loading" style="padding:6px 0;">Loading scoreboard…</div>
-    <div style="overflow-x:auto;">
-      <table class="gl-table" id="quantScoreboardTable" style="width:100%;min-width:420px;">
-        <thead><tr><th>Ticker</th><th>Scored Forecasts</th><th>Direction Accuracy</th></tr></thead>
-        <tbody id="quantScoreboardBody"></tbody>
       </table>
     </div>
   </div>
@@ -928,12 +952,15 @@
             <button class="vt-btn active" id="vtMap" onclick="setHeatmapMode('map')">▦ Map</button>
             <button class="vt-btn" id="vtBubbles" onclick="setHeatmapMode('bubbles')">●● Bubbles</button>
           </div>
-          <span class="hm-desc">Sample data · size = market cap</span>
+          <span class="hm-desc">S&amp;P 500 · size = market cap · colour = performance</span>
           <select id="timeframeFilter" onchange="onTimeframeChange()">
             <option value="1D">1-Day Performance</option>
-            <option value="1W">1-Week (simulated)</option>
-            <option value="1M">1-Month (simulated)</option>
-            <option value="YTD">YTD (simulated)</option>
+            <option value="1W">1-Week Performance</option>
+            <option value="1M">1-Month Performance</option>
+            <option value="3M">3-Month Performance</option>
+            <option value="6M">6-Month Performance</option>
+            <option value="YTD">Year-to-Date Performance</option>
+            <option value="1Y">1-Year Performance</option>
           </select>
           <button class="reset-btn" onclick="zoomHeatmap(1.2)">➕</button>
           <button class="reset-btn" onclick="zoomHeatmap(0.85)">➖</button>
@@ -944,7 +971,7 @@
           <div class="heatmap-legend">
             <span>Change:</span>
             <div class="legend-scale"><span style="background:#7f0000"></span><span style="background:#c62828"></span><span style="background:#3a3f4c"></span><span style="background:#2e7d32"></span><span style="background:#00e676"></span></div>
-            <span>−4% · 0% · +4%</span>
+            <span id="hmLegendRange">−3% · 0% · +3%</span>
             <span style="margin-left:auto;">Click a box for details</span>
           </div>
           <div id="heatmapSvgWrap"></div>
@@ -971,36 +998,37 @@
   </div>
 </div>
 
-<!-- Register interest survey modal -->
-<div class="modal-overlay" id="surveyOverlay">
-  <div class="modal-panel" style="max-width:420px;">
-    <button class="modal-close" onclick="closeSurvey()">✕</button>
-    <h2 style="margin-bottom:6px;">Interested in FinSTR accounts?</h2>
-    <div class="sim-tag" style="display:block;margin-bottom:16px;">
-      This hosted demo has no account system yet. Answer a couple of quick questions and
-      we'll send your interest straight to the person building it — no account created, no data stored.
-    </div>
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <div>
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">Your email (optional, so we can follow up)</label>
-        <input type="email" id="surveyEmail" placeholder="you@example.com" style="width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;">
-      </div>
-      <div>
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">What would you use a FinSTR account for?</label>
-        <select id="surveyUseCase" style="width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;">
-          <option>Tracking my own portfolio (MyShare)</option>
-          <option>Saving custom screener filters/watchlists</option>
-          <option>Following the Quant Desk paper account</option>
-          <option>Just curious / exploring</option>
-          <option>Other</option>
-        </select>
-      </div>
-      <div>
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px;">Anything else? (optional)</label>
-        <textarea id="surveyNote" rows="3" placeholder="Feature requests, feedback, etc." style="width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;resize:vertical;"></textarea>
-      </div>
-      <button class="live-btn" style="justify-content:center;" onclick="submitSurvey()">Send</button>
-    </div>
+
+
+<!-- About / methodology -->
+<div class="modal-overlay" id="aboutOverlay">
+  <div class="modal-panel about-panel">
+    <button class="modal-close" onclick="closeAbout()">✕</button>
+    <h2>About FinSTR</h2>
+    <div class="dim-note">A Finviz-style stock screener for the S&amp;P 500, built by Prapanch Kokkalemada.</div>
+    <h3>What it does</h3>
+    <ul>
+      <li><b>Screener</b>: filter and sort all S&amp;P 500 companies across valuation, financial, ownership, performance, technical and analyst views; export CSV; share any view by link.</li>
+      <li><b>Maps</b>: market-cap treemap coloured by 1-day to 1-year performance.</li>
+      <li><b>Quote panel</b>: click any stock for a price chart with 50/200-day averages, a 70-field snapshot, company profile, headlines and a valuation sandbox.</li>
+      <li><b>Markets</b>: index, futures, forex and crypto snapshots; sector and industry groups; insider trades; earnings calendar.</li>
+    </ul>
+    <h3>Data</h3>
+    <div class="about-kv" id="aboutData"></div>
+    <h3>Method notes</h3>
+    <ul>
+      <li>Performance, moving averages, RSI (14, Wilder), volatility (std. dev. of daily returns), ATR and 52-week levels are computed from daily closes, the same way for every stock.</li>
+      <li>Valuation, margins, ownership, short interest and analyst targets are Yahoo Finance's reported figures. A missing value shows as "-", never as zero.</li>
+      <li>The FinSTR Score is a simple 0-100 blend of a value score (P/E, PEG) and a momentum score. The valuation sandbox uses your own growth and discount assumptions. Neither is investment advice.</li>
+      <li>Data refreshes several times each US trading day. It is a snapshot, not a live feed.</li>
+    </ul>
+    <h3>Built with</h3>
+    <div class="dim-note">Python data pipeline (yfinance, pandas) on a scheduled GitHub Action · static site with D3 and TradingView Lightweight Charts · no server, no tracking.</div>
+    <h3>Links</h3>
+    <ul>
+      <li><a href="https://github.com/Punch-k/FinSTR-app" target="_blank" rel="noopener">Source code on GitHub</a></li>
+      <li><a href="https://punch-k.github.io/Portfolio/" target="_blank" rel="noopener">Prapanch's portfolio</a></li>
+    </ul>
   </div>
 </div>
 
@@ -1013,30 +1041,35 @@
       <div class="modal-price-block"><div class="modal-price" id="modalPrice"></div><div class="modal-change" id="modalChange"></div></div>
     </div>
     <div class="modal-live-row">
-      <button class="live-btn" id="liveFetchBtn" onclick="fetchLivePrice()">🔄 Fetch Live Price</button>
       <button class="live-btn" id="modalStarBtn" onclick="toggleWatchFromModal()">☆ Watch</button>
+      <button class="live-btn" onclick="openFullChart()">📈 Full Chart</button>
+      <button class="live-btn" onclick="compareFromModal()">⇄ Compare</button>
       <button class="live-btn" onclick="copyShareLink()">🔗 Copy Link</button>
       <span class="live-status" id="liveStatus"></span>
     </div>
-    <div class="modal-spark-row">
-      <div class="modal-spark-label">30-Day Trend <span class="sim-tag">(simulated, illustrative)</span></div>
-      <svg width="100%" height="50" viewBox="0 0 300 50"><polyline id="modalSparkLine" points="" fill="none" stroke-width="2"/></svg>
+    <div class="qp-chart">
+      <div class="qp-chart-head">
+        <span class="qp-chart-title" id="qpChartTitle">Price</span>
+        <span class="qp-legend"><i class="lg-price"></i>Close <i class="lg-50"></i>SMA 50 <i class="lg-200"></i>SMA 200</span>
+        <span class="qp-range" id="qpRange">
+          <button data-n="21">1M</button><button data-n="63">3M</button><button data-n="126">6M</button><button data-n="252" class="on">1Y</button><button data-n="9999">2Y</button>
+        </span>
+      </div>
+      <div id="qpChart" class="qp-chart-body"></div>
     </div>
+    <div class="qp-snapshot-wrap"><table class="qp-snapshot" id="modalSnapshot"></table></div>
+    <div class="qp-profile" id="modalProfile"></div>
+    <div class="qp-section-title">Valuation sandbox <span class="sim-tag">your assumptions · illustrative, not a recommendation</span></div>
     <div class="modal-rec" id="modalRecCard"><div id="modalRec"></div><div id="modalScore"></div><div id="modalNote"></div></div>
-    <div class="modal-rec" id="modalQuantCard" style="display:none;">
-      <div id="modalQuantHeadline"></div>
-      <div id="modalQuantRange" style="font-size:12px;"></div>
-      <div id="modalQuantModel" class="sim-tag" style="font-size:11px;"></div>
-    </div>
     <div class="assumptions-row">
-      <div class="assumption-box"><label>Growth Rate: <span id="growthDisplay"></span>%</label><input type="range" id="growthInput" min="-10" max="45" step="0.5" value="8" oninput="recalcModal()"></div>
-      <div class="assumption-box"><label>Discount Rate: <span id="discountDisplay"></span>%</label><input type="range" id="discountInput" min="5" max="15" step="0.5" value="9" oninput="recalcModal()"></div>
+      <div class="assumption-box"><label>EPS growth, next 5 yrs: <span id="growthDisplay"></span>%</label><input type="range" id="growthInput" min="-10" max="30" step="0.5" value="8" oninput="recalcModal()"></div>
+      <div class="assumption-box"><label>Discount rate: <span id="discountDisplay"></span>%</label><input type="range" id="discountInput" min="6" max="14" step="0.5" value="9" oninput="recalcModal()"></div>
     </div>
     <div class="modal-metrics-grid" id="modalMetricsGrid"></div>
-    <div class="modal-investment-row"><label>Simulate investment:</label><input type="number" id="modalInvestment" value="10000" step="1000" onchange="recalcModal()"></div>
-    <table class="modal-proj-table"><thead><tr><th>Year</th><th>Price</th><th>Value</th><th>Gain / Loss</th></tr></thead><tbody id="modalProjBody"></tbody></table>
+    <div class="modal-investment-row"><label>Hypothetical amount invested ($):</label><input type="number" id="modalInvestment" value="10000" step="1000" min="0" onchange="recalcModal()"></div>
+    <table class="modal-proj-table"><thead><tr><th>Year</th><th>Price at your growth rate</th><th>Value incl. dividends</th><th>Gain / Loss</th></tr></thead><tbody id="modalProjBody"></tbody></table>
     <div class="modal-news-section">
-      <div class="modal-news-title">Latest News <span class="sim-tag">(Google News)</span></div>
+      <div class="modal-news-title">Latest News <span class="sim-tag">(Yahoo Finance)</span></div>
       <ul class="news-list" id="modalNewsList"><li class="news-loading">Loading…</li></ul>
     </div>
   </div>
@@ -1045,259 +1078,38 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 <script>
-// ---------- SEED DATA (demo fallback) ----------
-const FIELDS = ["ticker","name","sector","industry","marketCap","price","changePercent","pe","forwardPE","peg","ma50","eps","dividendYield","beta","roe","profitMargin"];
-const RAW = [
-["MSFT","Microsoft Corp","Technology","Software",3150,465.20,0.8,35.5,30.2,2.1,452.10,13.10,0.7,0.9,34.5,36.2],
-["ORCL","Oracle Corp","Technology","Software",520,185.40,-1.2,38.2,26.5,2.0,178.30,4.85,0.9,1.1,60.1,20.5],
-["CRM","Salesforce Inc","Technology","Software",290,305.10,1.5,45.0,25.8,2.6,295.00,6.78,0.5,1.2,12.3,15.8],
-["ADBE","Adobe Inc","Technology","Software",210,480.30,-2.1,28.5,22.1,1.8,495.00,16.85,0,1.1,34.2,30.1],
-["INTU","Intuit Inc","Technology","Software",195,690.20,0.6,52.3,34.2,2.9,670.00,13.20,0.6,1.0,18.5,22.4],
-["NOW","ServiceNow Inc","Technology","Software",175,850.50,2.3,78.5,48.2,2.1,820.00,10.85,0,1.1,12.1,12.8],
-["NVDA","NVIDIA Corp","Technology","Semiconductors",3300,135.20,3.5,55.2,32.1,1.3,128.00,2.45,0.03,1.7,91.5,55.2],
-["AVGO","Broadcom Inc","Technology","Semiconductors",780,165.30,1.2,32.5,24.8,1.9,158.00,5.08,1.4,1.2,22.5,35.1],
-["AMD","Advanced Micro Devices","Technology","Semiconductors",260,160.40,-3.8,105.5,28.5,2.3,168.00,1.52,0,1.7,4.5,6.2],
-["TXN","Texas Instruments","Technology","Semiconductors",155,168.20,-0.5,30.2,26.5,3.5,172.00,5.56,2.9,1.0,30.1,26.8],
-["QCOM","Qualcomm Inc","Technology","Semiconductors",175,158.10,0.9,16.5,13.2,1.5,155.00,9.58,2.1,1.3,42.5,26.1],
-["INTC","Intel Corp","Technology","Semiconductors",95,22.10,-4.5,0,24.5,0,24.50,-0.15,0.4,1.1,-8.5,-3.2],
-["AAPL","Apple Inc","Technology","Hardware",3400,220.30,1.1,34.5,29.2,2.5,212.00,6.38,0.44,1.2,147.2,26.4],
-["HPQ","HP Inc","Technology","Hardware",32,32.50,-1.8,10.5,9.2,2.1,33.50,3.09,3.2,1.1,32.1,5.2],
-["DELL","Dell Technologies","Technology","Hardware",78,115.20,2.5,22.5,14.2,1.5,108.00,5.12,1.5,1.4,45.2,6.8],
-["GOOGL","Alphabet Inc","Communication Services","Internet Content",2150,178.50,0.5,25.8,21.5,1.5,172.00,6.92,0.4,1.05,30.5,28.1],
-["META","Meta Platforms","Communication Services","Internet Content",1450,570.20,-1.5,27.5,22.8,1.6,585.00,20.75,0.4,1.2,35.2,34.5],
-["NFLX","Netflix Inc","Communication Services","Internet Content",340,780.50,3.2,42.5,32.1,1.9,750.00,18.36,0,1.3,32.1,22.5],
-["T","AT&T Inc","Communication Services","Telecom",165,22.80,0.3,12.5,11.2,2.5,22.20,1.82,5.2,0.6,12.5,10.2],
-["VZ","Verizon Communications","Communication Services","Telecom",175,41.20,-0.6,9.8,9.5,3.1,42.00,4.20,6.5,0.4,21.5,12.8],
-["TMUS","T-Mobile US","Communication Services","Telecom",245,205.30,1.4,24.5,19.8,2.0,198.00,8.38,1.4,0.7,22.5,15.2],
-["AMZN","Amazon.com Inc","Consumer Discretionary","Internet Retail",2250,215.40,1.8,42.5,32.5,1.8,205.00,5.07,0,1.3,22.5,8.5],
-["EBAY","eBay Inc","Consumer Discretionary","Internet Retail",32,68.20,-0.9,15.2,12.5,1.5,70.00,4.49,1.5,1.2,32.1,22.5],
-["TSLA","Tesla Inc","Consumer Discretionary","Automobiles",1050,325.50,4.5,105.5,68.2,3.5,295.00,3.08,0,2.3,10.5,8.2],
-["GM","General Motors","Consumer Discretionary","Automobiles",55,52.30,-2.1,5.8,6.5,0.8,54.00,9.02,1.1,1.4,22.5,5.8],
-["F","Ford Motor Co","Consumer Discretionary","Automobiles",42,10.85,-1.5,8.2,8.5,1.2,11.20,1.32,5.1,1.5,3.2,2.5],
-["MCD","McDonald's Corp","Consumer Discretionary","Restaurants",210,295.20,0.4,24.5,22.8,2.8,288.00,12.05,2.3,0.7,185.2,32.5],
-["SBUX","Starbucks Corp","Consumer Discretionary","Restaurants",95,84.50,-1.2,28.5,25.2,2.5,88.00,2.97,2.8,0.9,42.5,10.2],
-["CMG","Chipotle Mexican Grill","Consumer Discretionary","Restaurants",78,58.20,1.5,45.2,38.5,2.2,55.00,1.29,0,1.5,15.2,13.5],
-["PG","Procter & Gamble","Consumer Staples","Household Products",400,170.20,0.2,25.5,23.8,2.9,168.00,6.68,2.4,0.4,32.5,18.8],
-["CL","Colgate-Palmolive","Consumer Staples","Household Products",72,92.30,-0.4,26.5,22.5,3.1,91.00,3.48,2.1,0.6,62.5,14.2],
-["KMB","Kimberly-Clark","Consumer Staples","Household Products",45,135.20,0.3,18.5,17.2,2.8,133.00,7.31,3.5,0.5,42.5,10.5],
-["KO","Coca-Cola Co","Consumer Staples","Food & Beverage",285,65.80,0.1,25.2,23.5,3.2,65.00,2.61,2.9,0.5,42.5,22.5],
-["PEP","PepsiCo Inc","Consumer Staples","Food & Beverage",220,165.40,-0.3,22.5,20.8,2.9,168.00,7.35,3.1,0.5,22.5,10.2],
-["MDLZ","Mondelez International","Consumer Staples","Food & Beverage",92,68.20,0.5,20.5,18.2,2.5,67.00,3.33,2.5,0.6,12.5,9.8],
-["JPM","JPMorgan Chase","Financials","Banks",620,215.30,0.8,12.5,11.8,1.5,208.00,17.22,2.1,1.1,17.2,32.5],
-["BAC","Bank of America","Financials","Banks",320,42.50,-0.5,13.2,12.1,1.6,41.00,3.22,2.5,1.3,11.5,28.2],
-["WFC","Wells Fargo","Financials","Banks",225,68.20,0.6,12.8,11.5,1.4,66.00,5.33,2.4,1.1,12.5,25.8],
-["C","Citigroup Inc","Financials","Banks",130,68.50,-1.1,10.5,9.8,1.2,67.00,6.52,3.2,1.4,8.5,18.5],
-["BRK.B","Berkshire Hathaway","Financials","Insurance",950,425.30,0.3,22.5,20.5,1.8,420.00,18.90,0,0.9,12.5,22.5],
-["PGR","Progressive Corp","Financials","Insurance",145,245.20,1.2,18.5,17.2,1.5,238.00,13.25,0.4,0.7,32.5,12.5],
-["AIG","American International Group","Financials","Insurance",48,75.30,-0.8,12.5,11.2,1.3,74.00,6.02,2.1,0.9,8.5,14.2],
-["V","Visa Inc","Financials","Payments",570,275.40,0.5,28.5,25.2,1.9,270.00,9.66,0.7,0.9,42.5,52.5],
-["MA","Mastercard Inc","Financials","Payments",460,495.20,0.7,35.5,30.2,2.1,488.00,13.94,0.5,1.1,152.5,45.8],
-["PYPL","PayPal Holdings","Financials","Payments",68,68.50,-2.5,15.2,12.5,1.2,72.00,4.51,0,1.2,22.5,15.5],
-["JNJ","Johnson & Johnson","Healthcare","Pharma",385,160.20,0.2,15.5,14.2,2.5,158.00,10.33,3.2,0.5,28.5,22.5],
-["PFE","Pfizer Inc","Healthcare","Pharma",145,25.30,-1.5,12.5,10.8,3.5,26.00,2.02,6.8,0.6,8.5,10.2],
-["MRK","Merck & Co","Healthcare","Pharma",250,98.20,0.6,13.5,11.2,1.8,96.00,7.27,3.5,0.4,32.5,25.8],
-["ABBV","AbbVie Inc","Healthcare","Pharma",340,192.50,1.1,32.5,15.8,2.1,185.00,5.92,3.1,0.6,22.5,18.5],
-["AMGN","Amgen Inc","Healthcare","Biotech",155,285.30,-0.4,22.5,14.2,2.8,290.00,12.68,3.1,0.9,68.5,28.5],
-["GILD","Gilead Sciences","Healthcare","Biotech",105,82.50,0.3,14.5,12.8,1.9,80.00,5.69,4.2,0.5,22.5,22.8],
-["VRTX","Vertex Pharmaceuticals","Healthcare","Biotech",128,495.20,2.1,32.5,24.5,2.5,480.00,15.24,0,0.8,22.5,32.5],
-["UNH","UnitedHealth Group","Healthcare","Health Insurance",470,510.20,-0.8,20.5,18.2,1.5,520.00,24.89,1.6,0.6,25.2,6.2],
-["CI","Cigna Group","Healthcare","Health Insurance",88,335.20,0.5,12.5,10.8,1.1,328.00,26.82,1.8,0.8,15.2,2.5],
-["ELV","Elevance Health","Healthcare","Health Insurance",92,385.30,-0.2,14.5,12.2,1.3,390.00,26.57,1.5,0.6,18.5,3.8],
-["BA","Boeing Co","Industrials","Aerospace",105,172.50,-1.8,0,32.5,0,178.00,-2.85,0,1.4,-15.2,-8.5],
-["LMT","Lockheed Martin","Industrials","Aerospace",115,485.20,0.4,18.5,17.2,2.2,478.00,26.23,2.5,0.8,82.5,10.5],
-["RTX","RTX Corp","Industrials","Aerospace",175,128.50,0.6,25.5,20.8,2.5,124.00,5.04,2.1,1.0,12.5,6.8],
-["CAT","Caterpillar Inc","Industrials","Machinery",185,385.20,1.2,16.5,15.8,1.8,375.00,23.35,1.5,1.1,52.5,15.2],
-["DE","Deere & Company","Industrials","Machinery",115,425.30,-0.5,18.5,16.2,1.9,420.00,22.99,1.5,1.0,32.5,12.8],
-["HON","Honeywell International","Industrials","Machinery",138,210.20,0.3,22.5,19.8,2.5,208.00,9.34,2.1,0.9,32.5,15.5],
-["XOM","Exxon Mobil Corp","Energy","Oil & Gas",485,112.50,0.8,14.5,13.2,1.5,108.00,7.76,3.5,0.9,18.5,10.2],
-["CVX","Chevron Corp","Energy","Oil & Gas",285,158.20,0.5,15.2,13.8,1.8,155.00,10.41,4.1,0.9,12.5,8.5],
-["COP","ConocoPhillips","Energy","Oil & Gas",128,98.50,-0.9,12.5,11.2,1.5,100.00,7.88,3.2,1.1,18.5,15.2],
-["SLB","Schlumberger NV","Energy","Oil & Gas",58,45.20,-1.5,14.5,12.8,1.8,46.00,3.12,2.5,1.3,15.2,12.5],
-["NEE","NextEra Energy","Utilities","Electric",155,76.20,0.3,22.5,19.8,2.5,75.00,3.39,2.8,0.5,12.5,20.5],
-["DUK","Duke Energy","Utilities","Electric",88,112.50,0.1,18.5,17.2,2.9,110.00,6.08,3.8,0.4,10.5,15.2],
-["SO","Southern Company","Utilities","Electric",95,88.20,0.2,20.5,18.8,3.1,87.00,4.30,3.5,0.4,12.5,17.5],
-["AMT","American Tower Corp","Real Estate","REITs",95,205.20,-0.6,42.5,35.2,2.5,210.00,4.83,3.2,0.9,10.5,22.5],
-["PLD","Prologis Inc","Real Estate","REITs",105,112.50,0.4,32.5,28.2,2.1,110.00,3.46,3.5,1.0,8.5,32.5],
-["EQIX","Equinix Inc","Real Estate","REITs",82,780.20,1.1,85.5,55.2,3.5,750.00,9.13,1.8,0.8,5.2,12.5],
-["LIN","Linde plc","Materials","Chemicals",225,445.20,0.3,32.5,27.8,2.5,440.00,13.70,1.2,0.9,12.5,18.5],
-["APD","Air Products & Chemicals","Materials","Chemicals",68,305.20,-0.5,25.5,22.8,2.1,310.00,11.97,2.5,0.9,10.5,15.2],
-["SHW","Sherwin-Williams","Materials","Chemicals",88,345.20,0.6,32.5,28.2,2.5,340.00,10.62,0.8,1.0,62.5,11.2]
-];
-
-// Additional real, well-known tickers to broaden coverage beyond the 74 hand-curated
-// above. Ticker/name/sector/industry/marketCap are real facts; the remaining valuation
-// fields (PE, PEG, beta, ROE, etc.) are not sourced per-company — they're deterministically
-// synthesized per-ticker (same approach already used for volume/sparklines below), scoped
-// to realistic per-sector ranges. This is consistent with the existing disclosed model:
-// "fundamentals are demo data" — only price/change become real via the live fetch overlay.
-const EXTRA_TICKERS = [
-["CSCO","Cisco Systems","Technology","Networking",210],["IBM","IBM Corp","Technology","IT Services",255],
-["HPE","Hewlett Packard Enterprise","Technology","Hardware",28],["PANW","Palo Alto Networks","Technology","Software",130],
-["CRWD","CrowdStrike Holdings","Technology","Software",95],["FTNT","Fortinet Inc","Technology","Software",75],
-["ZS","Zscaler Inc","Technology","Software",32],["SNOW","Snowflake Inc","Technology","Software",55],
-["PLTR","Palantir Technologies","Technology","Software",95],["MU","Micron Technology","Technology","Semiconductors",120],
-["LRCX","Lam Research","Technology","Semiconductors",115],["AMAT","Applied Materials","Technology","Semiconductors",155],
-["KLAC","KLA Corp","Technology","Semiconductors",105],["ADI","Analog Devices","Technology","Semiconductors",105],
-["MRVL","Marvell Technology","Technology","Semiconductors",75],["ON","ON Semiconductor","Technology","Semiconductors",30],
-["SWKS","Skyworks Solutions","Technology","Semiconductors",12],["WDC","Western Digital","Technology","Hardware",22],
-["STX","Seagate Technology","Technology","Hardware",20],["JNPR","Juniper Networks","Technology","Networking",13],
-["ANET","Arista Networks","Technology","Networking",110],["TEL","TE Connectivity","Technology","Electronic Components",50],
-["GLW","Corning Inc","Technology","Electronic Components",38],["APH","Amphenol Corp","Technology","Electronic Components",95],
-["KEYS","Keysight Technologies","Technology","Electronic Components",28],["AKAM","Akamai Technologies","Technology","Software",13],
-["NET","Cloudflare Inc","Technology","Software",35],["DDOG","Datadog Inc","Technology","Software",40],
-["MDB","MongoDB Inc","Technology","Software",22],["TEAM","Atlassian Corp","Technology","Software",50],
-["WDAY","Workday Inc","Technology","Software",62],["ZM","Zoom Communications","Technology","Software",22],
-["DOCU","DocuSign Inc","Technology","Software",13],["OKTA","Okta Inc","Technology","Software",15],
-["ANSS","Ansys Inc","Technology","Software",30],["CDNS","Cadence Design Systems","Technology","Software",85],
-["SNPS","Synopsys Inc","Technology","Software",80],["ROP","Roper Technologies","Technology","Software",58],
-["ADP","Automatic Data Processing","Technology","IT Services",115],["PAYX","Paychex Inc","Technology","IT Services",48],
-["CMCSA","Comcast Corp","Communication Services","Media",145],["CHTR","Charter Communications","Communication Services","Media",42],
-["DIS","Walt Disney Co","Communication Services","Media",210],["WBD","Warner Bros Discovery","Communication Services","Media",28],
-["EA","Electronic Arts","Communication Services","Gaming",38],["TTWO","Take-Two Interactive","Communication Services","Gaming",28],
-["MTCH","Match Group","Communication Services","Internet Content",9],["PINS","Pinterest Inc","Communication Services","Internet Content",22],
-["SNAP","Snap Inc","Communication Services","Internet Content",18],["LYV","Live Nation Entertainment","Communication Services","Media",30],
-["HD","Home Depot Inc","Consumer Discretionary","Home Improvement Retail",395],["LOW","Lowe's Companies","Consumer Discretionary","Home Improvement Retail",145],
-["TJX","TJX Companies","Consumer Discretionary","Apparel Retail",145],["ROST","Ross Stores","Consumer Discretionary","Apparel Retail",48],
-["NKE","Nike Inc","Consumer Discretionary","Apparel",95],["LULU","Lululemon Athletica","Consumer Discretionary","Apparel",32],
-["YUM","Yum! Brands","Consumer Discretionary","Restaurants",38],["DPZ","Domino's Pizza","Consumer Discretionary","Restaurants",15],
-["BKNG","Booking Holdings","Consumer Discretionary","Travel Services",145],["ABNB","Airbnb Inc","Consumer Discretionary","Travel Services",78],
-["MAR","Marriott International","Consumer Discretionary","Hotels",72],["HLT","Hilton Worldwide","Consumer Discretionary","Hotels",58],
-["RCL","Royal Caribbean Group","Consumer Discretionary","Travel Services",52],["CCL","Carnival Corp","Consumer Discretionary","Travel Services",32],
-["LVS","Las Vegas Sands","Consumer Discretionary","Casinos",32],["WYNN","Wynn Resorts","Consumer Discretionary","Casinos",10],
-["MGM","MGM Resorts International","Consumer Discretionary","Casinos",12],["TGT","Target Corp","Consumer Discretionary","General Merchandise",68],
-["DG","Dollar General Corp","Consumer Discretionary","General Merchandise",18],["DLTR","Dollar Tree Inc","Consumer Discretionary","General Merchandise",18],
-["ORLY","O'Reilly Automotive","Consumer Discretionary","Specialty Retail",68],["AZO","AutoZone Inc","Consumer Discretionary","Specialty Retail",58],
-["ULTA","Ulta Beauty Inc","Consumer Discretionary","Specialty Retail",18],["BBY","Best Buy Co","Consumer Discretionary","Specialty Retail",18],
-["WMT","Walmart Inc","Consumer Staples","Discount Stores",620],["COST","Costco Wholesale","Consumer Staples","Discount Stores",420],
-["KR","Kroger Co","Consumer Staples","Grocery Stores",42],["SYY","Sysco Corp","Consumer Staples","Food Distribution",38],
-["ADM","Archer-Daniels-Midland","Consumer Staples","Agricultural Products",28],["TSN","Tyson Foods","Consumer Staples","Food Products",22],
-["HRL","Hormel Foods","Consumer Staples","Food Products",17],["GIS","General Mills","Consumer Staples","Food Products",32],
-["K","Kellanova","Consumer Staples","Food Products",28],["HSY","Hershey Co","Consumer Staples","Food Products",38],
-["STZ","Constellation Brands","Consumer Staples","Beverages",38],["MO","Altria Group","Consumer Staples","Tobacco",92],
-["PM","Philip Morris International","Consumer Staples","Tobacco",210],["CLX","Clorox Co","Consumer Staples","Household Products",18],
-["EL","Estee Lauder Companies","Consumer Staples","Personal Products",42],["KDP","Keurig Dr Pepper","Consumer Staples","Beverages",48],
-["MNST","Monster Beverage Corp","Consumer Staples","Beverages",52],["KHC","Kraft Heinz Co","Consumer Staples","Food Products",38],
-["GS","Goldman Sachs Group","Financials","Investment Banking",185],["MS","Morgan Stanley","Financials","Investment Banking",195],
-["SCHW","Charles Schwab Corp","Financials","Investment Services",145],["BLK","BlackRock Inc","Financials","Asset Management",145],
-["BX","Blackstone Inc","Financials","Asset Management",165],["KKR","KKR & Co","Financials","Asset Management",115],
-["AXP","American Express Co","Financials","Payments",195],["DFS","Discover Financial Services","Financials","Payments",42],
-["COF","Capital One Financial","Financials","Banks",68],["USB","U.S. Bancorp","Financials","Banks",78],
-["PNC","PNC Financial Services","Financials","Banks",72],["TFC","Truist Financial Corp","Financials","Banks",58],
-["STT","State Street Corp","Financials","Asset Management",28],["ICE","Intercontinental Exchange","Financials","Financial Exchanges",92],
-["CME","CME Group Inc","Financials","Financial Exchanges",85],["NDAQ","Nasdaq Inc","Financials","Financial Exchanges",42],
-["MCO","Moody's Corp","Financials","Financial Data",85],["SPGI","S&P Global Inc","Financials","Financial Data",145],
-["AON","Aon plc","Financials","Insurance Brokers",78],["MMC","Marsh & McLennan","Financials","Insurance Brokers",108],
-["TRV","Travelers Companies","Financials","Insurance",52],["ALL","Allstate Corp","Financials","Insurance",48],
-["MET","MetLife Inc","Financials","Insurance",52],["PRU","Prudential Financial","Financials","Insurance",42],
-["AFL","Aflac Inc","Financials","Insurance",58],["HIG","Hartford Financial Services","Financials","Insurance",38],
-["CB","Chubb Ltd","Financials","Insurance",112],["LLY","Eli Lilly and Co","Healthcare","Pharma",720],
-["ABT","Abbott Laboratories","Healthcare","Medical Devices",195],["TMO","Thermo Fisher Scientific","Healthcare","Life Sciences Tools",185],
-["DHR","Danaher Corp","Healthcare","Life Sciences Tools",155],["SYK","Stryker Corp","Healthcare","Medical Devices",145],
-["BSX","Boston Scientific Corp","Healthcare","Medical Devices",125],["MDT","Medtronic plc","Healthcare","Medical Devices",108],
-["ISRG","Intuitive Surgical","Healthcare","Medical Devices",185],["ZTS","Zoetis Inc","Healthcare","Pharma",85],
-["EW","Edwards Lifesciences","Healthcare","Medical Devices",42],["BDX","Becton Dickinson","Healthcare","Medical Devices",62],
-["IDXX","IDEXX Laboratories","Healthcare","Diagnostics",42],["IQV","IQVIA Holdings","Healthcare","Life Sciences Tools",38],
-["A","Agilent Technologies","Healthcare","Life Sciences Tools",38],["DXCM","DexCom Inc","Healthcare","Medical Devices",32],
-["HUM","Humana Inc","Healthcare","Health Insurance",32],["CVS","CVS Health Corp","Healthcare","Health Services",78],
-["MCK","McKesson Corp","Healthcare","Health Services",78],["CAH","Cardinal Health Inc","Healthcare","Health Services",38],
-["BIIB","Biogen Inc","Healthcare","Biotech",22],["REGN","Regeneron Pharmaceuticals","Healthcare","Biotech",78],
-["ILMN","Illumina Inc","Healthcare","Life Sciences Tools",18],["GE","GE Aerospace","Industrials","Aerospace",195],
-["MMM","3M Co","Industrials","Diversified Industrials",78],["EMR","Emerson Electric","Industrials","Electrical Equipment",62],
-["ETN","Eaton Corp","Industrials","Electrical Equipment",125],["ITW","Illinois Tool Works","Industrials","Diversified Industrials",78],
-["PH","Parker-Hannifin Corp","Industrials","Machinery",78],["ROK","Rockwell Automation","Industrials","Machinery",32],
-["CMI","Cummins Inc","Industrials","Machinery",42],["PCAR","Paccar Inc","Industrials","Machinery",52],
-["CSX","CSX Corp","Industrials","Railroads",62],["UNP","Union Pacific Corp","Industrials","Railroads",145],
-["NSC","Norfolk Southern Corp","Industrials","Railroads",58],["UPS","United Parcel Service","Industrials","Air Freight",95],
-["FDX","FedEx Corp","Industrials","Air Freight",62],["DAL","Delta Air Lines","Industrials","Airlines",38],
-["UAL","United Airlines Holdings","Industrials","Airlines",28],["LUV","Southwest Airlines","Industrials","Airlines",18],
-["WM","Waste Management Inc","Industrials","Environmental Services",92],["RSG","Republic Services","Industrials","Environmental Services",68],
-["URI","United Rentals Inc","Industrials","Rental Services",48],["GD","General Dynamics Corp","Industrials","Aerospace",78],
-["NOC","Northrop Grumman Corp","Industrials","Aerospace",78],["TDG","TransDigm Group","Industrials","Aerospace",78],
-["OXY","Occidental Petroleum","Energy","Oil & Gas",48],["EOG","EOG Resources","Energy","Oil & Gas",68],
-["MPC","Marathon Petroleum","Energy","Oil & Gas Refining",48],["PSX","Phillips 66","Energy","Oil & Gas Refining",48],
-["VLO","Valero Energy Corp","Energy","Oil & Gas Refining",42],["WMB","Williams Companies","Energy","Oil & Gas Midstream",58],
-["KMI","Kinder Morgan Inc","Energy","Oil & Gas Midstream",58],["OKE","ONEOK Inc","Energy","Oil & Gas Midstream",48],
-["HAL","Halliburton Co","Energy","Oil & Gas Equipment",22],["BKR","Baker Hughes Co","Energy","Oil & Gas Equipment",38],
-["DVN","Devon Energy Corp","Energy","Oil & Gas",22],["D","Dominion Energy Inc","Utilities","Electric",48],
-["EXC","Exelon Corp","Utilities","Electric",42],["AEP","American Electric Power","Utilities","Electric",52],
-["XEL","Xcel Energy Inc","Utilities","Electric",38],["ED","Consolidated Edison","Utilities","Electric",32],
-["PEG","Public Service Enterprise Group","Utilities","Electric",42],["WEC","WEC Energy Group","Utilities","Electric",28],
-["ETR","Entergy Corp","Utilities","Electric",32],["SPG","Simon Property Group","Real Estate","REITs",62],
-["O","Realty Income Corp","Real Estate","REITs",48],["PSA","Public Storage","Real Estate","REITs",52],
-["WELL","Welltower Inc","Real Estate","REITs",78],["DLR","Digital Realty Trust","Real Estate","REITs",52],
-["AVB","AvalonBay Communities","Real Estate","REITs",32],["EQR","Equity Residential","Real Estate","REITs",28],
-["VTR","Ventas Inc","Real Estate","REITs",28],["INVH","Invitation Homes","Real Estate","REITs",22],
-["CBRE","CBRE Group Inc","Real Estate","Real Estate Services",32],["FCX","Freeport-McMoRan Inc","Materials","Mining",62],
-["NEM","Newmont Corp","Materials","Mining",52],["ECL","Ecolab Inc","Materials","Chemicals",62],
-["DD","DuPont de Nemours","Materials","Chemicals",32],["DOW","Dow Inc","Materials","Chemicals",32],
-["PPG","PPG Industries","Materials","Chemicals",28],["NUE","Nucor Corp","Materials","Steel",32],
-["VMC","Vulcan Materials Co","Materials","Building Materials",32],["MLM","Martin Marietta Materials","Materials","Building Materials",32],
-["ALB","Albemarle Corp","Materials","Chemicals",12],["CTVA","Corteva Inc","Materials","Agricultural Chemicals",38]
-];
-
-const SECTOR_RANGES = {
-  'Technology':          { pe:[18,55], peg:[1.2,2.8], div:[0,2.5], beta:[0.9,2.0], roe:[10,60], margin:[8,38] },
-  'Communication Services':{ pe:[12,35], peg:[1.0,2.2], div:[0,4.5], beta:[0.8,1.6], roe:[8,35],  margin:[5,32] },
-  'Consumer Discretionary':{ pe:[10,42], peg:[0.9,2.5], div:[0,3.0], beta:[0.8,2.0], roe:[8,50],  margin:[3,22] },
-  'Consumer Staples':    { pe:[15,28], peg:[1.5,3.2], div:[1.5,5.5], beta:[0.3,0.8], roe:[10,45],  margin:[4,20] },
-  'Financials':           { pe:[9,22],  peg:[0.8,2.0], div:[0.5,4.0], beta:[0.9,1.7], roe:[8,25],   margin:[15,45] },
-  'Healthcare':           { pe:[12,35], peg:[1.2,3.0], div:[0,3.5],  beta:[0.5,1.2], roe:[8,35],   margin:[5,28] },
-  'Industrials':          { pe:[14,28], peg:[1.2,2.5], div:[0,3.0],  beta:[0.9,1.6], roe:[10,40],  margin:[5,20] },
-  'Energy':                { pe:[8,16],  peg:[0.7,1.8], div:[2.5,6.5], beta:[1.0,1.8], roe:[8,25],   margin:[5,18] },
-  'Utilities':             { pe:[16,23], peg:[1.8,3.5], div:[2.8,4.8], beta:[0.3,0.7], roe:[8,15],   margin:[8,18] },
-  'Real Estate':           { pe:[20,45], peg:[1.5,3.5], div:[2.5,5.5], beta:[0.7,1.3], roe:[3,12],   margin:[15,40] },
-  'Materials':             { pe:[12,26], peg:[1.0,2.2], div:[0,3.0],  beta:[0.9,1.6], roe:[8,25],   margin:[5,18] },
-};
-
-function synthesizeRow(ticker, name, sector, industry, marketCap){
-  const rnd = mulberry32(hashSeed(ticker+'_fund'));
-  const r = SECTOR_RANGES[sector] || SECTOR_RANGES['Industrials'];
-  const lerp = (lo,hi) => lo + rnd()*(hi-lo);
-  // rough per-share price band from market cap tier, purely a plausible placeholder —
-  // gets overwritten by the real live price fetch on load for any valid ticker
-  const price = marketCap > 300 ? lerp(150,550) : marketCap > 80 ? lerp(50,250) : marketCap > 20 ? lerp(20,150) : lerp(8,90);
-  const pe = lerp(...r.pe);
-  const eps = pe > 0 ? Math.round((price/pe)*100)/100 : -Math.round(lerp(0.5,5)*100)/100;
-  return [
-    ticker, name, sector, industry, marketCap,
-    Math.round(price*100)/100,
-    Math.round(lerp(-4,4)*100)/100,
-    Math.round(pe*10)/10,
-    Math.round(pe*lerp(0.75,0.95)*10)/10,
-    Math.round(lerp(...r.peg)*100)/100,
-    Math.round(price*lerp(0.94,1.02)*100)/100,
-    eps,
-    Math.round(lerp(...r.div)*100)/100,
-    Math.round(lerp(...r.beta)*100)/100,
-    Math.round(lerp(...r.roe)*10)/10,
-    Math.round(lerp(...r.margin)*10)/10
-  ];
-}
-
-const EXTRA_RAW = EXTRA_TICKERS.map(t => synthesizeRow(t[0], t[1], t[2], t[3], t[4]));
-const EXISTING_TICKER_SET = new Set(RAW.map(r=>r[0]));
-const ALL_RAW = RAW.concat(EXTRA_RAW.filter(r => !EXISTING_TICKER_SET.has(r[0])));
-let stockData = ALL_RAW.map(r => Object.fromEntries(FIELDS.map((f,i)=>[f,r[i]])));
-
+// ---------- DATA ----------
+// Real data only. Rows come from data/screener.json, built by pipeline/fetch.py from Yahoo
+// Finance. There is no synthesized fallback: if the file can't load, the page says so.
+let stockData = [];
+let dataMeta = null;
 function hashSeed(str){ let h=0; for(let i=0;i<str.length;i++){ h = Math.imul(31,h)+str.charCodeAt(i)|0; } return h>>>0; }
-function mulberry32(seed){
-  return function(){
-    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
-    let t = Math.imul(seed ^ seed>>>15, 1 | seed);
-    t = t + Math.imul(t ^ t>>>7, 61 | t) ^ t;
-    return ((t ^ t>>>14) >>> 0) / 4294967296;
-  };
+
+// ---------- STATIC DATA FILES ----------
+// Everything below reads files published with the site; there are no third-party proxies.
+let _mktData = null, _newsData = null;
+const _quoteCache = {};
+async function getMarkets(){
+  if(!_mktData){ try{ _mktData = await fetch('data/markets.json',{cache:'no-cache'}).then(r=>r.json()); }catch(e){ _mktData = {futures:[],forex:[],crypto:[],indices:[]}; } }
+  return _mktData;
 }
-function addDemoVolume(data){
-  data.forEach(s=>{
-    if(s.avgVolume != null && s.volume != null) return;
-    const rnd = mulberry32(hashSeed(s.ticker+'_vol'));
-    const sharesM = (s.marketCap*1000)/s.price;
-    s.avgVolume = Math.max(0.3, sharesM*0.006*(0.4+rnd()));
-    s.volume = Math.max(0.1, s.avgVolume*(0.5+rnd()*1.4));
-  });
+async function getNewsData(){
+  if(!_newsData){ try{ _newsData = await fetch('data/news.json',{cache:'no-cache'}).then(r=>r.json()); }catch(e){ _newsData = {}; } }
+  return _newsData;
 }
-addDemoVolume(stockData);
+function getQuote(t){
+  if(!_quoteCache[t]) _quoteCache[t] = fetch(`data/quote/${encodeURIComponent(t)}.json`).then(r=> r.ok ? r.json() : null).catch(()=>null);
+  return _quoteCache[t];
+}
+function sparkSvg(vals, w=200, h=60, color){
+  if(!vals || vals.length<2) return '';
+  const min=Math.min(...vals), max=Math.max(...vals), rng=(max-min)||1;
+  const pts = vals.map((v,i)=>`${(i/(vals.length-1)*w).toFixed(1)},${(h-2-((v-min)/rng)*(h-4)).toFixed(1)}`).join(' ');
+  return `<svg class="fx-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${color||'currentColor'}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+function newsFromRow(s){
+  return (s.news||[]).map(a=>({title:a.title, link:a.link, publisher:a.source||a.publisher, date:a.ts? new Date(a.ts*1000).toISOString() : a.date, ticker:s.ticker}));
+}
 
 // ---------- STATE ----------
 const state = {
@@ -1314,27 +1126,14 @@ let heatmapZoom = 1;
 let usingLiveData = false;
 
 function genSparkPoints(s, w, h){
-  const rnd = mulberry32(hashSeed(s.ticker));
-  const n = 20;
-  const start = s.price / (1 + s.changePercent/100);
-  const vals = [start];
-  for(let i=1;i<n;i++){
-    const drift = (s.price - vals[i-1]) / (n-i);
-    const noise = (rnd()-0.5) * s.price * 0.015;
-    vals.push(vals[i-1] + drift*0.3 + noise);
-  }
-  vals[n-1] = s.price;
+  const vals = (s.spark && s.spark.length > 1) ? s.spark : [s.price, s.price];
   const min = Math.min(...vals), max = Math.max(...vals);
   const range = (max-min) || (s.price*0.01) || 1;
-  const stepX = w/(n-1);
+  const stepX = w/(vals.length-1);
   return vals.map((v,i)=> `${(i*stepX).toFixed(1)},${(h - ((v-min)/range)*h).toFixed(1)}`).join(' ');
 }
-function getDisplayChange(s){
-  if(state.heatmapTimeframe==='1D') return s.changePercent;
-  const rnd = mulberry32(hashSeed(s.ticker+'_'+state.heatmapTimeframe));
-  const mult = state.heatmapTimeframe==='1W'? 2.2 : state.heatmapTimeframe==='1M'? 4.5 : 9;
-  return Math.max(-40, Math.min(40, s.changePercent*mult*(0.6+rnd()*0.8) + (rnd()-0.5)*mult*2));
-}
+const TF_FIELD = {'1D':'changePercent','1W':'perfW','1M':'perfM','3M':'perfQ','6M':'perfH','YTD':'perfYTD','1Y':'perfY'};
+function getDisplayChange(s){ const v = s[TF_FIELD[state.heatmapTimeframe]||'changePercent']; return v==null ? 0 : v; }
 
 // ---------- MOBILE NAV ----------
 function toggleMobileMenu(){ document.getElementById('topnavBody').classList.toggle('open'); }
@@ -1343,6 +1142,7 @@ function closeMobileMenu(){ document.getElementById('topnavBody').classList.remo
 // ---------- FILTER HELPERS ----------
 function capBucket(cap){ if(cap>200) return 'mega'; if(cap>=10) return 'large'; if(cap>=2) return 'mid'; return 'small'; }
 function passesFilters(s){
+  const n = v => isNum(v);
   if(state.sector!=='All' && s.sector!==state.sector) return false;
   if(state.industry!=='All' && s.industry!==state.industry) return false;
   if(state.cap!=='All' && capBucket(s.marketCap)!==state.cap) return false;
@@ -1352,18 +1152,18 @@ function passesFilters(s){
   if(state.peg==='lt1' && !(s.peg>0 && s.peg<1)) return false;
   if(state.peg==='1to2' && !(s.peg>=1 && s.peg<=2)) return false;
   if(state.peg==='gt2' && !(s.peg>2)) return false;
-  if(state.divYield==='none' && !(s.dividendYield===0)) return false;
+  if(state.divYield==='none' && !(!s.dividendYield)) return false;
   if(state.divYield==='lt2' && !(s.dividendYield>0 && s.dividendYield<2)) return false;
   if(state.divYield==='gt2' && !(s.dividendYield>=2)) return false;
-  if(state.roe==='lt10' && !(s.roe<10)) return false;
+  if(state.roe==='lt10' && !(n(s.roe) && s.roe<10)) return false;
   if(state.roe==='10to20' && !(s.roe>=10 && s.roe<=20)) return false;
   if(state.roe==='gt20' && !(s.roe>20)) return false;
-  if(state.margin==='neg' && !(s.profitMargin<0)) return false;
+  if(state.margin==='neg' && !(n(s.profitMargin) && s.profitMargin<0)) return false;
   if(state.margin==='0to15' && !(s.profitMargin>=0 && s.profitMargin<=15)) return false;
   if(state.margin==='gt15' && !(s.profitMargin>15)) return false;
-  if(state.maPos==='above' && !(s.price>=s.ma50)) return false;
-  if(state.maPos==='below' && !(s.price<s.ma50)) return false;
-  if(state.beta==='lt1' && !(s.beta<1)) return false;
+  if(state.maPos==='above' && !(n(s.ma50) && s.price>=s.ma50)) return false;
+  if(state.maPos==='below' && !(n(s.ma50) && s.price<s.ma50)) return false;
+  if(state.beta==='lt1' && !(n(s.beta) && s.beta<1)) return false;
   if(state.beta==='gt1' && !(s.beta>=1)) return false;
   if(state.watchlistOnly && !watchlist.has(s.ticker)) return false;
   const q = state.search.trim().toLowerCase();
@@ -1371,15 +1171,23 @@ function passesFilters(s){
   return true;
 }
 function applySignal(list){
+  const by = (k, dir) => [...list].filter(s=>isNum(s[k])).sort((a,b)=> dir*(b[k]-a[k]));
   switch(state.signal){
-    case 'top_gainers': return [...list].sort((a,b)=>b.changePercent-a.changePercent).slice(0,20);
-    case 'top_losers': return [...list].sort((a,b)=>a.changePercent-b.changePercent).slice(0,20);
-    case 'new_high': return list.filter(s=> s.price > s.ma50*1.05);
-    case 'new_low': return list.filter(s=> s.price < s.ma50*0.95);
-    case 'above_ma50': return list.filter(s=> s.price>=s.ma50);
-    case 'below_ma50': return list.filter(s=> s.price<s.ma50);
-    case 'unusual_volume': return list.filter(s=> s.volume > s.avgVolume*1.5);
-    case 'most_volatile': return [...list].sort((a,b)=> Math.abs(b.changePercent)-Math.abs(a.changePercent)).slice(0,20);
+    case 'top_gainers': return by('changePercent', 1).slice(0,30);
+    case 'top_losers': return by('changePercent', -1).slice(0,30);
+    case 'new_high': return list.filter(s=> isNum(s.fromHigh52) && s.fromHigh52 >= -1);
+    case 'new_low': return list.filter(s=> isNum(s.fromLow52) && s.fromLow52 <= 1);
+    case 'above_ma50': return list.filter(s=> isNum(s.vsSma50) && s.vsSma50>=0);
+    case 'below_ma50': return list.filter(s=> isNum(s.vsSma50) && s.vsSma50<0);
+    case 'above_ma200': return list.filter(s=> isNum(s.vsSma200) && s.vsSma200>=0);
+    case 'below_ma200': return list.filter(s=> isNum(s.vsSma200) && s.vsSma200<0);
+    case 'overbought': return list.filter(s=> isNum(s.rsi) && s.rsi>=70);
+    case 'oversold': return list.filter(s=> isNum(s.rsi) && s.rsi<=30);
+    case 'unusual_volume': return by('relVol', 1).filter(s=> s.relVol>=1.5);
+    case 'most_active': return by('volume', 1).slice(0,30);
+    case 'most_volatile': return by('volW', 1).slice(0,30);
+    case 'earnings_week': { const t=Date.now(), w=t+7*864e5; return list.filter(s=>{ const d=s.earningsDate && Date.parse(s.earningsDate+'T12:00:00'); return d && d>=t-864e5 && d<=w; }); }
+    case 'upgrades_room': return by('upside', 1).filter(s=> (s.analysts||0)>=5).slice(0,30);
     default: return list;
   }
 }
@@ -1470,6 +1278,8 @@ function setFilterTab(tab){
   document.getElementById('filterGroupTechnical').style.display = (tab==='technical'||tab==='all') ? 'grid':'none';
 }
 function populateIndustryOptions(){
+  const sectors = [...new Set(stockData.map(s=>s.sector))].sort();
+  document.getElementById('sectorFilter').innerHTML = '<option value="All">All Sectors</option>' + sectors.map(x=>`<option>${x}</option>`).join('');
   const industries = [...new Set(stockData.map(s=>s.industry))].sort();
   document.getElementById('industryFilter').innerHTML = '<option value="All">All Industries</option>' + industries.map(i=>`<option>${i}</option>`).join('');
 }
@@ -1516,7 +1326,7 @@ function toggleWatchFromModal(){
 function toggleCompare(ticker, evt){
   if(evt) evt.stopPropagation();
   if(compareSet.has(ticker)) compareSet.delete(ticker);
-  else { if(compareSet.size>=3){ alert('You can compare up to 3 stocks at a time.'); return; } compareSet.add(ticker); }
+  else { if(compareSet.size>=6){ showToast('You can compare up to 6 stocks at a time.'); return; } compareSet.add(ticker); }
   renderAll(); updateCompareBar();
 }
 function updateCompareBar(){
@@ -1527,27 +1337,25 @@ function updateCompareBar(){
 }
 function clearCompare(){ compareSet.clear(); renderAll(); updateCompareBar(); }
 function openCompareFromView(){
-  const data = getFilteredData().slice(0,3);
-  if(data.length<2){ alert('Need at least 2 stocks in the current view to compare.'); return; }
-  compareSet = new Set(data.map(s=>s.ticker));
-  renderAll(); updateCompareBar(); openCompare();
+  if(compareSet.size < 2){
+    const data = getFilteredData().slice(0,3);
+    if(data.length<2){ showToast('Need at least 2 stocks in the current view to compare.'); return; }
+    compareSet = new Set(data.map(s=>s.ticker));
+    renderAll(); updateCompareBar();
+  }
+  openCompare();
 }
 function openCompare(){
-  if(compareSet.size<2){ alert('Select at least 2 stocks to compare.'); return; }
-  const stocks = [...compareSet].map(tk=> stockData.find(s=>s.ticker===tk));
+  if(compareSet.size<2){ showToast('Tick at least 2 stocks (☐) to compare.'); return; }
+  const stocks = [...compareSet].map(tk=> stockData.find(s=>s.ticker===tk)).filter(Boolean).slice(0,6);
   const rows = [
-    ['Price', t=>`$${t.price.toFixed(2)}`],
-    ['Change %', t=>`${t.changePercent>=0?'+':''}${t.changePercent.toFixed(2)}%`],
-    ['Market Cap', t=> t.marketCap>=1000? `$${(t.marketCap/1000).toFixed(2)}T` : `$${t.marketCap.toFixed(0)}B`],
-    ['P/E', t=> t.pe>0? t.pe.toFixed(1)+'x':'N/A'],
-    ['Fwd P/E', t=> t.forwardPE.toFixed(1)+'x'],
-    ['PEG', t=> t.peg.toFixed(2)],
-    ['ROE', t=> t.roe.toFixed(1)+'%'],
-    ['Profit Margin', t=> t.profitMargin.toFixed(1)+'%'],
-    ['Dividend Yield', t=> t.dividendYield.toFixed(2)+'%'],
-    ['Beta', t=> t.beta.toFixed(2)],
-    ['50D MA', t=> `$${t.ma50.toFixed(2)}`],
-    ['Volume', t=> `${t.volume.toFixed(1)}M`],
+    ['Price', t=> fN(t.price)], ['Change', t=> fPct(t.changePercent)], ['Market Cap', t=> fCap(t.marketCap)],
+    ['P/E', t=> fN(t.pe)], ['Forward P/E', t=> fN(t.forwardPE)], ['PEG', t=> fN(t.peg)], ['P/S', t=> fN(t.ps)],
+    ['EV/EBITDA', t=> fN(t.evEbitda)], ['EPS Q/Q', t=> fPct(t.epsGrowthQ,1)], ['Sales Q/Q', t=> fPct(t.salesGrowthQ,1)],
+    ['Gross Margin', t=> fN(t.grossMargin,1,'%')], ['Profit Margin', t=> fN(t.profitMargin,1,'%')], ['ROE', t=> fN(t.roe,1,'%')],
+    ['Debt/Eq', t=> fN(t.debtEq)], ['Dividend', t=> t.dividendYield>0 ? t.dividendYield.toFixed(2)+'%' : NA],
+    ['Perf YTD', t=> fPct(t.perfYTD)], ['Perf Year', t=> fPct(t.perfY)], ['RSI (14)', t=> fN(t.rsi,1)],
+    ['vs SMA200', t=> fPct(t.vsSma200)], ['Beta', t=> fN(t.beta)], ['Analyst Rec', t=> fRec(t.recMean)], ['To Target', t=> fPct(t.upside,1)],
   ];
   let html = `<table class="compare-table"><thead><tr><th>Metric</th>${stocks.map(s=>`<th>${s.ticker}</th>`).join('')}</tr></thead><tbody>`;
   rows.forEach(([label, fn])=>{ html += `<tr><td class="cmp-label">${label}</td>${stocks.map(s=>`<td>${fn(s)}</td>`).join('')}</tr>`; });
@@ -1556,39 +1364,23 @@ function openCompare(){
   document.getElementById('compareOverlay').classList.add('show');
 }
 function closeCompare(){ document.getElementById('compareOverlay').classList.remove('show'); }
-function createAlertDemo(){ showToast('🔔 Alerts need a backend to send notifications — see chat for how to wire this up.'); }
 
-// ---------- NAV / THEME / CLOCK ----------
-function navClick(section){ showToast(`"${section}" isn't part of this demo — built to showcase Screener + Maps.`); closeMobileMenu(); }
-
-function openSurvey(){
-  document.getElementById('surveyOverlay').classList.add('show');
+// ---------- ABOUT ----------
+function openAbout(){
+  const el = document.getElementById('aboutData');
+  if(el){
+    const m = dataMeta || {};
+    const asOf = m.generatedAt ? new Date(m.generatedAt*1000).toLocaleString('en-US',{timeZone:'America/New_York',dateStyle:'medium',timeStyle:'short'})+' ET' : 'unknown';
+    el.innerHTML = `<span>Snapshot</span><span>${asOf}</span>`+
+      `<span>Coverage</span><span>${stockData.length} of ${m.requested||stockData.length} S&amp;P 500 companies${(m.stale||[]).length?` (${m.stale.length} carried over from the previous run)`:''}</span>`+
+      `<span>Sources</span><span>${m.source || 'Yahoo Finance'}</span>`;
+  }
+  document.getElementById('aboutOverlay').classList.add('show');
   closeMobileMenu();
 }
-function closeSurvey(){ document.getElementById('surveyOverlay').classList.remove('show'); }
+function closeAbout(){ const o=document.getElementById('aboutOverlay'); if(o) o.classList.remove('show'); }
 
-// No backend on this static (GitHub Pages) deploy, so "sending" the survey means handing
-// off to the visitor's own email client via a mailto: link — no third-party form service,
-// no credentials, no data stored anywhere. Recipient is fixed; this isn't a general contact
-// form, just a lightweight signal for register-interest.
-const SURVEY_RECIPIENT = 'prapanch.kokkalemada@gmail.com';
-function submitSurvey(){
-  const email = document.getElementById('surveyEmail').value.trim();
-  const useCase = document.getElementById('surveyUseCase').value;
-  const note = document.getElementById('surveyNote').value.trim();
-
-  const subject = 'FinSTR — Register interest';
-  const bodyLines = [
-    `Use case: ${useCase}`,
-    email ? `Follow-up email: ${email}` : `Follow-up email: (not provided)`,
-    note ? `Note: ${note}` : null,
-  ].filter(Boolean);
-  const body = bodyLines.join('\n');
-
-  window.location.href = `mailto:${SURVEY_RECIPIENT}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  closeSurvey();
-  showToast('Opening your email client to send this — thanks for the interest!');
-}
+// ---------- NAV / THEME / CLOCK ----------
 function toggleTheme(){
   const html = document.documentElement;
   const isLight = html.dataset.theme === 'light';
@@ -1645,7 +1437,7 @@ function decodeStateFromHash(){
 }
 function copyShareLink(){
   encodeStateToHash();
-  try{ navigator.clipboard.writeText(location.href).then(()=> alert('Link copied! It reproduces your current filters and view.')); }
+  try{ navigator.clipboard.writeText(location.href).then(()=> showToast('Link copied: it reproduces your current filters and view.')); }
   catch(e){ prompt('Copy this link:', location.href); }
 }
 
@@ -1679,7 +1471,7 @@ function selectAutocomplete(ticker){
 function hideAutocomplete(){ document.getElementById('autocompleteBox').style.display='none'; }
 
 // ---------- VIEW SWITCH ----------
-const ALL_SECTIONS = ['home','screener','heatmap','news','charts','groups','futures','forex','crypto','insider','calendar','quant'];
+const ALL_SECTIONS = ['home','screener','heatmap','news','charts','groups','futures','forex','crypto','insider','calendar'];
 // Grouped nav dropdowns (Markets / Analytics) — declutters the top nav from 12 flat
 // links down to a handful, per user request to "club the analytics into dropdowns."
 const NAV_DROPDOWN_GROUPS = {
@@ -1717,7 +1509,6 @@ function setView(view){
   if(view==='crypto' && !cryptoLoaded) loadCrypto();
   if(view==='insider') renderInsider();
   if(view==='calendar') renderCalendar();
-  if(view==='quant' && !quantLoaded) loadQuantDesk();
   encodeStateToHash();
   closeMobileMenu();
 }
@@ -1751,48 +1542,85 @@ function peHeatStyle(pe){
 }
 
 // ---------- COLUMN VIEWS ----------
-// Per-row (not per-column) freshness marker: true once a row comes from a real fetch
-// (live Flask API or the GitHub Actions JSON snapshot); false only for the hardcoded
-// offline seed data, which synthesizes these fields. Was previously a static column-
-// header label claiming ALL rows were "Estimated, not live" regardless of source.
-function estTag(s){
-  return s.hasRealFundamentals ? '' : ' <span class="sim-tag" title="Demo estimate — not from a live fetch">~</span>';
-}
+// Formatting helpers: every value is real or shown as "-" (never 0 or a made-up number).
+const NA = '<span class="na">-</span>';
+const isNum = v => typeof v === 'number' && isFinite(v);
+function fN(v, d=2, suf=''){ return isNum(v) ? v.toFixed(d)+suf : NA; }
+function fPct(v, d=2){ if(!isNum(v)) return NA; return `<span class="${v>0?'pos':v<0?'neg':''}">${v>0?'+':''}${v.toFixed(d)}%</span>`; }
+function fCap(b){ return isNum(b) ? (b>=1000 ? (b/1000).toFixed(2)+'T' : b>=1 ? b.toFixed(1)+'B' : (b*1000).toFixed(0)+'M') : NA; }
+function fVolM(m){ return isNum(m) ? (m>=1000 ? (m/1000).toFixed(2)+'B' : m>=1 ? m.toFixed(2)+'M' : (m*1000).toFixed(0)+'K') : NA; }
+function fBig(v){ if(!isNum(v)) return NA; const a=Math.abs(v), sg=v<0?'-':'';
+  return a>=1e12 ? sg+(a/1e12).toFixed(2)+'T' : a>=1e9 ? sg+(a/1e9).toFixed(2)+'B' : a>=1e6 ? sg+(a/1e6).toFixed(2)+'M' : a>=1e3 ? sg+(a/1e3).toFixed(1)+'K' : sg+a.toFixed(0); }
+function fDate(d){ if(!d) return NA; const x=new Date(d+'T12:00:00'); return isNaN(x)? NA : x.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+function recLabel(m){ if(!isNum(m)) return ''; return m<=1.5?'Strong Buy':m<=2.5?'Buy':m<=3.5?'Hold':m<=4.5?'Sell':'Strong Sell'; }
+function fRec(m){ return isNum(m) ? `${m.toFixed(2)} <span class="dim-note">${recLabel(m)}</span>` : NA; }
+function estTag(s){ return ''; }
+const pct = (k, label, title) => ({label, title, render:s=> fPct(s[k])});
 const COLUMN_DEFS = {
-  ticker:{label:'Ticker', render:s=>s.ticker},
+  ticker:{label:'Ticker', render:s=>`<b class="tk">${s.ticker}</b>`},
   name:{label:'Company', render:s=>s.name},
   sector:{label:'Sector', render:s=>`<span class="sector-tag">${s.sector}</span>`},
   industry:{label:'Industry', render:s=>s.industry},
-  marketCap:{label:'Mkt Cap', render:s=> s.marketCap>=1000? (s.marketCap/1000).toFixed(2)+'T':s.marketCap.toFixed(0)+'B'},
-  price:{label:'Price', render:s=>`$${s.price.toFixed(2)}`},
-  changePercent:{label:'Change %', render:s=>`<span class="${s.changePercent>=0?'pos':'neg'}">${s.changePercent>=0?'+':''}${s.changePercent.toFixed(2)}%</span>`},
-  volume:{label:'Volume', render:s=>`${s.volume.toFixed(1)}M`},
-  // Real for any row from a live fetch (Flask API or the GitHub Actions JSON snapshot —
-  // fetched server-side via yfinance, no browser auth-wall issue there). Only the
-  // hardcoded offline seed data synthesizes these; estTag() marks those rows only.
-  pe:{label:'P/E', cellAttrs:s=>peHeatStyle(s.pe), render:s=> (s.pe>0? s.pe.toFixed(1):'N/A') + estTag(s)},
-  valueScore:{label:'Value Score', render:s=> scoreBadge(finstrValueScore(s))},
-  momentumScore:{label:'Momentum Score', render:s=> scoreBadge(finstrMomentumScore(s))},
-  finstrScore:{label:'FinSTR Score', render:s=> scoreBadge(finstrScore(s))},
-  forwardPE:{label:'Fwd P/E', render:s=> s.forwardPE.toFixed(1) + estTag(s)},
-  peg:{label:'PEG', render:s=> s.peg.toFixed(2) + estTag(s)},
-  roe:{label:'ROE', render:s=> s.roe.toFixed(1)+'%' + estTag(s)},
-  profitMargin:{label:'Profit Margin', render:s=> s.profitMargin.toFixed(1)+'%' + estTag(s)},
-  dividendYield:{label:'Dividend', render:s=> s.dividendYield.toFixed(2)+'%' + estTag(s)},
-  eps:{label:'EPS', render:s=> `$${s.eps.toFixed(2)}` + estTag(s)},
-  ma50:{label:'50D MA', render:s=> `$${s.ma50.toFixed(2)} <span class="ma-badge ${s.price>=s.ma50?'pos':'neg'}">${s.price>=s.ma50?'▲':'▼'}</span>${estTag(s)}`},
-  beta:{label:'Beta', render:s=> s.beta.toFixed(2) + estTag(s)},
+  country:{label:'Country', render:s=>s.country||NA},
+  marketCap:{label:'Mkt Cap', render:s=> fCap(s.marketCap)},
+  price:{label:'Price', render:s=> isNum(s.price) ? s.price.toFixed(2) : NA},
+  changePercent:{label:'Change', render:s=> fPct(s.changePercent)},
+  volume:{label:'Volume', render:s=> fVolM(s.volume)},
+  avgVolume:{label:'Avg Volume', title:'3-month average daily volume', render:s=> fVolM(s.avgVolume)},
+  relVol:{label:'Rel Volume', title:'Today\'s volume / 3-month average', render:s=> isNum(s.relVol) ? `<span class="${s.relVol>=1.5?'pos':''}">${s.relVol.toFixed(2)}</span>` : NA},
+  pe:{label:'P/E', cellAttrs:s=>peHeatStyle(s.pe), render:s=> fN(s.pe)},
+  forwardPE:{label:'Fwd P/E', render:s=> fN(s.forwardPE)},
+  peg:{label:'PEG', render:s=> fN(s.peg)},
+  ps:{label:'P/S', render:s=> fN(s.ps)},
+  pb:{label:'P/B', render:s=> fN(s.pb)},
+  evEbitda:{label:'EV/EBITDA', render:s=> fN(s.evEbitda)},
+  pfcf:{label:'P/FCF', render:s=> fN(s.pfcf)},
+  eps:{label:'EPS (ttm)', render:s=> fN(s.eps)},
+  fwdEps:{label:'EPS next Y', render:s=> fN(s.fwdEps)},
+  epsGrowthQ:pct('epsGrowthQ','EPS Q/Q','Quarterly earnings growth, year over year'),
+  salesGrowthQ:pct('salesGrowthQ','Sales Q/Q','Quarterly revenue growth, year over year'),
+  dividendYield:{label:'Dividend', title:'Forward dividend yield', render:s=> isNum(s.dividendYield) && s.dividendYield>0 ? s.dividendYield.toFixed(2)+'%' : NA},
+  payout:{label:'Payout', render:s=> fN(s.payout,1,'%')},
+  roe:{label:'ROE', render:s=> fN(s.roe,1,'%')},
+  roa:{label:'ROA', render:s=> fN(s.roa,1,'%')},
+  grossMargin:{label:'Gross M', render:s=> fN(s.grossMargin,1,'%')},
+  operMargin:{label:'Oper M', render:s=> fN(s.operMargin,1,'%')},
+  profitMargin:{label:'Profit M', render:s=> fN(s.profitMargin,1,'%')},
+  debtEq:{label:'Debt/Eq', render:s=> fN(s.debtEq)},
+  currentRatio:{label:'Curr R', title:'Current ratio', render:s=> fN(s.currentRatio)},
+  quickRatio:{label:'Quick R', title:'Quick ratio', render:s=> fN(s.quickRatio)},
+  shares:{label:'Shs Outstand', render:s=> fBig(s.shares)},
+  float:{label:'Shs Float', render:s=> fBig(s.float)},
+  insiderOwn:{label:'Insider Own', render:s=> fN(s.insiderOwn,2,'%')},
+  instOwn:{label:'Inst Own', render:s=> fN(s.instOwn,2,'%')},
+  shortFloat:{label:'Short Float', render:s=> fN(s.shortFloat,2,'%')},
+  shortRatio:{label:'Short Ratio', title:'Days to cover', render:s=> fN(s.shortRatio)},
+  perfW:pct('perfW','Perf Week'), perfM:pct('perfM','Perf Month'), perfQ:pct('perfQ','Perf Quart'),
+  perfH:pct('perfH','Perf Half'), perfYTD:pct('perfYTD','Perf YTD'), perfY:pct('perfY','Perf Year'),
+  volW:{label:'Volatility W', title:'Std. dev. of daily returns, last 5 sessions', render:s=> fN(s.volW,2,'%')},
+  volM:{label:'Volatility M', title:'Std. dev. of daily returns, last 21 sessions', render:s=> fN(s.volM,2,'%')},
+  beta:{label:'Beta', render:s=> fN(s.beta)},
+  atr:{label:'ATR', title:'Average true range, 14 sessions', render:s=> fN(s.atr)},
+  rsi:{label:'RSI (14)', render:s=> isNum(s.rsi) ? `<span class="${s.rsi>=70?'neg':s.rsi<=30?'pos':''}">${s.rsi.toFixed(1)}</span>` : NA},
+  vsSma20:pct('vsSma20','SMA20','Distance from 20-day simple moving average'),
+  vsSma50:pct('vsSma50','SMA50','Distance from 50-day simple moving average'),
+  vsSma200:pct('vsSma200','SMA200','Distance from 200-day simple moving average'),
+  fromHigh52:pct('fromHigh52','52W High','Distance from 52-week high'),
+  fromLow52:pct('fromLow52','52W Low','Distance from 52-week low'),
+  ma50:{label:'50D MA', render:s=> isNum(s.ma50) ? `${s.ma50.toFixed(2)} <span class="ma-badge ${s.price>=s.ma50?'pos':'neg'}">${s.price>=s.ma50?'▲':'▼'}</span>` : NA},
+  recMean:{label:'Analyst Rec', title:'Mean analyst rating (1 = Strong Buy, 5 = Strong Sell), Yahoo Finance', render:s=> fRec(s.recMean)},
+  analysts:{label:'Analysts', render:s=> isNum(s.analysts) ? String(s.analysts) : NA},
+  target:{label:'Target', title:'Mean analyst price target', render:s=> fN(s.target)},
+  targetLow:{label:'Target Low', render:s=> fN(s.targetLow)},
+  targetHigh:{label:'Target High', render:s=> fN(s.targetHigh)},
+  upside:pct('upside','To Target','Mean analyst target vs price'),
+  earningsDate:{label:'Earnings', render:s=> fDate(s.earningsDate)},
+  valueScore:{label:'Value Score', value:s=>finstrValueScore(s), render:s=> scoreBadge(finstrValueScore(s))},
+  momentumScore:{label:'Momentum Score', value:s=>finstrMomentumScore(s), render:s=> scoreBadge(finstrMomentumScore(s))},
+  finstrScore:{label:'FinSTR Score', value:s=>finstrScore(s), render:s=> scoreBadge(finstrScore(s))},
   insight:{label:'Insight', render:s=> `<span class="insight-line">${computeInsight(s).join(' · ')}</span>`},
-  // Fetched by scripts/fetch_data.py all along but never surfaced in any column view —
-  // no new data pipeline work needed to add the Volume preset below.
-  avgVolume:{label:'Avg Volume', render:s=> `${s.avgVolume.toFixed(1)}M` + estTag(s)},
-  relVolume:{label:'Rel Volume', render:s=>{
-    if(!(s.avgVolume>0)) return 'N/A';
-    const r = s.volume/s.avgVolume;
-    const cls = r>=1.5?'pos':r<=0.5?'neg':'';
-    return `<span class="${cls}">${r.toFixed(2)}x</span>`;
-  }},
 };
+function sortValue(s, k){ const d = COLUMN_DEFS[k]; return d && d.value ? d.value(s) : s[k]; }
 
 // Computes short signal tags directly from a stock's own numeric fields — no external
 // data, no fabricated commentary. Each tag states a concrete threshold it crossed so it's
@@ -1817,16 +1645,18 @@ function computeInsight(s){
 }
 
 const COLUMN_SETS = {
-  overview:['ticker','name','sector','industry','marketCap','price','changePercent','volume'],
-  valuation:['ticker','marketCap','price','pe','forwardPE','peg'],
-  financial:['ticker','roe','profitMargin','dividendYield','eps'],
-  performance:['ticker','price','changePercent','ma50'],
-  technical:['ticker','price','beta','ma50'],
+  overview:['ticker','name','sector','industry','country','marketCap','pe','price','changePercent','volume'],
+  valuation:['ticker','marketCap','pe','forwardPE','peg','ps','pb','evEbitda','pfcf','eps','fwdEps','epsGrowthQ','salesGrowthQ','price','changePercent'],
+  financial:['ticker','marketCap','dividendYield','payout','roa','roe','currentRatio','quickRatio','debtEq','grossMargin','operMargin','profitMargin','earningsDate','price','changePercent'],
+  ownership:['ticker','marketCap','shares','float','insiderOwn','instOwn','shortFloat','shortRatio','avgVolume','price','changePercent','volume'],
+  performance:['ticker','perfW','perfM','perfQ','perfH','perfYTD','perfY','volW','volM','avgVolume','relVol','price','changePercent','volume'],
+  technical:['ticker','beta','atr','volW','volM','vsSma20','vsSma50','vsSma200','fromHigh52','fromLow52','rsi','price','changePercent','relVol'],
+  analyst:['ticker','name','price','changePercent','target','targetLow','targetHigh','upside','recMean','analysts','earningsDate'],
   insights:['ticker','name','sector','price','changePercent','insight'],
   finstr:['ticker','name','sector','price','changePercent','valueScore','momentumScore','finstrScore'],
-  volume:['ticker','name','price','changePercent','volume','avgVolume','relVolume'],
-  all:['ticker','name','sector','industry','marketCap','price','changePercent','volume','avgVolume','relVolume','pe','forwardPE','peg','roe','profitMargin','dividendYield','eps','beta','ma50'],
-  custom:['ticker','name','sector','marketCap','price','changePercent','pe','forwardPE','peg','ma50','volume']
+  volume:['ticker','name','price','changePercent','volume','avgVolume','relVol'],
+  all:['ticker','name','sector','industry','marketCap','pe','forwardPE','peg','ps','pb','evEbitda','eps','epsGrowthQ','salesGrowthQ','dividendYield','roa','roe','grossMargin','operMargin','profitMargin','debtEq','insiderOwn','instOwn','shortFloat','perfW','perfM','perfYTD','perfY','beta','rsi','vsSma50','vsSma200','fromHigh52','recMean','upside','earningsDate','price','changePercent','volume','relVol'],
+  custom:['ticker','name','sector','marketCap','price','changePercent','pe','forwardPE','peg','perfYTD','rsi','volume']
 };
 function setColumnView(v){
   state.columnView = v;
@@ -1849,8 +1679,9 @@ function renderTable(dataAll){
   });
 
   const sorted = [...dataAll].sort((a,b)=>{
-    let v1=a[state.sortKey], v2=b[state.sortKey];
-    if(v1===undefined||v2===undefined) return 0;
+    const v1=sortValue(a,state.sortKey), v2=sortValue(b,state.sortKey);
+    const m1 = v1===null||v1===undefined||v1==='' , m2 = v2===null||v2===undefined||v2==='';
+    if(m1||m2) return m1===m2 ? 0 : (m1 ? 1 : -1);
     if(typeof v1==='string') return state.sortDir==='asc'? v1.localeCompare(v2) : v2.localeCompare(v1);
     return state.sortDir==='asc'? v1-v2 : v2-v1;
   });
@@ -1868,7 +1699,7 @@ function renderTable(dataAll){
         <td data-label="Watch" class="star-cell" onclick="toggleWatch('${s.ticker}', event)">${watchlist.has(s.ticker)?'★':'☆'}</td>
         <td data-label="Compare" class="cmp-cell" onclick="toggleCompare('${s.ticker}', event)">${compareSet.has(s.ticker)?'☑':'☐'}</td>
         ${cols.map(k=>`<td data-label="${COLUMN_DEFS[k].label}" data-col="${k}"${COLUMN_DEFS[k].cellAttrs?COLUMN_DEFS[k].cellAttrs(s):''}>${COLUMN_DEFS[k].render(s)}</td>`).join('')}
-        <td data-label="Trend"><svg width="60" height="20" title="Simulated trend (illustrative)"><polyline points="${genSparkPoints(s,60,20)}" fill="none" stroke="${s.changePercent>=0?'#26a65b':'#ef5350'}" stroke-width="1.5"/></svg></td>
+        <td data-label="Trend"><svg width="60" height="20"><title>Last 30 sessions</title><polyline points="${genSparkPoints(s,60,20)}" fill="none" stroke="${s.changePercent>=0?'#26a65b':'#ef5350'}" stroke-width="1.5"/></svg></td>
       </tr>`).join('');
     tbody.querySelectorAll('tr').forEach(tr=> tr.addEventListener('click', ()=> openModal(tr.dataset.ticker)));
   }
@@ -1909,7 +1740,7 @@ function renderSectorPerf(data){
 
 // ---------- HEATMAP SIDEBAR ----------
 function populateSectorSidebar(){
-  const sectors = ["Technology","Communication Services","Consumer Discretionary","Consumer Staples","Financials","Healthcare","Industrials","Energy","Utilities","Real Estate","Materials"];
+  const sectors = [...new Set(stockData.map(s=>s.sector))].sort();
   document.getElementById('hsSectorList').innerHTML = sectors.map(sec=>`<div class="hs-item" data-kind="${sec}" onclick="quickHeatmapFilter('${sec}')">${sec}</div>`).join('');
 }
 function quickHeatmapFilter(kind){
@@ -1948,7 +1779,14 @@ function toggleFullscreen(){
 }
 
 // ---------- HEATMAP RENDER ----------
-const colorScale = d3.scaleLinear().domain([-4,-1.2,0,1.2,4]).range(['#7f0000','#c62828','#3a3f4c','#2e7d32','#00e676']).clamp(true);
+// Colour range widens with the timeframe so longer periods don't saturate (Finviz does the same).
+const TF_RANGE = {'1D':3,'1W':6,'1M':10,'3M':15,'6M':20,'YTD':30,'1Y':30};
+function colorScale(v){
+  const r = TF_RANGE[state.heatmapTimeframe] || 3;
+  const legend = document.getElementById('hmLegendRange');
+  if(legend) legend.textContent = `−${r}% · 0% · +${r}%`;
+  return d3.scaleLinear().domain([-r,-r*0.3,0,r*0.3,r]).range(['#7f0000','#c62828','#3a3f4c','#2e7d32','#00e676']).clamp(true)(v);
+}
 function scaledFont(minF,maxF,divisor,dim){ return Math.max(minF, Math.min(maxF, dim/divisor)); }
 
 function buildHierarchy(data){
@@ -1985,7 +1823,7 @@ function renderTreemap(data){
   svg.selectAll('text.group-label').data(groups.filter(d=>(d.x1-d.x0)>45)).join('text').attr('class','group-label')
     .attr('x',d=>d.x0+4).attr('y',d=>d.y0+12).attr('fill', d=>d.depth===1?'#e8ebf3':'#9aa3b5')
     .attr('font-size', d=>d.depth===1?12:9.5).attr('font-weight', d=>d.depth===1?800:600)
-    .text(d=>d.data.name.toUpperCase());
+    .text(d=>{ const t=d.data.name.toUpperCase(), max=Math.floor((d.x1-d.x0-8)/(d.depth===1?7.6:6.2)); return t.length>max ? t.slice(0,Math.max(1,max-1))+'…' : t; });
 
   const leaves = root.leaves();
   const leafG = svg.selectAll('g.leaf').data(leaves).join('g').attr('class','leaf').style('cursor','pointer')
@@ -1994,7 +1832,7 @@ function renderTreemap(data){
     .attr('fill', d=>colorScale(getDisplayChange(d.data.data))).attr('stroke','#05070c').attr('stroke-width',1);
   leafG.append('title').text(d=>{
     const chg = getDisplayChange(d.data.data);
-    const tfNote = state.heatmapTimeframe==='1D' ? '' : ` (simulated ${state.heatmapTimeframe})`;
+    const tfNote = state.heatmapTimeframe==='1D' ? '' : ` (${state.heatmapTimeframe})`;
     return `${d.data.data.ticker} — ${d.data.data.name}\n$${d.data.data.price.toFixed(2)} (${chg>=0?'+':''}${chg.toFixed(2)}%${tfNote})\nMkt Cap: $${d.data.data.marketCap}B${watchlist.has(d.data.data.ticker)?'\n★ Watchlisted':''}`;
   });
   leafG.filter(d=>(d.x1-d.x0)>20 && (d.y1-d.y0)>14)
@@ -2048,27 +1886,7 @@ function renderAll(){
 // real data to show. Try a real refresh first; only fall back to a labeled simulated
 // move if the proxy fetch genuinely returns nothing (e.g. proxy is down), so we never
 // silently overwrite real prices with random noise.
-async function simOrUpdate(){
-  const btn = document.getElementById('simUpdateBtn');
-  if(btn){ btn.disabled = true; btn.textContent = '🔄 Updating…'; }
-  const updated = await refreshPrices();
-  if(btn){ btn.disabled = false; btn.textContent = '🔄 Update Prices'; }
-  if(updated === 0){
-    simulateMarketMove();
-    showToast('Live price fetch unavailable — showing a simulated demo move instead.');
-  }
-}
 
-function simulateMarketMove(){
-  stockData.forEach(s=>{
-    const drift = (Math.random()*6-3);
-    s.changePercent = Math.max(-9, Math.min(9, s.changePercent*0.4 + drift));
-    s.price = Math.max(0.5, s.price*(1+(Math.random()*0.02-0.01)));
-  });
-  renderAll();
-  document.getElementById('lastUpdated').textContent = `Simulated: ${new Date().toLocaleTimeString()}`;
-  checkWatchlistAlerts();
-}
 function checkWatchlistAlerts(){
   const moved = [...watchlist].map(t=> stockData.find(s=>s.ticker===t)).filter(s=> s && Math.abs(s.changePercent)>=3);
   if(moved.length===0) return;
@@ -2088,49 +1906,113 @@ function openModal(ticker){
   modalTicker = ticker;
   document.getElementById('modalOverlay').classList.add('show');
   document.getElementById('modalTicker').textContent = `${s.ticker} — ${s.name}`;
-  document.getElementById('modalSector').textContent = `${s.sector} · ${s.industry}`;
+  document.getElementById('modalSector').innerHTML = `${s.sector} · ${s.industry}${s.exchange?' · '+s.exchange:''}${s.earningsDate?` · Earnings ${fDate(s.earningsDate)}`:''}`;
   document.getElementById('modalPrice').textContent = `$${s.price.toFixed(2)}`;
   const chEl = document.getElementById('modalChange');
-  chEl.textContent = `${s.changePercent>=0?'+':''}${s.changePercent.toFixed(2)}% today`;
+  chEl.textContent = isNum(s.changePercent) ? `${s.changePercent>=0?'+':''}${s.changePercent.toFixed(2)}% on the day` : '';
   chEl.className = `modal-change ${s.changePercent>=0?'pos':'neg'}`;
   document.getElementById('modalStarBtn').textContent = watchlist.has(ticker) ? '★ Watching' : '☆ Watch';
-  document.getElementById('liveStatus').textContent = '';
-  const sparkLine = document.getElementById('modalSparkLine');
-  sparkLine.setAttribute('points', genSparkPoints(s,300,50));
-  sparkLine.setAttribute('stroke', s.changePercent>=0?'#26a65b':'#ef5350');
-  const defaultGrowth = Math.max(2, Math.min(40, s.pe>0 ? s.pe/s.peg : 8));
-  document.getElementById('growthInput').value = defaultGrowth.toFixed(1);
+  document.getElementById('liveStatus').textContent = dataMeta ? 'Data as of '+new Date(dataMeta.generatedAt*1000).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' ET' : '';
+  renderSnapshot(s);
+  // Default growth: the analysts' next-year EPS growth, kept within 2-20%; otherwise 8%.
+  let g = 8;
+  if(s.eps>0 && s.fwdEps>0) g = (s.fwdEps/s.eps - 1)*100;
+  else if(s.pe>0 && s.peg>0) g = s.pe/s.peg;
+  document.getElementById('growthInput').value = Math.max(2, Math.min(20, g)).toFixed(1);
   document.getElementById('discountInput').value = 9;
   document.getElementById('modalInvestment').value = 10000;
   recalcModal();
   loadModalNews(s);
-  loadModalQuantForecast(s.ticker);
+  loadQuotePanel(s);
   encodeStateToHash();
 }
 
-let modalQuantRequestId = 0;
-async function loadModalQuantForecast(ticker){
-  const card = document.getElementById('modalQuantCard');
-  card.style.display = 'none';
-  const requestId = ++modalQuantRequestId;
-  const forecast = await fetchQuantJSON(`/api/quant/forecast/${ticker}`, snap => snap.forecasts && snap.forecasts[ticker]);
-  if(requestId !== modalQuantRequestId || !modalTicker || modalTicker !== ticker) return; // stale response guard, same pattern as loadModalNews
-  if(!forecast) return; // no forecast for this ticker yet — leave the card hidden rather than showing empty state
-  card.style.display = '';
-  const dir = forecast.expected_return_pct >= 0 ? 'up' : 'down';
-  const cls = forecast.expected_return_pct >= 0 ? 'pos' : 'neg';
-  document.getElementById('modalQuantHeadline').innerHTML =
-    `Quant Desk forecast: <span class="${cls}">${forecast.expected_return_pct>=0?'+':''}${forecast.expected_return_pct.toFixed(2)}%</span>
-     over ${forecast.horizon_hours}h · confidence ${(forecast.direction_confidence*100).toFixed(0)}%`;
-  document.getElementById('modalQuantRange').textContent =
-    `Range: ${forecast.interval_low_pct.toFixed(2)}% to ${forecast.interval_high_pct.toFixed(2)}% · volatility ${(forecast.volatility_forecast*100).toFixed(2)}%`;
-  // Honesty labeling, same pattern as estTag()/hasRealFundamentals: never let a
-  // heuristic fallback forecast render indistinguishably from a real Kronos one.
-  document.getElementById('modalQuantModel').textContent =
-    forecast.model === 'Kronos-mini'
-      ? `Model: Kronos-mini (HuggingFace) — simulated paper trade, not investment advice`
-      : `Model: statistical fallback (Kronos unavailable this cycle) — simulated paper trade, not investment advice`;
+function snapRows(s){
+  const v = (x, d=2, suf='') => fN(x, d, suf);
+  const rng = (a,b,d=2) => isNum(a)&&isNum(b) ? `${a.toFixed(d)} - ${b.toFixed(d)}` : NA;
+  return [
+    ['Index','S&P 500','P/E',v(s.pe),'EPS (ttm)',v(s.eps),'Insider Own',v(s.insiderOwn,2,'%'),'Shs Outstand',fBig(s.shares),'Perf Week',fPct(s.perfW)],
+    ['Market Cap',fCap(s.marketCap),'Forward P/E',v(s.forwardPE),'EPS next Y',v(s.fwdEps),'Inst Own',v(s.instOwn,2,'%'),'Shs Float',fBig(s.float),'Perf Month',fPct(s.perfM)],
+    ['Income',fBig(s.netIncome),'PEG',v(s.peg),'EPS Q/Q',fPct(s.epsGrowthQ,1),'Short Float',v(s.shortFloat,2,'%'),'Short Ratio',v(s.shortRatio),'Perf Quarter',fPct(s.perfQ)],
+    ['Sales',fBig(s.revenue),'P/S',v(s.ps),'Sales Q/Q',fPct(s.salesGrowthQ,1),'Target Price',v(s.target),'Analysts',isNum(s.analysts)?s.analysts:NA,'Perf Half Y',fPct(s.perfH)],
+    ['EBITDA',fBig(s.ebitda),'P/B',v(s.pb),'ROA',v(s.roa,1,'%'),'Target Range',rng(s.targetLow,s.targetHigh),'Recom',fRec(s.recMean),'Perf YTD',fPct(s.perfYTD)],
+    ['Free Cash Flow',fBig(s.fcf),'P/FCF',v(s.pfcf),'ROE',v(s.roe,1,'%'),'To Target',fPct(s.upside,1),'Earnings',fDate(s.earningsDate),'Perf Year',fPct(s.perfY)],
+    ['Cash',fBig(s.cash),'EV/EBITDA',v(s.evEbitda),'Gross Margin',v(s.grossMargin,1,'%'),'52W Range',rng(s.low52,s.high52),'RSI (14)',v(s.rsi,1),'Beta',v(s.beta)],
+    ['Debt',fBig(s.debt),'EV/Sales',v(s.evSales),'Oper. Margin',v(s.operMargin,1,'%'),'52W High',fPct(s.fromHigh52),'SMA20',fPct(s.vsSma20),'ATR (14)',v(s.atr)],
+    ['Book/sh',v(s.bookPerShare),'Quick Ratio',v(s.quickRatio),'Profit Margin',v(s.profitMargin,1,'%'),'52W Low',fPct(s.fromLow52),'SMA50',fPct(s.vsSma50),'Volatility',isNum(s.volW)?`${s.volW.toFixed(2)}% ${isNum(s.volM)?s.volM.toFixed(2)+'%':''}`:NA],
+    ['Cash/sh',v(s.cashPerShare),'Current Ratio',v(s.currentRatio),'Payout',v(s.payout,1,'%'),'Prev Close',v(s.prevClose),'SMA200',fPct(s.vsSma200),'Rel Volume',v(s.relVol)],
+    ['Dividend',isNum(s.divRate)&&s.divRate>0?`${s.divRate.toFixed(2)} (${s.dividendYield.toFixed(2)}%)`:NA,'Debt/Eq',v(s.debtEq),'Ex-Div',fDate(s.exDividendDate),'Day Range',rng(s.dayLow,s.dayHigh),'Avg Volume',fVolM(s.avgVolume),'Volume',fVolM(s.volume)],
+    ['Employees',isNum(s.employees)?s.employees.toLocaleString():NA,'Country',s.country||NA,'Exchange',s.exchange||NA,'Open',v(s.open),'Price',v(s.price),'Change',fPct(s.changePercent)],
+  ];
 }
+function renderSnapshot(s){
+  document.getElementById('modalSnapshot').innerHTML = snapRows(s).map(r=>
+    `<tr>${r.map((c,i)=> i%2===0 ? `<td class="sl">${c}</td>` : `<td class="sv">${c}</td>`).join('')}</tr>`).join('');
+}
+
+let qpChart = null, qpReq = 0;
+async function loadQuotePanel(s){
+  const req = ++qpReq;
+  const prof = document.getElementById('modalProfile');
+  prof.innerHTML = '';
+  const holder = document.getElementById('qpChart');
+  if(qpChart){ try{ qpChart.remove(); }catch(e){} qpChart = null; }
+  holder.innerHTML = '<div class="news-loading">Loading chart…</div>';
+  const q = await getQuote(s.ticker);
+  if(req !== qpReq) return;
+  holder.innerHTML = '';
+  if(!q || !q.history){ holder.innerHTML = '<div class="news-loading">Price history unavailable.</div>'; return; }
+  const p = q.profile || {};
+  if(p.summary){
+    const short = p.summary.length > 420 ? p.summary.slice(0, 420).replace(/\s+\S*$/,'')+'…' : p.summary;
+    prof.innerHTML = `<p><span class="qp-prof-text">${short}</span>${p.summary.length>420?' <a href="#" class="qp-more">More</a>':''}</p>`+
+      `<div class="qp-prof-meta">${[p.city, p.state, p.country].filter(Boolean).join(', ')}${p.website?` · <a href="${p.website}" target="_blank" rel="noopener">${p.website.replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,'')}</a>`:''}</div>`;
+    const more = prof.querySelector('.qp-more');
+    if(more) more.onclick = e=>{ e.preventDefault(); prof.querySelector('.qp-prof-text').textContent = p.summary; more.remove(); };
+  }
+  const H = q.history;
+  const close = H.d.map((d,i)=>({time:d, value:H.c[i]})).filter(x=>x.value>0);
+  const sma = n => close.map((x,i)=> i<n-1 ? null : {time:x.time, value: +(close.slice(i-n+1,i+1).reduce((a,b)=>a+b.value,0)/n).toFixed(2)}).filter(Boolean);
+  const isDark = document.documentElement.dataset.theme !== 'light';
+  qpChart = LightweightCharts.createChart(holder, {
+    width: holder.clientWidth || 600, height: holder.clientHeight || 230,
+    layout:{ background:{color:'transparent'}, textColor: isDark?'#8b94a3':'#6b7280', fontSize:11 },
+    grid:{ vertLines:{color: isDark?'#1d2230':'#eef1f6'}, horzLines:{color: isDark?'#1d2230':'#eef1f6'} },
+    rightPriceScale:{ borderVisible:false }, timeScale:{ borderVisible:false }, handleScroll:false, handleScale:false,
+  });
+  const up = (s.perfY ?? 0) >= 0;
+  const area = qpChart.addAreaSeries({ lineColor: up?'#26a65b':'#ef5350', topColor: up?'rgba(38,166,91,.22)':'rgba(239,83,80,.22)', bottomColor:'rgba(0,0,0,0)', lineWidth:2, priceLineVisible:false });
+  const s50 = qpChart.addLineSeries({ color:'#4f8cff', lineWidth:1, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
+  const s200 = qpChart.addLineSeries({ color:'#f5a623', lineWidth:1, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
+  const all50 = sma(50), all200 = sma(200);
+  const draw = n => {
+    const from = close[Math.max(0, close.length-n)].time;
+    area.setData(close.filter(x=>x.time>=from)); s50.setData(all50.filter(x=>x.time>=from)); s200.setData(all200.filter(x=>x.time>=from));
+    qpChart.timeScale().fitContent();
+    const first = close.find(x=>x.time>=from), last = close[close.length-1];
+    const ch = (last.value/first.value-1)*100;
+    document.getElementById('qpChartTitle').innerHTML = `Price · <span class="${ch>=0?'pos':'neg'}">${ch>=0?'+':''}${ch.toFixed(2)}%</span> over period`;
+  };
+  document.querySelectorAll('#qpRange button').forEach(b=> b.onclick = ()=>{
+    document.querySelectorAll('#qpRange button').forEach(x=>x.classList.toggle('on', x===b)); draw(+b.dataset.n); });
+  draw(252);
+  document.querySelectorAll('#qpRange button').forEach(x=>x.classList.toggle('on', x.dataset.n==='252'));
+}
+function openFullChart(){
+  if(!modalTicker) return;
+  const t = modalTicker; closeModal();
+  document.getElementById('chartTickerInput').value = t;
+  document.getElementById('chartPeriodSel').value = '1y';
+  if(lwChartInst){ try{ lwChartInst.remove(); }catch(e){} lwChartInst = null; }
+  setView('charts'); loadChart();
+}
+function compareFromModal(){
+  if(!modalTicker) return;
+  compareSet.add(modalTicker);
+  if(typeof updateCompareBar==='function') updateCompareBar();
+  showToast(`${modalTicker} added to compare (${compareSet.size} selected). Use "Open in Compare" above the table.`);
+}
+
 function closeModal(){
   document.getElementById('modalOverlay').classList.remove('show');
   modalTicker = null;
@@ -2138,32 +2020,14 @@ function closeModal(){
 }
 
 let modalNewsRequestId = 0;
-async function loadModalNews(s){
+function loadModalNews(s){
   const listEl = document.getElementById('modalNewsList');
-  listEl.innerHTML = '<li class="news-loading">Loading…</li>';
-  // Guards against a stale response landing after the user has already opened a
-  // different stock (e.g. clicking through several rows quickly).
-  const requestId = ++modalNewsRequestId;
-  // Strip common corporate suffixes — "Tesla Inc stock" returns broad/generic results from
-  // Yahoo's search API, while a clean company name (e.g. "Tesla") returns tightly relevant
-  // matches, per manual testing during development.
-  const cleanName = s.name.replace(/\s+(Inc\.?|Corp\.?|Corporation|Co\.?|Company|plc|Ltd\.?|Group|Holdings?|International|The)\.?$/i, '').trim();
-  const { articles, source } = await fetchNews([cleanName || s.name], 8);
-  if(requestId !== modalNewsRequestId) return;
-  const titleEl = document.querySelector('.modal-news-title .sim-tag');
-  if(titleEl) titleEl.textContent = `(${source})`;
-  if(!articles.length){
-    listEl.innerHTML = `<li class="news-loading">No recent news found for ${s.ticker}.</li>`;
-    return;
-  }
+  const articles = newsFromRow(s);
+  if(!articles.length){ listEl.innerHTML = `<li class="news-loading">No headlines for ${s.ticker} in this snapshot.</li>`; return; }
   listEl.innerHTML = articles.map(a=>{
-    const t = fmtNewsTime(a.date);
     const safeLink = a.link && a.link.startsWith('http') ? a.link : '#';
-    return `<li class="news-item">
-      <span class="news-time">${t}</span>
-      ${srcIcon(a.publisher)}
-      <span class="news-headline" onclick="window.open('${safeLink}','_blank')">${a.title}</span>
-    </li>`;
+    return `<li class="news-item"><span class="news-time">${fmtNewsTime(a.date)}</span>${srcIcon(a.publisher)}
+      <a class="news-headline" href="${safeLink}" target="_blank" rel="noopener">${a.title}</a></li>`;
   }).join('');
 }
 
@@ -2174,99 +2038,47 @@ function recalcModal(){
   const discount = parseFloat(document.getElementById('discountInput').value)/100;
   document.getElementById('growthDisplay').textContent = (growth*100).toFixed(1);
   document.getElementById('discountDisplay').textContent = (discount*100).toFixed(1);
-  let fairValue, upside, score, rec, cls, note;
-  if(s.eps <= 0){
-    fairValue = s.price; upside = 0; score = 30; rec='CAUTION ⚠️'; cls='hold';
-    note = `${s.ticker} currently has negative earnings, so a DCF / fair-value estimate isn't meaningful here. Weigh turnaround catalysts and balance-sheet strength instead of these numbers.`;
+  let fairValue = null, upside = null, rec, cls, note;
+  if(!(s.eps > 0)){
+    rec = 'Model not applicable'; cls = 'hold';
+    note = `${s.ticker} has negative or missing trailing earnings, so an earnings-based model value isn't meaningful. Look at revenue growth, cash flow and the balance sheet instead.`;
   } else {
-    let intrinsic=0, futureEPS=s.eps;
-    for(let y=1;y<=5;y++){ futureEPS*=(1+growth); intrinsic += futureEPS/Math.pow(1+discount,y); }
-    const tG=0.03, denom = discount-tG;
-    const terminal = denom>0.005 ? (futureEPS*(1+tG))/denom / Math.pow(1+discount,5) : 0;
-    intrinsic += terminal;
-    fairValue = (intrinsic + s.eps*22)/2;
-    upside = ((fairValue - s.price)/s.price)*100;
-    score = 50;
-    if(s.pe>0 && s.pe<18) score+=15; else if(s.pe>32) score-=15;
-    if(s.roe>20) score+=10; else if(s.roe<8) score-=10;
-    if(growth>0.15) score+=10; else if(growth<0.03) score-=10;
-    if(upside>25) score+=15; else if(upside<-15) score-=15;
-    score = Math.max(0, Math.min(100, score));
-    if(score>=70){ rec='STRONG BUY'; cls='buy'; } else if(score>=55){ rec='BUY'; cls='buy'; }
-    else if(score>=40){ rec='HOLD'; cls='hold'; } else if(score>=25){ rec='SELL'; cls='sell'; } else { rec='STRONG SELL'; cls='sell'; }
-    note = `Fair value blends a 5-yr DCF (${(growth*100).toFixed(1)}% growth, ${(discount*100).toFixed(1)}% discount rate) with a 22x peer P/E multiple. Drag the sliders to test your own assumptions.`;
+    // 5 years of EPS at the chosen growth rate, discounted, plus a 3% perpetual-growth terminal value,
+    // blended 50/50 with a 20x market multiple on trailing EPS.
+    let pv = 0, e = s.eps;
+    for(let y=1;y<=5;y++){ e *= (1+growth); pv += e/Math.pow(1+discount,y); }
+    const tg = 0.03, terminal = discount-tg > 0.005 ? (e*(1+tg))/(discount-tg)/Math.pow(1+discount,5) : 0;
+    fairValue = ((pv + terminal) + s.eps*20) / 2;
+    upside = (fairValue/s.price - 1)*100;
+    if(upside > 20){ rec = 'Trades below this model value'; cls = 'buy'; }
+    else if(upside < -20){ rec = 'Trades above this model value'; cls = 'sell'; }
+    else { rec = 'Trades near this model value'; cls = 'hold'; }
+    note = `Model value = average of (a) 5 years of EPS growing ${(growth*100).toFixed(1)}%/yr discounted at ${(discount*100).toFixed(1)}% with 3% terminal growth and (b) 20x trailing EPS. Defaults use the analysts' next-year EPS estimate. Change the sliders to test your own view. Educational only, not investment advice.`;
   }
-  const card = document.getElementById('modalRecCard'); card.className = `modal-rec ${cls}`;
+  document.getElementById('modalRecCard').className = `modal-rec ${cls}`;
   document.getElementById('modalRec').textContent = rec;
-  document.getElementById('modalScore').textContent = `Score: ${score.toFixed(0)}/100 · Fair Value $${fairValue.toFixed(2)} · ${upside>=0?'+':''}${upside.toFixed(1)}% vs current price`;
+  document.getElementById('modalScore').textContent = fairValue==null ? '' :
+    `Model value $${fairValue.toFixed(2)} vs price $${s.price.toFixed(2)} (${upside>=0?'+':''}${upside.toFixed(1)}%)`;
   document.getElementById('modalNote').textContent = note;
   document.getElementById('modalMetricsGrid').innerHTML = `
-    <div class="mm-card"><div class="mm-label">FinSTR Score</div><div class="mm-value">${scoreBadge(finstrScore(s))}</div></div>
-    <div class="mm-card"><div class="mm-label">Fair Value</div><div class="mm-value">$${fairValue.toFixed(2)}</div></div>
-    <div class="mm-card"><div class="mm-label">Upside</div><div class="mm-value ${upside>=0?'pos':'neg'}">${upside>=0?'+':''}${upside.toFixed(1)}%</div></div>
-    <div class="mm-card"><div class="mm-label">P/E</div><div class="mm-value">${s.pe>0? s.pe.toFixed(1)+'x':'N/A'}</div></div>
-    <div class="mm-card"><div class="mm-label">PEG</div><div class="mm-value">${s.peg.toFixed(2)}</div></div>
-    <div class="mm-card"><div class="mm-label">ROE</div><div class="mm-value">${s.roe.toFixed(1)}%</div></div>
-    <div class="mm-card"><div class="mm-label">Profit Margin</div><div class="mm-value">${s.profitMargin.toFixed(1)}%</div></div>
-    <div class="mm-card"><div class="mm-label">Volume</div><div class="mm-value">${s.volume.toFixed(1)}M</div></div>
-    <div class="mm-card"><div class="mm-label">vs 50D MA</div><div class="mm-value ${s.price>=s.ma50?'pos':'neg'}">${s.price>=s.ma50?'Above ▲':'Below ▼'}</div></div>
-    ${s.fiftyTwoWeekLow!=null ? `<div class="mm-card"><div class="mm-label">52-Week Range</div><div class="mm-value" style="font-size:13px">$${s.fiftyTwoWeekLow.toFixed(2)} – $${s.fiftyTwoWeekHigh.toFixed(2)}</div></div>` : ''}
-    ${s.dayLow!=null ? `<div class="mm-card"><div class="mm-label">Day Range</div><div class="mm-value" style="font-size:13px">$${s.dayLow.toFixed(2)} – $${s.dayHigh.toFixed(2)}</div></div>` : ''}`;
+    <div class="mm-card"><div class="mm-label">FinSTR Score <span class="dim-note" title="Average of the Value score (P/E, PEG) and Momentum score (distance from 50-day average, day change). Separate from the model value.">ⓘ</span></div><div class="mm-value">${scoreBadge(finstrScore(s))}</div></div>
+    <div class="mm-card"><div class="mm-label">Model Value</div><div class="mm-value">${fairValue==null?'-':'$'+fairValue.toFixed(2)}</div></div>
+    <div class="mm-card"><div class="mm-label">vs Price</div><div class="mm-value ${upside>=0?'pos':'neg'}">${upside==null?'-':(upside>=0?'+':'')+upside.toFixed(1)+'%'}</div></div>
+    <div class="mm-card"><div class="mm-label">Analyst Target</div><div class="mm-value">${isNum(s.target)?'$'+s.target.toFixed(2):'-'}</div></div>`;
   renderModalProjection(s, growth);
 }
 function renderModalProjection(s, growth){
-  const investment = parseFloat(document.getElementById('modalInvestment').value) || 10000;
-  const shares = investment / s.price;
-  let price = s.price, divTotal = 0, rows = '';
+  const investment = Math.max(0, parseFloat(document.getElementById('modalInvestment').value) || 0);
+  const shares = s.price>0 ? investment / s.price : 0;
+  const dps0 = isNum(s.divRate) ? s.divRate : 0;   // annual dividend per share, grown with the price
+  let price = s.price, dps = dps0, divs = 0, rows = '';
   for(let y=1;y<=5;y++){
-    price *= (1+growth);
-    divTotal += shares*price*(s.dividendYield/100);
-    const val = shares*price + divTotal, ret = val - investment;
-    rows += `<tr><td>Yr ${y}</td><td>$${price.toFixed(2)}</td><td>$${val.toLocaleString(undefined,{maximumFractionDigits:0})}</td><td class="${ret>=0?'pos':'neg'}">${ret>=0?'+':''}$${ret.toLocaleString(undefined,{maximumFractionDigits:0})}</td></tr>`;
+    price *= (1+growth); dps *= (1+growth);
+    divs += shares*dps;
+    const val = shares*price + divs, ret = val - investment;
+    rows += `<tr><td>Yr ${y}</td><td>$${price.toFixed(2)}</td><td>$${val.toLocaleString(undefined,{maximumFractionDigits:0})}</td><td class="${ret>=0?'pos':'neg'}">${ret>=0?'+':'-'}$${Math.abs(ret).toLocaleString(undefined,{maximumFractionDigits:0})}</td></tr>`;
   }
   document.getElementById('modalProjBody').innerHTML = rows;
-}
-async function fetchLivePrice(){
-  const s = stockData.find(x=>x.ticker===modalTicker);
-  if(!s) return;
-  const btn = document.getElementById('liveFetchBtn'), status = document.getElementById('liveStatus');
-  btn.disabled = true; btn.textContent = 'Fetching…'; status.textContent = '';
-  // Try backend /api/price first (available when running locally)
-  try{
-    const res = await fetch(`/api/price?ticker=${encodeURIComponent(s.ticker)}`, {signal: AbortSignal.timeout(5000)});
-    if(res.ok){
-      const data = await res.json();
-      if(data.price){
-        s.price = data.price;
-        document.getElementById('modalPrice').textContent = `$${s.price.toFixed(2)}`;
-        recalcModal(); renderAll();
-        status.textContent = '✓ Live price from Yahoo Finance';
-        btn.disabled = false; btn.textContent = '🔄 Fetch Live Price';
-        return;
-      }
-    }
-  }catch(e){}
-  // Fallback: Alpha Vantage demo key (25 req/day limit)
-  try{
-    const symbol = s.ticker.replace('.','-');
-    const res = await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=demo`);
-    const json = await res.json();
-    const q = json['Global Quote'];
-    if(q && q['05. price']){
-      s.price = parseFloat(q['05. price']);
-      s.changePercent = parseFloat((q['10. change percent']||'0%').replace('%',''));
-      document.getElementById('modalPrice').textContent = `$${s.price.toFixed(2)}`;
-      const chEl = document.getElementById('modalChange');
-      chEl.textContent = `${s.changePercent>=0?'+':''}${s.changePercent.toFixed(2)}% today`;
-      chEl.className = `modal-change ${s.changePercent>=0?'pos':'neg'}`;
-      const sparkLine = document.getElementById('modalSparkLine');
-      sparkLine.setAttribute('points', genSparkPoints(s,300,50));
-      sparkLine.setAttribute('stroke', s.changePercent>=0?'#26a65b':'#ef5350');
-      recalcModal(); renderAll();
-      status.textContent = '✓ Live price loaded';
-    } else { status.textContent = 'Rate limit reached (25/day) — run locally for unlimited live prices.'; }
-  }catch(e){ status.textContent = 'Live fetch failed.'; }
-  btn.disabled = false; btn.textContent = '🔄 Fetch Live Price';
 }
 
 // ---------- PRICE REFRESH (Option A+B) ----------
@@ -2281,19 +2093,6 @@ const PROXY_LIST = [
 // batch — and the whole Futures/Forex grid — for up to 18s before. 4s x 2 proxies caps
 // the worst case at 8s per symbol instead.
 
-async function fetchWithProxy(url){
-  for(const {base, encode} of PROXY_LIST){
-    try{
-      const proxyUrl = base + (encode ? encodeURIComponent(url) : url);
-      const ctrl = new AbortController();
-      const tid = setTimeout(()=>ctrl.abort(), 4000);
-      const res = await fetch(proxyUrl, {signal: ctrl.signal});
-      clearTimeout(tid);
-      if(res.ok) return await res.json();
-    }catch(e){}
-  }
-  return null;
-}
 
 async function fetchTextWithProxy(url){
   for(const {base, encode} of PROXY_LIST){
@@ -2364,72 +2163,8 @@ let priceRefreshInterval = null;
 let livePriceBannerSet = false;
 let refreshInFlight = false;
 
-async function refreshPrices(){
-  // Guard against overlap: a full batched fetch across ~250 tickers can occasionally run
-  // longer than the 60s auto-refresh interval, especially if the proxy is slow/retrying.
-  if(refreshInFlight) return 0;
-  refreshInFlight = true;
-  try{
-    return await refreshPricesInner();
-  } finally {
-    refreshInFlight = false;
-  }
-}
 
-async function refreshPricesInner(){
-  let priceMap = {};
-  try{
-    if(usingLiveData){
-      const res = await fetch('/api/prices');
-      if(res.ok){
-        const prices = await res.json();
-        prices.forEach(p=>{ priceMap[p.ticker]=p; });
-      }
-    } else {
-      priceMap = await fetchAllPricesDirect();
-    }
-  }catch(e){}
 
-  let updated = 0;
-  stockData.forEach(s=>{
-    const p = priceMap[s.ticker];
-    if(p && p.price){
-      s.price         = p.price;
-      s.change        = p.change;
-      s.changePercent = p.changePercent;
-      // These come from the same real Yahoo response as price — replace the earlier
-      // synthesized placeholders with genuine values once a live fetch succeeds.
-      if(p.ma50 != null) s.ma50 = p.ma50;
-      if(p.volume != null) s.volume = p.volume;
-      if(p.fiftyTwoWeekHigh != null) s.fiftyTwoWeekHigh = p.fiftyTwoWeekHigh;
-      if(p.fiftyTwoWeekLow != null) s.fiftyTwoWeekLow = p.fiftyTwoWeekLow;
-      if(p.dayHigh != null) s.dayHigh = p.dayHigh;
-      if(p.dayLow != null) s.dayLow = p.dayLow;
-      s.hasRealFundamentals = true;
-      updated++;
-    }
-  });
-
-  if(updated > 0){
-    renderAll();
-    if(state.view==='home'&&homeLoaded){ renderBreadth(); renderGainersLosers(); }
-    const ts = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    if(!usingLiveData && !livePriceBannerSet){
-      livePriceBannerSet = true;
-      document.getElementById('dataBanner').innerHTML =
-        '<b>📡 Live Data:</b> Price, volume, day range, 52-week range & 50-day MA are real-time from Yahoo Finance · P/E, PEG, beta, ROE, margin & dividend yield are estimates (Yahoo\'s endpoints for those now require server-side auth Yahoo added — see the "~" marked columns) · <span id="lastUpdated"></span>';
-    }
-    const el = document.getElementById('lastUpdated');
-    if(el) el.textContent = `Prices last refreshed ${ts}`;
-  }
-  return updated;
-}
-
-function startPriceRefresh(){
-  if(priceRefreshInterval) return;
-  refreshPrices();
-  priceRefreshInterval = setInterval(refreshPrices, 60000);
-}
 
 // ---------- HOME ----------
 let homeLoaded = false;
@@ -2442,100 +2177,42 @@ const INDEX_SYMBOLS = {
 const _idxCharts = {};
 
 async function loadIndexCard(id, sym, label){
-  try{
-    // Try two proxies with fallback
-    let data = null;
-    const url = `https://query2.finance.yahoo.com/v8/finance/chart/${sym}?interval=5m&range=1d`;
-    for(let attempt = 0; attempt < 2 && !data; attempt++){
-      try{
-        const proxy = attempt === 0
-          ? 'https://corsproxy.io/?' + url
-          : 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-        const ctrl = new AbortController();
-        const tid = setTimeout(()=>ctrl.abort(), 12000);
-        const res = await fetch(proxy, {signal: ctrl.signal});
-        clearTimeout(tid);
-        if(res.ok) data = await res.json();
-      }catch(e){}
-    }
-    if(!data) return;
-    const result = data?.chart?.result?.[0];
-    const meta = result?.meta;
-    const q = result?.indicators?.quote?.[0];
-    const ts = result?.timestamp;
-    if(!meta || !q || !ts || !ts.length) return;
-
-    const price = meta.regularMarketPrice || q.close?.filter(v=>v!=null).pop() || 0;
-    const prev  = meta.chartPreviousClose || meta.previousClose || price;
-    const chg   = price - prev;
-    const chgP  = prev ? (chg/prev*100) : 0;
-    const isUp  = chg >= 0;
-
-    const card = document.getElementById(id);
-    if(!card) return;
-    card.querySelector('.idx-name').innerHTML = `${label} <span class="idx-date">${new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>`;
-    card.querySelector('.idx-price').textContent = price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-    const chgEl = card.querySelector('.idx-chg');
-    chgEl.textContent = `${isUp?'+':''}${chg.toFixed(2)} (${isUp?'+':''}${chgP.toFixed(2)}%)`;
-    chgEl.style.color = isUp ? 'var(--pos)' : 'var(--neg)';
-
-    // Build candlestick data
-    const candles = [], volumes = [];
-    for(let i = 0; i < ts.length; i++){
-      const o=q.open?.[i], h=q.high?.[i], l=q.low?.[i], c=q.close?.[i], v=q.volume?.[i];
-      if(o==null||h==null||l==null||c==null) continue;
-      candles.push({time: ts[i], open: o, high: h, low: l, close: c});
-      volumes.push({time: ts[i], value: v||0, color: c>=o ? '#26a65b44' : '#ef535044'});
-    }
-    if(!candles.length) return;
-
-    const chartDiv = document.getElementById(id+'-chart');
-    if(!chartDiv) return;
-    if(_idxCharts[id]){ try{ _idxCharts[id].remove(); }catch(e){} delete _idxCharts[id]; }
-
-    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
-    const chart = LightweightCharts.createChart(chartDiv, {
-      width: chartDiv.offsetWidth || 260,
-      height: 80,
-      layout: { background:{type:'Solid',color:'transparent'}, textColor: isDark?'#555':'#888' },
-      grid: { vertLines:{visible:false}, horzLines:{visible:false} },
-      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-      rightPriceScale: { visible:false },
-      leftPriceScale: { visible:false },
-      timeScale: { visible:false, borderVisible:false },
-      handleScale: false,
-      handleScroll: false,
-    });
-
-    const volSeries = chart.addHistogramSeries({
-      color: '#26a65b44',
-      priceFormat: {type:'volume'},
-      priceScaleId: 'vol',
-      lastValueVisible: false,
-      priceLineVisible: false,
-    });
-    chart.priceScale('vol').applyOptions({ scaleMargins:{top:0.8, bottom:0}, visible:false });
-    volSeries.setData(volumes);
-
-    const candleSeries = chart.addCandlestickSeries({
-      upColor: '#26a65b', downColor: '#ef5350',
-      wickUpColor: '#26a65b', wickDownColor: '#ef5350',
-      borderVisible: false,
-      priceLineVisible: false,
-      lastValueVisible: false,
-    });
-    candleSeries.setData(candles);
-    chart.timeScale().fitContent();
-    _idxCharts[id] = chart;
-  }catch(e){}
+  const m = await getMarkets();
+  const t = (m.indices||[]).find(x=>x.id===id);
+  const card = document.getElementById(id);
+  if(!card || !t) return;
+  const isUp = (t.changePercent||0) >= 0;
+  const last = t.dates && t.dates.length ? new Date(t.dates[t.dates.length-1]+'T12:00:00') : null;
+  card.querySelector('.idx-name').innerHTML = `${label} <span class="idx-date">${last? last.toLocaleDateString('en-US',{month:'short',day:'numeric'}) : ''} close</span>`;
+  card.querySelector('.idx-price').textContent = t.price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const chgEl = card.querySelector('.idx-chg');
+  chgEl.textContent = `${isUp?'+':''}${t.change.toFixed(2)} (${isUp?'+':''}${t.changePercent.toFixed(2)}%)`;
+  chgEl.style.color = isUp ? 'var(--pos)' : 'var(--neg)';
+  const chartDiv = document.getElementById(id+'-chart');
+  if(!chartDiv) return;
+  if(_idxCharts[id]){ try{ _idxCharts[id].remove(); }catch(e){} delete _idxCharts[id]; }
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const chart = LightweightCharts.createChart(chartDiv, {
+    width: chartDiv.offsetWidth || 260, height: 80,
+    layout: { background:{type:'Solid',color:'transparent'}, textColor: isDark?'#555':'#888' },
+    grid: { vertLines:{visible:false}, horzLines:{visible:false} },
+    rightPriceScale:{visible:false}, leftPriceScale:{visible:false}, timeScale:{visible:false, borderVisible:false},
+    handleScale:false, handleScroll:false, crosshair:{ vertLine:{visible:false}, horzLine:{visible:false} },
+  });
+  const up = (t.perfM||0) >= 0;
+  const area = chart.addAreaSeries({ lineColor: up?'#26a65b':'#ef5350', topColor: up?'rgba(38,166,91,.28)':'rgba(239,83,80,.28)',
+    bottomColor:'rgba(0,0,0,0)', lineWidth:2, priceLineVisible:false, lastValueVisible:false });
+  area.setData(t.spark.map((v,i)=>({time:t.dates[i], value:v})));
+  chart.timeScale().fitContent();
+  _idxCharts[id] = chart;
 }
 
 function renderBreadth(){
   const total = stockData.length;
   const adv = stockData.filter(s=>s.changePercent>0).length;
   const dec = stockData.filter(s=>s.changePercent<0).length;
-  const above = stockData.filter(s=>s.price>s.ma50).length;
-  const below = total-above;
+  const above = stockData.filter(s=>isNum(s.vsSma50) && s.vsSma50>=0).length;
+  const below = stockData.filter(s=>isNum(s.vsSma50) && s.vsSma50<0).length;
   const set=(id,val,pct,barId,pct2)=>{
     document.getElementById(id).textContent=val;
     document.getElementById(id+'Pct').textContent=`(${pct.toFixed(1)}%)`;
@@ -2549,13 +2226,14 @@ function renderBreadth(){
 }
 
 function getSignal(s){
-  if(s.changePercent >= 5)  return 'Top Gainers';
-  if(s.price > s.ma50 * 1.05 && s.changePercent > 0) return 'Above SMA50';
-  if(s.changePercent > 2)   return 'Overbought';
-  if(s.changePercent <= -5) return 'Top Losers';
-  if(s.price < s.ma50 * 0.95 && s.changePercent < 0) return 'Below SMA50';
-  if(s.changePercent < -2)  return 'Oversold';
-  return '';
+  if(isNum(s.fromHigh52) && s.fromHigh52 >= -1) return 'New 52W High';
+  if(isNum(s.fromLow52) && s.fromLow52 <= 1) return 'New 52W Low';
+  if(isNum(s.relVol) && s.relVol >= 2) return 'Unusual Volume';
+  if(isNum(s.rsi) && s.rsi >= 70) return 'Overbought';
+  if(isNum(s.rsi) && s.rsi <= 30) return 'Oversold';
+  if(s.changePercent >= 3) return 'Top Gainer';
+  if(s.changePercent <= -3) return 'Top Loser';
+  return isNum(s.vsSma50) ? (s.vsSma50>=0 ? 'Above SMA50' : 'Below SMA50') : '';
 }
 
 function renderGainersLosers(){
@@ -2614,8 +2292,8 @@ async function loadHome(){
   // Yahoo search hit for "market+today" — that endpoint's relevance ranking for a broad
   // query occasionally surfaced completely unrelated (non-financial) top stories.
   try{
-    const { articles } = await fetchNews(['market today','stock market'], 1);
-    const item = articles[0];
+    const nd = await getNewsData();
+    const item = ((nd.market||{}).main||[])[0];
     if(item) document.getElementById('homeHeadlineText').innerHTML=
       `<a href="${item.link}" target="_blank" style="color:var(--accent);text-decoration:none">${item.title}</a>`;
   }catch(e){}
@@ -2653,63 +2331,7 @@ function isPressReleaseSpam(title){
   return PRESS_RELEASE_SPAM_PATTERN.test(title || '');
 }
 
-async function fetchGoogleNews(queries, count=30){
-  const seen = new Set();
-  const articles = [];
-  await Promise.all(queries.map(async q=>{
-    try{
-      const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`;
-      const xmlText = await fetchTextWithProxy(url);
-      if(!xmlText) return;
-      const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
-      doc.querySelectorAll('item').forEach(item=>{
-        const title = item.querySelector('title')?.textContent || '';
-        const link = item.querySelector('link')?.textContent || '#';
-        const pubDate = item.querySelector('pubDate')?.textContent || '';
-        const source = item.querySelector('source')?.textContent || 'Google News';
-        // Google News RSS titles are formatted "Headline - Publisher"; split that back out.
-        const dashIdx = title.lastIndexOf(' - ');
-        const headline = dashIdx > 0 ? title.slice(0, dashIdx) : title;
-        const key = link || title;
-        if(title && !seen.has(key) && !isPressReleaseSpam(headline)){
-          seen.add(key);
-          articles.push({
-            title:     headline,
-            link:      link,
-            publisher: source || 'Google News',
-            date:      pubDate ? new Date(pubDate).toISOString() : '',
-            summary:   ''
-          });
-        }
-      });
-    }catch(e){}
-  }));
-  return articles.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,count);
-}
 
-async function fetchYahooNews(queries, count=30){
-  const seen = new Set();
-  const articles = [];
-  await Promise.all(queries.map(async q=>{
-    try{
-      const url=`https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&newsCount=10&quotesCount=0`;
-      const data=await fetchWithProxy(url);
-      (data?.news||[]).forEach(a=>{
-        if(!seen.has(a.uuid)&&a.title&&!isPressReleaseSpam(a.title)){
-          seen.add(a.uuid);
-          articles.push({
-            title:     a.title,
-            link:      a.link||'#',
-            publisher: a.publisher||'Yahoo Finance',
-            date:      a.providerPublishTime ? new Date(a.providerPublishTime*1000).toISOString() : '',
-            summary:   ''
-          });
-        }
-      });
-    }catch(e){}
-  }));
-  return articles.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,count);
-}
 
 // Tries Google News first (per user requirement that news be Google-sourced); falls back
 // to Yahoo Finance search only if Google returns nothing, so the section never goes empty.
@@ -2717,12 +2339,6 @@ async function fetchYahooNews(queries, count=30){
 // public CORS proxies fairly often (Google appears to actively push back on known open-
 // proxy IPs), so callers should show which source actually served the results rather
 // than always claiming Google.
-async function fetchNews(queries, count=30){
-  const google = await fetchGoogleNews(queries, count);
-  if(google.length) return { articles: google, source: 'Google News' };
-  const yahoo = await fetchYahooNews(queries, count);
-  return { articles: yahoo, source: 'Yahoo Finance' };
-}
 
 const SRC_COLORS=['#4f8cff','#26a65b','#ef5350','#ffc107','#ab47bc','#26c6da','#ff7043','#66bb6a'];
 function srcIcon(publisher){
@@ -2785,89 +2401,47 @@ function switchNewsTab(tab, el){
 }
 
 async function searchNews(){
-  const q = document.getElementById('newsSearchInput').value.trim();
+  const q = document.getElementById('newsSearchInput').value.trim().toLowerCase();
   if(!q){ loadNews(); return; }
   document.querySelectorAll('.news-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('newsMainTitle').textContent = `Results for "${q}"`;
-  const col = document.getElementById('newsMainCol');
-  const blogsCol = document.getElementById('newsBlogsCol');
-  col.innerHTML = '<li class="news-loading">Searching…</li>';
-  blogsCol.innerHTML = '<li class="news-loading">Searching…</li>';
-  document.getElementById('newsLoadMoreBtn').style.display='none';
-
-  const { articles: all, source } = await fetchNews([q], 40);
-  newsAllArticles = all;
-  newsPage = 1;
+  const nd = await getNewsData();
+  const pool = [...Object.values(nd).flatMap(t=>[...(t.main||[]),...(t.blogs||[])]), ...stockData.flatMap(newsFromRow)];
+  const seen = new Set();
+  const all = pool.filter(a=>{ const k=a.title.toLowerCase(); if(seen.has(k)) return false; seen.add(k);
+    return k.includes(q) || (a.ticker||'').toLowerCase()===q || (stockData.find(s=>s.ticker===a.ticker)?.name||'').toLowerCase().includes(q); })
+    .sort((a,b)=> Date.parse(b.date||0)-Date.parse(a.date||0));
+  newsAllArticles = all; newsPage = 1;
   if(!all.length){
-    col.innerHTML = `<li class="news-loading">No results for "${q}". <a href="https://finance.yahoo.com/lookup?s=${encodeURIComponent(q)}" target="_blank" style="color:var(--accent)">Search Yahoo Finance →</a></li>`;
-    blogsCol.innerHTML = '<li class="news-loading">No results.</li>';
+    document.getElementById('newsMainCol').innerHTML = `<li class="news-loading">No headlines in today's snapshot mention "${q}".</li>`;
+    document.getElementById('newsBlogsCol').innerHTML = '';
+    document.getElementById('newsLoadMoreBtn').style.display='none';
     return;
   }
-  const mainSlice = all.slice(0, NEWS_PAGE_SIZE);
-  renderArticles(mainSlice, 'newsMainCol');
-  renderArticles(dedupeAgainst(all.slice(NEWS_PAGE_SIZE, NEWS_PAGE_SIZE*2), mainSlice), 'newsBlogsCol');
-  document.getElementById('newsLoadMoreBtn').style.display = all.length > NEWS_PAGE_SIZE*2 ? '' : 'none';
-  document.getElementById('newsSourceNote').textContent = `Source: ${source}`;
+  renderArticles(all.slice(0, NEWS_PAGE_SIZE), 'newsMainCol');
+  document.getElementById('newsBlogsCol').innerHTML = '';
+  document.getElementById('newsLoadMoreBtn').style.display = all.length > NEWS_PAGE_SIZE ? '' : 'none';
+  document.getElementById('newsSourceNote').textContent = 'Source: Yahoo Finance headlines';
 }
 
 function loadMoreNews(){
-  const start = NEWS_PAGE_SIZE*2 + (newsPage-1)*NEWS_PAGE_SIZE;
+  const start = newsPage*NEWS_PAGE_SIZE;
   const next = newsAllArticles.slice(start, start+NEWS_PAGE_SIZE);
-  if(!next.length){ document.getElementById('newsLoadMoreBtn').style.display='none'; return; }
-  renderArticles(next, 'newsMainCol', true);
+  if(next.length) renderArticles(next, 'newsMainCol', true);
   newsPage++;
-  if(start+NEWS_PAGE_SIZE >= newsAllArticles.length) document.getElementById('newsLoadMoreBtn').style.display='none';
+  if(newsPage*NEWS_PAGE_SIZE >= newsAllArticles.length) document.getElementById('newsLoadMoreBtn').style.display='none';
 }
 
 async function loadNews(){
   newsLoaded = true;
   document.getElementById('newsMainTitle').textContent = 'News';
-  document.getElementById('newsLoadMoreBtn').style.display='none';
-  const col = document.getElementById('newsMainCol');
-  const blogsCol = document.getElementById('newsBlogsCol');
-  const { main: mainQueries, blogs: blogsQueries } = NEWS_TAB_QUERIES[currentNewsTab] || NEWS_TAB_QUERIES.market;
-  const cacheKey = NEWS_CACHE_PREFIX + currentNewsTab;
-
-  // Serve from localStorage cache if fresh (cached per-tab, so tabs no longer collide)
-  try{
-    const cached = JSON.parse(localStorage.getItem(cacheKey)||'null');
-    if(cached && Date.now()-cached.ts < NEWS_CACHE_TTL){
-      newsAllArticles = cached.main;
-      newsPage = 1;
-      const cachedMainSlice = cached.main.slice(0, NEWS_PAGE_SIZE);
-      renderArticles(cachedMainSlice, 'newsMainCol');
-      renderArticles(dedupeAgainst(cached.blogs, cachedMainSlice), 'newsBlogsCol');
-      document.getElementById('newsLoadMoreBtn').style.display = cached.main.length > NEWS_PAGE_SIZE ? '' : 'none';
-      document.getElementById('newsSourceNote').textContent = `Source: ${cached.source || 'Google News'}`;
-      return;
-    }
-  }catch(e){}
-
-  col.innerHTML = '<div class="news-loading">Loading news…</div>';
-  blogsCol.innerHTML = '<div class="news-loading">Loading…</div>';
-
-  // Google News RSS is the primary source (falls back to Yahoo only if empty)
-  try{
-    const [mainRes, blogsRes] = await Promise.all([
-      fetchNews(mainQueries, 30),
-      fetchNews(blogsQueries, 10),
-    ]);
-    const main = mainRes.articles, blogs = blogsRes.articles;
-    if(main.length || blogs.length){
-      newsAllArticles = main;
-      newsPage = 1;
-      const mainSlice = main.slice(0, NEWS_PAGE_SIZE);
-      renderArticles(mainSlice, 'newsMainCol');
-      renderArticles(dedupeAgainst(blogs, mainSlice), 'newsBlogsCol');
-      document.getElementById('newsLoadMoreBtn').style.display = main.length > NEWS_PAGE_SIZE ? '' : 'none';
-      document.getElementById('newsSourceNote').textContent = `Source: ${mainRes.source}`;
-      try{ localStorage.setItem(cacheKey, JSON.stringify({ts:Date.now(), main, blogs, source:mainRes.source})); }catch(e){}
-      return;
-    }
-  }catch(e){}
-
-  col.innerHTML='<li class="news-loading">Unable to load news. <a href="https://finance.yahoo.com/news/" target="_blank" style="color:var(--accent)">Browse Yahoo Finance →</a></li>';
-  blogsCol.innerHTML='';
+  const nd = await getNewsData();
+  const tab = nd[currentNewsTab] || nd.market || {main:[], blogs:[]};
+  newsAllArticles = tab.main || []; newsPage = 1;
+  renderArticles(newsAllArticles.slice(0, NEWS_PAGE_SIZE), 'newsMainCol');
+  renderArticles(dedupeAgainst(tab.blogs||[], newsAllArticles), 'newsBlogsCol');
+  document.getElementById('newsLoadMoreBtn').style.display = newsAllArticles.length > NEWS_PAGE_SIZE ? '' : 'none';
+  document.getElementById('newsSourceNote').textContent = 'Source: Yahoo Finance headlines · snapshot';
 }
 
 // ---------- CHARTS ----------
@@ -2898,37 +2472,22 @@ async function loadChart(){
     color:'#4f8cff', priceFormat:{type:'volume'}, priceScaleId:'', scaleMargins:{top:0.85, bottom:0}
   });
 
-  // Map period selector → Yahoo Finance range param
-  const rangeMap = {'1wk':'5d','1mo':'1mo','3mo':'3mo','6mo':'6mo','1y':'1y','5y':'5y'};
-  const yRange = rangeMap[period] || '1mo';
-  const yInterval = period==='5y' ? '1wk' : interval;
-
   let bars = null;
-  // Try backend first
-  try{
-    const res = await fetch(`/api/chart?ticker=${ticker}&period=${period}&interval=${interval}`, {signal: AbortSignal.timeout(4000)});
-    if(res.ok){ const d = await res.json(); if(d?.length) bars = d; }
-  }catch(e){}
-
-  // Fallback: fetch directly from Yahoo Finance via corsproxy
-  if(!bars){
-    try{
-      const url = `https://query2.finance.yahoo.com/v8/finance/chart/${ticker}?interval=${yInterval}&range=${yRange}`;
-      const data = await fetchWithProxy(url);
-      const result = data?.chart?.result?.[0];
-      const ts = result?.timestamp || [];
-      const q = result?.indicators?.quote?.[0] || {};
-      bars = ts.map((t,i)=>({
-        time:   new Date(t*1000).toISOString().split('T')[0],
-        open:   Math.round((q.open?.[i]||0)*100)/100,
-        high:   Math.round((q.high?.[i]||0)*100)/100,
-        low:    Math.round((q.low?.[i]||0)*100)/100,
-        close:  Math.round((q.close?.[i]||0)*100)/100,
-        volume: q.volume?.[i]||0
-      })).filter(b=>b.close>0);
-    }catch(e){}
+  const qd = await getQuote(ticker);
+  if(qd && qd.history){
+    const H = qd.history, take = {'1wk':5,'1mo':21,'3mo':63,'6mo':126,'1y':252,'2y':9999}[period] || 21;
+    let b = H.d.map((d,i)=>({time:d, open:H.o[i], high:H.h[i], low:H.l[i], close:H.c[i], volume:H.v[i]})).filter(x=>x.close>0);
+    b = b.slice(-take);
+    if(interval==='1wk'){
+      const wk = {};
+      b.forEach(x=>{ const dt=new Date(x.time+'T12:00:00'); const mon=new Date(dt); mon.setDate(dt.getDate()-((dt.getDay()+6)%7));
+        const k=mon.toISOString().slice(0,10); const w=wk[k];
+        if(!w) wk[k]={time:k, open:x.open, high:x.high, low:x.low, close:x.close, volume:x.volume};
+        else { w.high=Math.max(w.high,x.high); w.low=Math.min(w.low,x.low); w.close=x.close; w.volume+=x.volume; } });
+      b = Object.values(wk);
+    }
+    bars = b;
   }
-
   if(bars && bars.length){
     lwCandleSeries.setData(bars.map(b=>({time:b.time,open:b.open,high:b.high,low:b.low,close:b.close})));
     lwVolSeries.setData(bars.map(b=>({time:b.time,value:b.volume,color:b.close>=b.open?'rgba(38,166,91,0.4)':'rgba(239,83,80,0.4)'})));
@@ -2942,10 +2501,11 @@ async function loadChart(){
        <span class="chart-stat">Open <b>$${last.open.toFixed(2)}</b></span>
        <span class="chart-stat">High <b>$${last.high.toFixed(2)}</b></span>
        <span class="chart-stat">Low <b>$${last.low.toFixed(2)}</b></span>
-       <span class="chart-stat ${chg>=0?'pos':'neg'}">${chg>=0?'+':''}${chg}% (period)</span>`;
+       <span class="chart-stat ${chg>=0?'pos':'neg'}">${chg>=0?'+':''}${chg}% (period)</span>
+       <span class="chart-stat" style="color:var(--dim)">Daily bars to ${last.time}</span>`;
   } else {
     lwCandleSeries.setData([]);
-    document.getElementById('chartInfo').innerHTML = '<span style="color:var(--dim)">No data returned for this ticker.</span>';
+    document.getElementById('chartInfo').innerHTML = '<span style="color:var(--dim)">Charts cover S&amp;P 500 companies. Try a ticker such as AAPL, MSFT or JPM.</span>';
   }
   window.addEventListener('resize', ()=>{ if(lwChartInst) lwChartInst.applyOptions({width: wrap.clientWidth}); });
 }
@@ -3039,116 +2599,7 @@ function renderCalendar(){
   </tr>`).join('');
 }
 
-// ---------- QUANT DESK ----------
-// Same fallback-chain pattern as init()'s screener fetch: try the live Flask
-// API first (/api/quant/*, only reachable when running app.py locally), and
-// fall back to the static JSON snapshot quant/run_quant_cycle.py writes on
-// GitHub Pages (no server there — same reason data/screener.json exists).
-async function fetchQuantJSON(apiPath, snapshotPicker){
-  try{
-    const res = await fetch(apiPath, {cache:'no-store'});
-    if(res.ok) return await res.json();
-  }catch(e){}
-  try{
-    const res = await fetch('data/quant_snapshot.json', {cache:'no-store'});
-    if(res.ok){
-      const snapshot = await res.json();
-      return snapshotPicker(snapshot);
-    }
-  }catch(e){}
-  return null;
-}
 
-function quantEquitySparkPoints(history, w, h){
-  if(!history || history.length < 2) return '';
-  const vals = history.map(pt=>pt.equity);
-  const min = Math.min(...vals), max = Math.max(...vals);
-  const range = (max-min) || (vals[0]*0.01) || 1;
-  const stepX = w/(vals.length-1);
-  return vals.map((v,i)=> `${(i*stepX).toFixed(1)},${(h - ((v-min)/range)*h).toFixed(1)}`).join(' ');
-}
-
-async function loadQuantDesk(){
-  quantLoaded = true;
-
-  const [allocation, pnl, scoreboard] = await Promise.all([
-    fetchQuantJSON('/api/quant/allocation', snap => snap.allocation),
-    fetchQuantJSON('/api/quant/paper/pnl', snap => snap.paper),
-    fetchQuantJSON('/api/quant/scoreboard', () => null), // scoreboard has no static-snapshot equivalent yet
-  ]);
-
-  // Paper P&L headline + equity curve
-  const pnlHeadEl = document.getElementById('quantPnlHeadline');
-  if(pnl && pnl.equity != null){
-    const sign = pnl.pnl_pct >= 0 ? '+' : '';
-    const cls = pnl.pnl_pct >= 0 ? 'pos' : 'neg';
-    pnlHeadEl.innerHTML = `<div>Paper Equity: <b>$${pnl.equity.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</b></div>
-      <div class="${cls}">${sign}${pnl.pnl_pct.toFixed(2)}% vs. $${pnl.starting_equity.toLocaleString()} paper start</div>`;
-    const spark = document.getElementById('quantEquitySpark');
-    spark.setAttribute('points', quantEquitySparkPoints(pnl.history, 300, 60));
-  } else {
-    pnlHeadEl.textContent = 'No paper account snapshot yet — the scheduled Quant Desk cycle hasn\'t run.';
-  }
-
-  // Open positions
-  const posBody = document.getElementById('quantPositionsBody');
-  const openPositions = (pnl && pnl.open_positions) || [];
-  posBody.innerHTML = openPositions.length ? openPositions.map(p=>{
-    const cls = p.unrealized_pnl >= 0 ? 'pos' : 'neg';
-    return `<tr>
-      <td><a href="#" onclick="event.preventDefault();openModal('${p.ticker}')" style="color:var(--accent)">${p.ticker}</a></td>
-      <td>${p.qty.toFixed(4)}</td>
-      <td>$${p.avg_price.toFixed(2)}</td>
-      <td class="${cls}">${p.unrealized_pnl>=0?'+':''}$${p.unrealized_pnl.toFixed(2)}</td>
-    </tr>`;
-  }).join('') : '<tr><td colspan="4" class="news-loading">No open paper positions yet.</td></tr>';
-
-  // Target allocation
-  const allocBody = document.getElementById('quantAllocationBody');
-  const positions = (allocation && allocation.positions) || [];
-  allocBody.innerHTML = positions.length ? positions.map(p=>{
-    const cls = p.delta >= 0 ? 'pos' : 'neg';
-    const conf = p.confidence != null ? `${(p.confidence*100).toFixed(0)}%` : '—';
-    return `<tr>
-      <td><a href="#" onclick="event.preventDefault();openModal('${p.ticker}')" style="color:var(--accent)">${p.ticker}</a></td>
-      <td>${conf}</td>
-      <td>${(p.current_weight*100).toFixed(2)}%</td>
-      <td>${(p.target_weight*100).toFixed(2)}%</td>
-      <td class="${cls}">${p.delta>=0?'+':''}${(p.delta*100).toFixed(2)}%</td>
-    </tr>`;
-  }).join('') : '<tr><td colspan="5" class="news-loading">No allocation snapshot yet.</td></tr>';
-
-  // Honesty labeling for the allocation method, same pattern as estTag()/hasRealFundamentals:
-  // the disclaimer text above and this tag must reflect whichever method actually produced
-  // these weights (see quant/allocator.py::allocate()), never assume Black-Litterman ran.
-  const methodTag = document.getElementById('quantAllocationMethodTag');
-  const methodStatus = document.getElementById('quantMethodStatus');
-  const method = allocation && allocation.method;
-  if(method === 'black-litterman'){
-    methodTag.textContent = '(Kronos view + skfolio Black-Litterman)';
-    if(methodStatus) methodStatus.textContent = 'skfolio Black-Litterman is the method that produced this cycle\'s numbers';
-  } else if(method === 'confidence-weighted-tilt'){
-    methodTag.textContent = '(confidence-weighted tilt — Black-Litterman unavailable this cycle)';
-    if(methodStatus) methodStatus.textContent = 'a simpler confidence-weighted tilt (not Black-Litterman) produced this cycle\'s numbers';
-  } else {
-    methodTag.textContent = '(no allocation snapshot yet)';
-  }
-
-  // Forecast accuracy scoreboard (live-API only — no static fallback for this endpoint yet)
-  const summaryEl = document.getElementById('quantScoreboardSummary');
-  const scoreBody = document.getElementById('quantScoreboardBody');
-  if(scoreboard && scoreboard.scored_forecasts > 0){
-    const acc = scoreboard.overall_direction_accuracy;
-    summaryEl.innerHTML = `${scoreboard.scored_forecasts} forecasts scored so far · overall direction accuracy: <b>${(acc*100).toFixed(1)}%</b>`;
-    scoreBody.innerHTML = scoreboard.by_ticker.map(t=> `<tr>
-      <td>${t.ticker}</td><td>${t.scored_forecasts}</td>
-      <td>${t.direction_accuracy!=null ? (t.direction_accuracy*100).toFixed(1)+'%' : '—'}</td>
-    </tr>`).join('');
-  } else {
-    summaryEl.textContent = 'No forecasts have completed their 24h horizon yet — check back after the pipeline has run a few cycles.';
-    scoreBody.innerHTML = '';
-  }
-}
 
 function renderGroups(){
   const groups = aggregateGroups();
@@ -3223,31 +2674,6 @@ const CRYPTO_MAP = {
   'Avalanche':'AVAX-USD','Chainlink':'LINK-USD','Polygon':'MATIC-USD','Toncoin':'TON-USD'
 };
 
-async function fetchMktDirect(symbolMap){
-  const entries = Object.entries(symbolMap);
-  const results = [];
-  const BATCH = 6;
-  for(let i=0; i<entries.length; i+=BATCH){
-    if(i>0) await new Promise(r=>setTimeout(r,200));
-    const batch = entries.slice(i,i+BATCH);
-    const batchRes = await Promise.all(batch.map(async ([name,sym])=>{
-      try{
-        const url=`https://query2.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=2d`;
-        const data=await fetchWithProxy(url);
-        const meta=data?.chart?.result?.[0]?.meta;
-        if(!meta) return null;
-        const price=meta.regularMarketPrice||0;
-        const prev=meta.chartPreviousClose||meta.previousClose||price;
-        return {name,symbol:sym,price,change:price-prev,
-          changePercent:prev?(price-prev)/prev*100:0,
-          dayHigh:meta.regularMarketDayHigh||0,dayLow:meta.regularMarketDayLow||0,
-          volume:meta.regularMarketVolume||0};
-      }catch(e){return null;}
-    }));
-    results.push(...batchRes);
-  }
-  return results.filter(Boolean);
-}
 
 const FUTURES_CATEGORIES = {
   'Indices':    ['S&P 500 Fut.','Nasdaq 100 Fut.','Dow Jones Fut.','Russell 2000 Fut.','VIX'],
@@ -3298,89 +2724,37 @@ let futuresLoaded = false;
 async function loadFutures(){
   futuresLoaded = true;
   const wrap = document.getElementById('futuresGrid');
-  wrap.innerHTML = skeletonTiles(12);
-  let data = null;
-  try{ const r=await fetch('/api/futures',{signal:AbortSignal.timeout(3000)}); if(r.ok) data=await r.json(); }catch(e){}
-  if(data?.length){
-    const map = {}; data.forEach(f=>map[f.name]=f);
-    renderFuturesGrid(map); return;
-  }
-  const data2 = await fetchMktDirect(FUTURES_MAP);
-  if(!data2?.length){ wrap.innerHTML='<div class="news-loading">No futures data available.</div>'; return; }
-  const map2={}; data2.forEach(f=>map2[f.name]=f);
-  renderFuturesGrid(map2);
+  const m = await getMarkets();
+  if(!(m.futures||[]).length){ wrap.innerHTML='<div class="news-loading">Futures data is not in this snapshot.</div>'; return; }
+  const map = {}; m.futures.forEach(f=>map[f.name]=f);
+  renderFuturesGrid(map);
 }
 
-async function fxSparkline(sym){
-  try{
-    const url=`https://query2.finance.yahoo.com/v8/finance/chart/${sym}?interval=5m&range=1d`;
-    const data=await fetchWithProxy(url);
-    const result=data?.chart?.result?.[0];
-    const closes=result?.indicators?.quote?.[0]?.close?.filter(v=>v!=null)||[];
-    const ts=result?.timestamp||[];
-    if(!closes.length) return '';
-    const min=Math.min(...closes),max=Math.max(...closes),rng=max-min||1;
-    // Add subtle area fill
-    const pts=closes.map((v,i)=>{
-      const x=(i/(Math.max(closes.length-1,1)))*200;
-      const y=58-((v-min)/rng)*56;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(' ');
-    const firstX='0', lastX='200';
-    const areaPath=`M${pts.split(' ')[0]} L${pts.replaceAll(',',' ').split(' ').map((_,i,a)=>i%2===0?a[i]+','+a[i+1]:'').filter(Boolean).join(' L')} L${lastX},60 L${firstX},60 Z`.replace(/L NaN,NaN/g,'');
-    return `<svg class="fx-spark" viewBox="0 0 200 60" preserveAspectRatio="none">
-      <polyline points="${pts}" fill="none" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
-    </svg>`;
-  }catch(e){ return ''; }
-}
 
 let forexLoaded = false;
 async function loadForex(){
   forexLoaded = true;
   const grid = document.getElementById('forexGrid');
-  grid.innerHTML = skeletonTiles(12);
-  let data = null;
-  try{ const r=await fetch('/api/forex',{signal:AbortSignal.timeout(3000)}); if(r.ok) data=await r.json(); }catch(e){}
-  if(!data) data = await fetchMktDirect(FOREX_MAP);
-  if(!data?.length){ grid.innerHTML='<div class="news-loading">No forex data available.</div>'; return; }
-
-  // Render placeholders first, then fill sparklines
-  grid.innerHTML = data.map((f,i)=>{
-    const chg=f.change||0; const chgP=f.changePercent||0;
-    const cls=chgP>0?'up':chgP<0?'down':'flat';
-    const dp=f.price>10?2:4;
-    const chgSign=chg>=0?'+':'';
-    return `<div class="fx-tile ${cls}" id="fxt${i}">
-      <div class="fx-header">
-        <span class="fx-pair">${f.name}</span>
-        <span class="fx-pct">${chgSign}${chgP.toFixed(2)}% <span style="font-weight:400;opacity:.7">${chgSign}${Math.abs(chg).toFixed(dp>2?4:2)}</span></span>
-      </div>
-      <div class="fx-price">${(f.price||0).toFixed(dp)}</div>
-      <div class="fx-hl">H ${(f.dayHigh||0).toFixed(dp)} &nbsp;&nbsp; L ${(f.dayLow||0).toFixed(dp)}</div>
-      <div id="fxspark${i}" style="flex:1;display:flex;align-items:flex-end;"></div>
+  const data = (await getMarkets()).forex || [];
+  if(!data.length){ grid.innerHTML='<div class="news-loading">Forex data is not in this snapshot.</div>'; return; }
+  grid.innerHTML = data.map(f=>{
+    const chg=f.change||0, chgP=f.changePercent||0, cls=chgP>0?'up':chgP<0?'down':'flat', dp=f.price>10?2:4, sg=chg>=0?'+':'';
+    return `<div class="fx-tile ${cls}">
+      <div class="fx-header"><span class="fx-pair">${f.name}</span>
+        <span class="fx-pct">${sg}${chgP.toFixed(2)}% <span style="font-weight:400;opacity:.7">${sg}${Math.abs(chg).toFixed(dp>2?4:2)}</span></span></div>
+      <div class="fx-price">${f.price.toFixed(dp)}</div>
+      <div class="fx-hl">H ${(f.dayHigh||0).toFixed(dp)} &nbsp;&nbsp; L ${(f.dayLow||0).toFixed(dp)} &nbsp;&nbsp; 1M ${f.perfM==null?'-':(f.perfM>=0?'+':'')+f.perfM.toFixed(2)+'%'}</div>
+      <div style="flex:1;display:flex;align-items:flex-end;">${sparkSvg(f.spark,200,60, chgP>=0?'var(--pos)':'var(--neg)')}</div>
     </div>`;
   }).join('');
-
-  // Load sparklines in background
-  data.forEach(async (f,i)=>{
-    const sym = FOREX_MAP[f.name];
-    if(!sym) return;
-    const chgP = f.changePercent||0;
-    const col = chgP>=0?'var(--pos)':'var(--neg)';
-    const svg = await fxSparkline(sym);
-    const el = document.getElementById(`fxspark${i}`);
-    if(el && svg){ el.innerHTML=svg; el.querySelector('polyline').style.stroke=col; }
-  });
 }
 
 let cryptoLoaded = false;
-let quantLoaded = false;
 async function loadCrypto(){
   cryptoLoaded = true;
   const wrap = document.getElementById('cryptoGrid');
-  wrap.innerHTML = skeletonTiles(12);
-  const data = await fetchMktDirect(CRYPTO_MAP);
-  if(!data?.length){ wrap.innerHTML='<div class="news-loading">No crypto data available.</div>'; return; }
+  const data = (await getMarkets()).crypto || [];
+  if(!data.length){ wrap.innerHTML='<div class="news-loading">Crypto data is not in this snapshot.</div>'; return; }
   wrap.innerHTML = `<div class="ft-tiles">${data.map(ftTile).join('')}</div>`;
 }
 
@@ -3411,6 +2785,35 @@ function syncFilterUIFromState(){
   });
   syncHeatmapSidebarHighlighting();
 }
+// Loads the published snapshot. Every number on the site comes from these files.
+async function loadSnapshot(){
+  const banner = document.getElementById('dataBanner');
+  try{
+    const [rows, meta] = await Promise.all([
+      fetch('data/screener.json', {cache:'no-cache'}).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }),
+      fetch('data/meta.json', {cache:'no-cache'}).then(r=>r.ok ? r.json() : null).catch(()=>null),
+    ]);
+    stockData = (rows||[]).filter(s=> s && s.price);
+    stockData.forEach(s=>{ s.hasRealFundamentals = true; s.peg = s.peg ?? null; });
+    dataMeta = meta;
+    usingLiveData = stockData.length > 0;
+  }catch(e){ usingLiveData = false; }
+  if(!usingLiveData){
+    banner.className = 'banner banner-error';
+    banner.innerHTML = '<b>Data unavailable.</b> The market snapshot could not be loaded. Please refresh in a minute.';
+    return;
+  }
+  const asOf = dataMeta ? new Date(dataMeta.generatedAt*1000) : null;
+  const asOfText = asOf ? asOf.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})+' ET' : 'unknown';
+  const ageH = asOf ? (Date.now()-asOf.getTime())/36e5 : 0;
+  const stale = ageH > 30;
+  banner.className = 'banner' + (stale ? ' banner-warn' : '');
+  banner.innerHTML = `<b>${stale ? 'Snapshot (delayed)' : 'Market snapshot'}</b> · Data as of ${asOfText} · `+
+    `${stockData.length} S&amp;P 500 companies · Source: Yahoo Finance · Refreshed on US trading days, not real time · `+
+    `<a href="#" onclick="openAbout();return false">Methodology</a>`;
+  const lu = document.getElementById('lastUpdated'); if(lu) lu.textContent = asOf ? 'Data: '+asOfText : '';
+}
+
 async function init(){
   // Restore persisted preferences
   try{
@@ -3420,49 +2823,7 @@ async function init(){
     if(th){ document.documentElement.dataset.theme = th; document.getElementById('themeSwitchInput').checked = th==='light'; }
   }catch(e){}
 
-  // Try fetching live data from backend (only present when running python app.py locally)
-  try{
-    const ctrl = new AbortController();
-    const tid = setTimeout(()=> ctrl.abort(), 20000);
-    const res = await fetch('/api/screener', {signal: ctrl.signal});
-    clearTimeout(tid);
-    if(res.ok){
-      const live = await res.json();
-      if(live && live.length > 0){
-        stockData = live;
-        stockData.forEach(s=> s.hasRealFundamentals = true);
-        usingLiveData = true;
-        document.getElementById('dataBanner').innerHTML =
-          '<b>📡 Live Data:</b> Fundamentals refreshed every 6 hours · Prices refresh every 60 seconds · <span id="lastUpdated"></span>';
-        startPriceRefresh();
-      }
-    }
-  }catch(e){}
-
-  // No local Flask backend (e.g. on GitHub Pages) — fall back to the JSON snapshot
-  // committed by .github/workflows/update-data.yml every 6 hours.
-  if(!usingLiveData){
-    try{
-      const res = await fetch('data/screener.json', {cache: 'no-store'});
-      if(res.ok){
-        const snapshot = await res.json();
-        if(snapshot && snapshot.length > 0){
-          stockData = snapshot;
-          stockData.forEach(s=> s.hasRealFundamentals = true);
-          usingLiveData = true;
-          document.getElementById('dataBanner').innerHTML =
-            '<b>📊 Automated Snapshot:</b> Fundamentals + news refreshed every 6 hours via GitHub Actions · <span id="lastUpdated"></span>';
-          startPriceRefresh();
-        }
-      }
-    }catch(e){}
-  }
-
-  if(!usingLiveData){
-    document.getElementById('dataBanner').innerHTML =
-      '<b>⏳ Fetching live prices…</b> Loading real-time quotes from Yahoo Finance · <span id="lastUpdated"></span>';
-    startPriceRefresh();
-  }
+  await loadSnapshot();
 
   populateIndustryOptions();
   populateSectorSidebar();
@@ -3472,8 +2833,8 @@ async function init(){
 
   document.getElementById('modalOverlay').addEventListener('click', (e)=>{ if(e.target.id==='modalOverlay') closeModal(); });
   document.getElementById('compareOverlay').addEventListener('click', (e)=>{ if(e.target.id==='compareOverlay') closeCompare(); });
-  document.getElementById('surveyOverlay').addEventListener('click', (e)=>{ if(e.target.id==='surveyOverlay') closeSurvey(); });
-  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ closeModal(); closeCompare(); closeSurvey(); } });
+  document.getElementById('aboutOverlay').addEventListener('click', (e)=>{ if(e.target.id==='aboutOverlay') closeAbout(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ closeModal(); closeCompare(); closeAbout(); } });
   document.getElementById('screenerSection').setAttribute('tabindex','0');
   document.getElementById('screenerSection').addEventListener('keydown', handleTableKeydown);
   window.addEventListener('resize', ()=>{ if(state.view==='heatmap') renderHeatmap(getFilteredData()); });

@@ -1,0 +1,70 @@
+# Builds the market snapshot and publishes the site to GitHub Pages.
+#
+# The data is generated fresh on every run and deployed as a Pages artifact, so it is
+# never committed to the repository (no data commits, no repo growth).
+# Requires: Settings > Pages > Build and deployment > Source = "GitHub Actions".
+
+name: Build and deploy FinSTR
+
+on:
+  schedule:
+    # US trading days (UTC): late morning, midday, afternoon, and after the 4pm ET close
+    - cron: "20 15 * * 1-5"
+    - cron: "20 17 * * 1-5"
+    - cron: "20 19 * * 1-5"
+    - cron: "40 21 * * 1-5"
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+
+      - name: Install pipeline dependencies
+        run: pip install -r pipeline/requirements.txt
+
+      - name: Fetch market data (S&P 500, markets, news)
+        env:
+          # keep-last-good: tickers that fail this run reuse the currently published values
+          FINSTR_PREVIOUS_URL: https://punch-k.github.io/FinSTR-app
+        run: python pipeline/fetch.py
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp index.html _site/
+          cp -r assets data _site/
+          touch _site/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

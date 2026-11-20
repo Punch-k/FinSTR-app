@@ -1,0 +1,3 @@
+# Data pipeline only (pipeline/fetch.py). The optional local Flask app has its own list in server/requirements.txt.
+yfinance>=1.5.1,<2
+pandas>=2.0,<3
