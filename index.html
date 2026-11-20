@@ -693,6 +693,8 @@
   .sg-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;margin-bottom:12px;}
   .sg-card{border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--panel);margin-bottom:12px;}
   .sg-grid .sg-card{margin-bottom:0;}
+  .sg-grid > *, .sg-card, .pf-cards > div{min-width:0;}
+  .sg-card .q-table-wrap{max-width:100%;}
   .sg-card h3{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);margin:0 0 8px;}
   .sg-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;}
   .sg-stats > div{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:6px;padding:6px 8px;}
@@ -808,6 +810,10 @@
         <option value="value">Value Stocks (P/E &lt; 15)</option>
         <option value="growth">High Growth (ROE &gt; 20%)</option>
         <option value="dividend">Dividend Payers (Yield &gt; 2%)</option>
+        <option value="quality_value">Quality Value (Signal 60+, Fwd P/E &lt; 15, low debt)</option>
+        <option value="momentum_leaders">Momentum Leaders (above SMA200, +20% year, near 52W high)</option>
+        <option value="pullback_strong">Strong Signal on a Pullback (RSI &lt; 40)</option>
+        <option value="upgrades">Analysts Bullish (Buy+, 20%+ upside)</option>
         <option value="watchlist">My Watchlist</option>
       </select>
       <select id="orderByFilter" onchange="onOrderByChange()">
@@ -1395,12 +1401,61 @@ function newsFromRow(s){
   return (s.news||[]).map(a=>({title:a.title, link:a.link, publisher:a.source||a.publisher, date:a.ts? new Date(a.ts*1000).toISOString() : a.date, ticker:s.ticker}));
 }
 
+// ---------- EXTRA FILTERS (Finviz-style, declarative) ----------
+// Each filter: id, group (Descriptive/Fundamental/Technical), label, options [value, text, test].
+// A missing value never passes a filter.
+const XN = v => isNum(v);
+const inDays = (d, a, b) => { if(!d) return false; const t = (Date.parse(d+'T12:00:00') - Date.now())/864e5; return t >= a && t <= b; };
+const XF = [
+  ['xRec','Descriptive','Analyst Recom.',[['sb','Strong Buy (≤1.5)',s=>XN(s.recMean)&&s.recMean<=1.5],['b','Buy or better (≤2.5)',s=>XN(s.recMean)&&s.recMean<=2.5],['h','Hold (2.5–3.5)',s=>XN(s.recMean)&&s.recMean>2.5&&s.recMean<=3.5],['s','Sell or worse (>3.5)',s=>XN(s.recMean)&&s.recMean>3.5]]],
+  ['xEarn','Descriptive','Earnings Date',[['tw','Next 7 days',s=>inDays(s.earningsDate,-1,7)],['nw','In 8–14 days',s=>inDays(s.earningsDate,8,14)],['m','Next 30 days',s=>inDays(s.earningsDate,-1,30)]]],
+  ['xUp','Descriptive','Target Price',[['a10','10%+ above price',s=>XN(s.upside)&&s.upside>=10],['a20','20%+ above price',s=>XN(s.upside)&&s.upside>=20],['a50','50%+ above price',s=>XN(s.upside)&&s.upside>=50],['below','Below price',s=>XN(s.upside)&&s.upside<0]]],
+  ['xFpe','Fundamental','Forward P/E',[['lt15','Under 15',s=>XN(s.forwardPE)&&s.forwardPE>0&&s.forwardPE<15],['15to25','15–25',s=>XN(s.forwardPE)&&s.forwardPE>=15&&s.forwardPE<=25],['gt25','Over 25',s=>XN(s.forwardPE)&&s.forwardPE>25]]],
+  ['xPs','Fundamental','P/S',[['lt2','Under 2',s=>XN(s.ps)&&s.ps<2],['lt5','Under 5',s=>XN(s.ps)&&s.ps<5],['gt10','Over 10',s=>XN(s.ps)&&s.ps>10]]],
+  ['xEpsNY','Fundamental','EPS growth next Y',[['pos','Positive',s=>XN(s.epsNextYGrowth)&&s.epsNextYGrowth>0],['o10','Over 10%',s=>XN(s.epsNextYGrowth)&&s.epsNextYGrowth>10],['o20','Over 20%',s=>XN(s.epsNextYGrowth)&&s.epsNextYGrowth>20],['neg','Negative',s=>XN(s.epsNextYGrowth)&&s.epsNextYGrowth<0]]],
+  ['xSalesQ','Fundamental','Sales growth Q/Q',[['pos','Positive',s=>XN(s.salesGrowthQ)&&s.salesGrowthQ>0],['o10','Over 10%',s=>XN(s.salesGrowthQ)&&s.salesGrowthQ>10],['o25','Over 25%',s=>XN(s.salesGrowthQ)&&s.salesGrowthQ>25],['neg','Negative',s=>XN(s.salesGrowthQ)&&s.salesGrowthQ<0]]],
+  ['xDebt','Fundamental','Debt/Equity',[['lt05','Under 0.5',s=>XN(s.debtEq)&&s.debtEq<0.5],['lt1','Under 1',s=>XN(s.debtEq)&&s.debtEq<1],['gt1','Over 1',s=>XN(s.debtEq)&&s.debtEq>1]]],
+  ['xGm','Fundamental','Gross Margin',[['o40','Over 40%',s=>XN(s.grossMargin)&&s.grossMargin>40],['o60','Over 60%',s=>XN(s.grossMargin)&&s.grossMargin>60],['u20','Under 20%',s=>XN(s.grossMargin)&&s.grossMargin<20]]],
+  ['xIns','Fundamental','Insider Own',[['o5','Over 5%',s=>XN(s.insiderOwn)&&s.insiderOwn>5],['o10','Over 10%',s=>XN(s.insiderOwn)&&s.insiderOwn>10]]],
+  ['xShort','Fundamental','Short Float',[['u2','Under 2%',s=>XN(s.shortFloat)&&s.shortFloat<2],['o5','Over 5%',s=>XN(s.shortFloat)&&s.shortFloat>5],['o10','Over 10%',s=>XN(s.shortFloat)&&s.shortFloat>10]]],
+  ['xSig','Technical','FinSTR Signal',[['s','Strong (80+)',s=>XN(s.signal)&&s.signal>=80],['p','Positive or better (60+)',s=>XN(s.signal)&&s.signal>=60],['n','Neutral (40–59)',s=>XN(s.signal)&&s.signal>=40&&s.signal<60],['w','Weak or worse (<40)',s=>XN(s.signal)&&s.signal<40],['vw','Very Weak (<20)',s=>XN(s.signal)&&s.signal<20]]],
+  ['xPerfW','Technical','Performance (week)',[['up','Up',s=>XN(s.perfW)&&s.perfW>0],['o5','Up 5%+',s=>XN(s.perfW)&&s.perfW>=5],['dn','Down',s=>XN(s.perfW)&&s.perfW<0],['u5','Down 5%+',s=>XN(s.perfW)&&s.perfW<=-5]]],
+  ['xPerfYTD','Technical','Performance (YTD)',[['up','Up',s=>XN(s.perfYTD)&&s.perfYTD>0],['o25','Up 25%+',s=>XN(s.perfYTD)&&s.perfYTD>=25],['dn','Down',s=>XN(s.perfYTD)&&s.perfYTD<0],['u20','Down 20%+',s=>XN(s.perfYTD)&&s.perfYTD<=-20]]],
+  ['xPerfY','Technical','Performance (year)',[['o20','Up 20%+',s=>XN(s.perfY)&&s.perfY>=20],['o50','Up 50%+',s=>XN(s.perfY)&&s.perfY>=50],['dn','Down',s=>XN(s.perfY)&&s.perfY<0]]],
+  ['xRsi','Technical','RSI (14)',[['ob','Overbought (>70)',s=>XN(s.rsi)&&s.rsi>70],['o60','Above 60',s=>XN(s.rsi)&&s.rsi>60],['u40','Below 40',s=>XN(s.rsi)&&s.rsi<40],['os','Oversold (<30)',s=>XN(s.rsi)&&s.rsi<30]]],
+  ['xSma200','Technical','Price vs SMA200',[['above','Above',s=>XN(s.vsSma200)&&s.vsSma200>=0],['below','Below',s=>XN(s.vsSma200)&&s.vsSma200<0],['near','Within 2%',s=>XN(s.vsSma200)&&Math.abs(s.vsSma200)<=2],['gc','SMA50 above SMA200',s=>XN(s.sma50)&&XN(s.sma200)&&s.sma50>s.sma200]]],
+  ['xHigh','Technical','52-Week High/Low',[['nh','New high (within 1%)',s=>XN(s.fromHigh52)&&s.fromHigh52>=-1],['n5','Within 5% of high',s=>XN(s.fromHigh52)&&s.fromHigh52>=-5],['b20','20%+ below high',s=>XN(s.fromHigh52)&&s.fromHigh52<=-20],['nl','New low (within 1%)',s=>XN(s.fromLow52)&&s.fromLow52<=1]]],
+  ['xVol','Technical','Volatility (month)',[['lo','Low (<1.5%/day)',s=>XN(s.volM)&&s.volM<1.5],['hi','High (>3%/day)',s=>XN(s.volM)&&s.volM>3]]],
+  ['xRelVol','Technical','Relative Volume',[['o15','Over 1.5',s=>XN(s.relVol)&&s.relVol>1.5],['o2','Over 2',s=>XN(s.relVol)&&s.relVol>2],['u05','Under 0.5',s=>XN(s.relVol)&&s.relVol<0.5]]],
+];
+const XF_BY = Object.fromEntries(XF.map(f=>[f[0], f]));
+function buildExtraFilters(){
+  for(const [id, grp, label, opts] of XF){
+    const host = document.getElementById('filterGroup'+grp); if(!host || document.getElementById(id)) continue;
+    host.insertAdjacentHTML('beforeend', `<div class="filter-field"><label>${label}</label><select id="${id}" onchange="onExtraFilter('${id}')"><option value="All">Any</option>${opts.map(([v,t])=>`<option value="${v}">${t}</option>`).join('')}</select></div>`);
+  }
+}
+function onExtraFilter(id){
+  const v = document.getElementById(id).value;
+  state.xf = state.xf || {};
+  if(v==='All') delete state.xf[id]; else state.xf[id] = v;
+  state.page = 1; updateFilterBadge(); renderAll(); encodeStateToHash();
+}
+function passesExtraFilters(s){
+  for(const [id, v] of Object.entries(state.xf||{})){
+    const f = XF_BY[id]; const o = f && f[3].find(x=>x[0]===v);
+    if(o && !o[2](s)) return false;
+  }
+  return true;
+}
+function syncExtraFilterUI(){ for(const [id] of XF){ const el = document.getElementById(id); if(el) el.value = (state.xf||{})[id] || 'All'; } }
+
 // ---------- STATE ----------
 const state = {
   sector:'All', industry:'All', cap:'All', pe:'All', peg:'All', divYield:'All', roe:'All', margin:'All', maPos:'All', beta:'All',
   search:'', sortKey:'marketCap', sortDir:'desc', view:'screener', watchlistOnly:false,
   signal:'none', columnView:'overview', filterTab:'descriptive', filtersOpen:false,
-  page:1, pageSize:20, heatmapMode:'map', heatmapTimeframe:'1D'
+  page:1, pageSize:20, heatmapMode:'map', heatmapTimeframe:'1D', xf:{}
 };
 let modalTicker = null;
 let watchlist = new Set();
@@ -1427,6 +1482,7 @@ function closeMobileMenu(){ document.getElementById('topnavBody').classList.remo
 function capBucket(cap){ if(cap>200) return 'mega'; if(cap>=10) return 'large'; if(cap>=2) return 'mid'; return 'small'; }
 function passesFilters(s){
   const n = v => isNum(v);
+  if(!passesExtraFilters(s)) return false;
   if(state.sector!=='All' && s.sector!==state.sector) return false;
   if(state.industry!=='All' && s.industry!==state.industry) return false;
   if(state.cap!=='All' && capBucket(s.marketCap)!==state.cap) return false;
@@ -1484,11 +1540,16 @@ const PRESETS = {
   value:{pe:'lt15', sortKey:'pe', sortDir:'asc'},
   growth:{roe:'gt20', sortKey:'roe', sortDir:'desc'},
   dividend:{divYield:'gt2', sortKey:'dividendYield', sortDir:'desc'},
+  quality_value:{xf:{xSig:'p', xFpe:'lt15', xDebt:'lt1'}, sortKey:'signal', sortDir:'desc'},
+  momentum_leaders:{xf:{xSma200:'above', xPerfY:'o20', xHigh:'n5'}, sortKey:'perfY', sortDir:'desc'},
+  pullback_strong:{xf:{xSig:'s', xRsi:'u40'}, sortKey:'signal', sortDir:'desc'},
+  upgrades:{xf:{xRec:'b', xUp:'a20'}, sortKey:'upside', sortDir:'desc'},
   watchlist:{watchlistOnly:true}
 };
 function countActiveFilters(){
   let n=0;
   ['sector','industry','cap','pe','peg','divYield','roe','margin','maPos','beta'].forEach(k=>{ if(state[k]!=='All') n++; });
+  n += Object.keys(state.xf||{}).length;
   return n;
 }
 function updateFilterBadge(){
@@ -1501,11 +1562,12 @@ function updateFilterBadge(){
   } else if(badge){ badge.remove(); }
 }
 function resetFiltersSilent(){
-  Object.assign(state, {sector:'All',industry:'All',cap:'All',pe:'All',peg:'All',divYield:'All',roe:'All',margin:'All',maPos:'All',beta:'All',search:'',watchlistOnly:false,signal:'none',page:1});
+  Object.assign(state, {sector:'All',industry:'All',cap:'All',pe:'All',peg:'All',divYield:'All',roe:'All',margin:'All',maPos:'All',beta:'All',search:'',watchlistOnly:false,signal:'none',page:1,xf:{}});
 }
 function applyPreset(name){
   resetFiltersSilent();
-  if(PRESETS[name]) Object.assign(state, PRESETS[name]);
+  if(PRESETS[name]) Object.assign(state, JSON.parse(JSON.stringify(PRESETS[name])));
+  updateFilterBadge();
   document.getElementById('presetFilter').value = 'none';
   syncFilterUIFromState();
   renderAll();
@@ -1941,6 +2003,7 @@ function encodeStateToHash(){
   if(state.search) p.set('q', state.search);
   if(state.view!=='screener') p.set('view', state.view);
   if(state.watchlistOnly) p.set('wl','1');
+  const xf = Object.entries(state.xf||{}).map(([k,v])=>k+':'+v).join(','); if(xf) p.set('xf', xf);
   if(modalTicker) p.set('stock', modalTicker);
   const str=p.toString();
   history.replaceState(null,'', str? '#'+str: location.pathname+location.search);
@@ -1962,6 +2025,7 @@ function decodeStateFromHash(){
   if(p.has('q')) state.search=p.get('q');
   if(p.has('view')) state.view=p.get('view');
   if(p.get('wl')==='1') state.watchlistOnly=true;
+  if(p.has('xf')){ state.xf = {}; p.get('xf').split(',').forEach(x=>{ const [k,v]=x.split(':'); if(XF_BY[k]) state.xf[k]=v; }); }
   if(p.has('stock')) state.pendingStockDeepLink=p.get('stock');
 }
 function copyShareLink(){
@@ -3424,6 +3488,7 @@ async function loadCrypto(){
 
 // ---------- INIT ----------
 function syncFilterUIFromState(){
+  syncExtraFilterUI();
   document.getElementById('sectorFilter').value = state.sector;
   document.getElementById('industryFilter').value = state.industry;
   document.getElementById('capFilter').value = state.cap;
@@ -3490,6 +3555,7 @@ async function init(){
   await loadSnapshot();
 
   populateIndustryOptions();
+  buildExtraFilters();
   populateSectorSidebar();
   decodeStateFromHash();
   syncFilterUIFromState();
