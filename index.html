@@ -713,6 +713,41 @@
     .sg-defs{grid-template-columns:1fr;}
     .sg-list td:nth-child(4){display:none;}
   }
+
+  /* ───────── Portfolio ───────── */
+  #portfolioSection{padding:6px 0 24px;}
+  .pf-head{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap;margin:6px 0 10px;}
+  .pf-head h2{margin:0;font-size:20px;}
+  .pf-btns{display:flex;gap:6px;flex-wrap:wrap;}
+  .pf-import{position:relative;overflow:hidden;cursor:pointer;}
+  .pf-import input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+  .pf-add{display:flex;gap:8px;flex-wrap:wrap;align-items:center;border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--panel);margin-bottom:12px;}
+  .pf-add input{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:13px;width:140px;}
+  .pf-add #pfShares,.pf-add #pfCost{width:110px;}
+  .pf-add .dim-note{font-size:11px;}
+  .pf-empty{border:1px dashed var(--border);border-radius:8px;padding:18px;font-size:13.5px;line-height:1.6;margin-bottom:12px;}
+  .pf-empty button{margin-top:10px;}
+  .pf-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:10px;}
+  .pf-cards > div{border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--panel);display:flex;flex-direction:column;gap:2px;}
+  .pf-cards b{font-size:16px;} .pf-cards small{display:block;font-size:10.5px;color:var(--dim);font-weight:400;}
+  .pf-table td{white-space:nowrap;}
+  .pf-nm{display:inline-block;max-width:160px;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom;}
+  .pf-row-act{display:flex;gap:4px;justify-content:flex-end;}
+  .pf-cons{margin:0 0 8px;padding-left:18px;font-size:12.5px;line-height:1.55;}
+  .pf-cons li{margin:3px 0;}
+  .pc-warn::marker{color:#f5a623;} .pc-neg::marker{color:var(--neg);} .pc-pos::marker{color:var(--pos);} .pc-info::marker{color:var(--accent);}
+  .pf-alloc{display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
+  .pf-leg{display:flex;align-items:center;gap:6px;font-size:12px;margin:2px 0;}
+  .pf-leg i{width:10px;height:10px;border-radius:2px;display:inline-block;}
+  .pf-leg b{margin-left:auto;padding-left:10px;}
+  .pf-pref-row{display:flex;flex-direction:column;gap:6px;font-size:13px;margin-bottom:8px;}
+  .pf-pref-row label{cursor:pointer;}
+  #pfEmailNote a{color:var(--accent);}
+  @media (max-width: 900px){
+    .pf-cards{grid-template-columns:repeat(2,1fr);}
+    .pf-add input{flex:1 1 40%;width:auto;}
+    .pf-nm{display:none;}
+  }
 </style>
 </head>
 <body>
@@ -731,6 +766,7 @@
         <span class="nav-link active" data-nav="screener" onclick="setView('screener')">Screener</span>
         <span class="nav-link" data-nav="news" onclick="setView('news')">News</span>
         <span class="nav-link" data-nav="signals" onclick="setView('signals')">Signals</span>
+        <span class="nav-link" data-nav="portfolio" onclick="setView('portfolio')">Portfolio</span>
         <div class="nav-dropdown" id="navDropdownMarkets">
           <span class="nav-link nav-dropdown-toggle" onclick="toggleNavDropdown('navDropdownMarkets', event)">Markets ▾</span>
           <div class="nav-dropdown-menu">
@@ -1063,6 +1099,52 @@
     </div>
   </div>
 
+
+
+  <!-- ===================== PORTFOLIO (paper, guest mode) ===================== -->
+  <div id="portfolioSection" style="display:none;">
+    <div class="pf-head">
+      <div><h2>My Portfolio</h2><div class="dim-note">Paper portfolio · saved privately in this browser · prices from the latest snapshot</div></div>
+      <div class="pf-btns">
+        <button class="q-ico" onclick="pfCopyBrief()">🤖 Copy AI brief</button>
+        <button class="q-ico" onclick="pfExport()">⬇ Export</button>
+        <label class="q-ico pf-import">⬆ Import<input type="file" accept="application/json" onchange="pfImport(this)"></label>
+        <button class="q-ico" onclick="pfClear()">Clear</button>
+      </div>
+    </div>
+    <form class="pf-add" id="pfAdd" onsubmit="pfSave(event)">
+      <input id="pfTicker" list="pfTickers" placeholder="Ticker (e.g. AAPL)" autocomplete="off" required oninput="pfPrefill()">
+      <datalist id="pfTickers"></datalist>
+      <input id="pfShares" type="number" step="any" min="0" placeholder="Shares" required>
+      <input id="pfDate" type="date" onchange="pfPrefill()" title="Purchase date (optional)">
+      <input id="pfCost" type="number" step="any" min="0" placeholder="Cost / share" required>
+      <button class="live-btn" type="submit" id="pfSubmit">Add holding</button>
+      <button class="q-ico" type="button" id="pfCancel" onclick="pfCancelEdit()" style="display:none">Cancel</button>
+      <span class="dim-note" id="pfHint">Cost fills in from the closing price on the purchase date; change it to what you paid.</span>
+    </form>
+    <div id="pfEmpty" class="pf-empty">
+      <b>Track the stocks you bought.</b> Add a holding above. FinSTR then shows your profit and loss, how you're doing against the S&amp;P 500, your sector mix and risk, and plain-English points to consider for each position.
+      <div><button class="live-btn" onclick="pfSample()">Try a sample portfolio</button></div>
+    </div>
+    <div id="pfBody" style="display:none">
+      <div class="pf-cards" id="pfCards"></div>
+      <div class="q-table-wrap"><table class="q-table pf-table" id="pfTable"></table></div>
+      <div class="sg-grid" style="margin-top:12px">
+        <div class="sg-card"><h3>Points to consider</h3><ul class="pf-cons" id="pfCons"></ul><div class="dim-note">Rule-based and explainable, from the signals and your positions. Educational, not investment advice.</div></div>
+        <div class="sg-card"><h3>Allocation by sector</h3><div id="pfAlloc"></div></div>
+      </div>
+      <div class="sg-card"><h3>Ideas to diversify <span class="dim-note">strong signals in sectors you don't hold or hold little of</span></h3><div class="q-table-wrap"><table class="q-table" id="pfIdeas"></table></div></div>
+    </div>
+    <div class="sg-card" id="pfPrefs">
+      <h3>Email updates</h3>
+      <div class="pf-pref-row">
+        <label><input type="checkbox" id="pfWeekly" onchange="pfPrefsSave()"> Weekly digest <span class="dim-note">Monday before the open: portfolio review, points to consider, new ideas</span></label>
+        <label><input type="checkbox" id="pfDaily" onchange="pfPrefsSave()"> Daily after close <span class="dim-note">moves and signal changes on your holdings</span></label>
+        <label><input type="checkbox" id="pfAlerts" onchange="pfPrefsSave()"> Alerts only on triggers <span class="dim-note">a holding drops 7%+ in a day, crosses its 200-day average, earnings in 3 days, or its signal flips</span></label>
+      </div>
+      <div class="dim-note" id="pfEmailNote"></div>
+    </div>
+  </div>
 
   <!-- ===================== SIGNALS PAGE ===================== -->
   <div id="signalsSection" style="display:none;">
@@ -1581,6 +1663,199 @@ document.addEventListener('click', e=>{
   window.scrollTo({top: el.getBoundingClientRect().top + window.scrollY - off, behavior:'smooth'});
 });
 
+// ---------- PORTFOLIO (paper, guest mode) ----------
+const PF_KEY = 'finstr_portfolio_v1';
+const PF_DEFAULT = () => ({ version:1, name:'My Portfolio', holdings:[], prefs:{weekly:true, daily:false, alerts:true} });
+let pf = (()=>{ try{ return JSON.parse(localStorage.getItem(PF_KEY)) || PF_DEFAULT(); }catch(e){ return PF_DEFAULT(); } })();
+let pfEditId = null, _bench = null;
+function pfStore(){ try{ localStorage.setItem(PF_KEY, JSON.stringify(pf)); }catch(e){} }
+async function getBench(){ if(!_bench){ try{ _bench = await fetch('data/benchmark.json',{cache:'no-cache'}).then(r=>r.json()); }catch(e){ _bench = {d:[],c:[]}; } } return _bench; }
+function closeOn(series, date){            // close on or before a date (series: {d:[], c:[]})
+  if(!series || !series.d || !series.d.length || !date) return null;
+  let lo = 0, hi = series.d.length-1, ans = -1;
+  while(lo<=hi){ const m=(lo+hi)>>1; if(series.d[m] <= date){ ans=m; lo=m+1; } else hi=m-1; }
+  return ans>=0 ? series.c[ans] : null;
+}
+async function pfPrefill(){
+  const t = document.getElementById('pfTicker').value.trim().toUpperCase();
+  const s = stockData.find(x=>x.ticker===t); if(!s) return;
+  const d = document.getElementById('pfDate').value;
+  let px = s.price;
+  if(d){ const q = await getQuote(t); const c = q && q.history ? closeOn({d:q.history.d, c:q.history.c}, d) : null; if(c) px = c; }
+  if(!pfEditId) document.getElementById('pfCost').value = px.toFixed(2);
+}
+function pfSave(e){
+  e.preventDefault();
+  const t = document.getElementById('pfTicker').value.trim().toUpperCase();
+  if(!stockData.some(x=>x.ticker===t)){ showToast(`${t} isn't in the S&P 500 data set.`); return; }
+  const h = { id: pfEditId || (Date.now().toString(36)+Math.random().toString(36).slice(2,6)), ticker:t,
+    shares: +document.getElementById('pfShares').value, cost: +document.getElementById('pfCost').value,
+    date: document.getElementById('pfDate').value || null };
+  if(!(h.shares>0) || !(h.cost>0)){ showToast('Enter shares and cost per share.'); return; }
+  pf.holdings = pfEditId ? pf.holdings.map(x=> x.id===pfEditId ? h : x) : [...pf.holdings, h];
+  pfStore(); pfCancelEdit(); renderPortfolio();
+}
+function pfEdit(id){
+  const h = pf.holdings.find(x=>x.id===id); if(!h) return;
+  pfEditId = id;
+  document.getElementById('pfTicker').value = h.ticker; document.getElementById('pfShares').value = h.shares;
+  document.getElementById('pfCost').value = h.cost; document.getElementById('pfDate').value = h.date || '';
+  document.getElementById('pfSubmit').textContent = 'Save changes'; document.getElementById('pfCancel').style.display = '';
+  document.getElementById('pfAdd').scrollIntoView({behavior:'smooth', block:'center'});
+}
+function pfCancelEdit(){
+  pfEditId = null; document.getElementById('pfAdd').reset();
+  document.getElementById('pfSubmit').textContent = 'Add holding'; document.getElementById('pfCancel').style.display = 'none';
+}
+function pfDelete(id){ pf.holdings = pf.holdings.filter(x=>x.id!==id); pfStore(); renderPortfolio(); }
+function pfClear(){
+  if(!pf.holdings.length) return;
+  const btn = event && event.target;
+  if(btn && !btn.dataset.armed){ btn.dataset.armed='1'; btn.textContent='Click again to clear all'; setTimeout(()=>{ btn.dataset.armed=''; btn.textContent='Clear'; }, 3000); return; }
+  pf.holdings = []; pfStore(); renderPortfolio(); if(btn){ btn.dataset.armed=''; btn.textContent='Clear'; }
+}
+async function pfSample(){
+  const picks = [['AAPL',20,'2025-06-02'],['MSFT',8,'2025-03-03'],['JPM',15,'2025-09-02'],['KO',40,'2026-01-05'],['NVDA',25,'2026-02-02'],['XOM',20,'2025-12-01']];
+  const hs = [];
+  for(const [t,sh,d] of picks){
+    const s = stockData.find(x=>x.ticker===t); if(!s) continue;
+    const q = await getQuote(t); const c = q && q.history ? closeOn({d:q.history.d, c:q.history.c}, d) : null;
+    hs.push({ id: t+'-sample', ticker:t, shares:sh, cost: +(c || s.price).toFixed(2), date: c ? d : null });
+  }
+  pf.holdings = hs; pf.name = 'Sample portfolio'; pfStore(); renderPortfolio();
+  showToast('Sample loaded: costs are real closing prices on the purchase dates.');
+}
+function pfPrefsSave(){
+  pf.prefs = { weekly: document.getElementById('pfWeekly').checked, daily: document.getElementById('pfDaily').checked, alerts: document.getElementById('pfAlerts').checked };
+  pfStore(); pfPrefsNote();
+}
+function pfPrefsNote(){
+  const p = pf.prefs || {};
+  const on = [p.weekly&&'weekly digest', p.daily&&'daily summary', p.alerts&&'trigger alerts'].filter(Boolean);
+  document.getElementById('pfEmailNote').innerHTML = on.length
+    ? `Saved: ${on.join(', ')}. These preferences travel with your exported portfolio file. The open-source <b>FinSTR Digest</b> workflow reads that file and emails you on this cadence: see <a href="https://github.com/Punch-k/FinSTR-app#email-digests-self-hosted" target="_blank" rel="noopener">how to switch it on</a> (about 5 minutes, free).`
+    : 'No email updates selected.';
+}
+
+function pfCompute(){
+  const rows = [], bySector = {};
+  let value=0, cost=0, dayChg=0, sigW=0, sigV=0, betaW=0, betaV=0, excessW=0, excessCost=0;
+  for(const h of pf.holdings){
+    const s = stockData.find(x=>x.ticker===h.ticker); if(!s) continue;
+    const v = h.shares*s.price, c = h.shares*h.cost, prev = isNum(s.prevClose) ? s.prevClose : s.price/(1+(s.changePercent||0)/100);
+    const r = { h, s, value:v, cost:c, pnl:v-c, pnlPct:(v/c-1)*100, day:h.shares*(s.price-prev) };
+    rows.push(r); value+=v; cost+=c; dayChg+=r.day;
+    bySector[s.sector] = (bySector[s.sector]||0) + v;
+    if(isNum(s.signal)){ sigW+=v; sigV+=v*s.signal; }
+    if(isNum(s.beta)){ betaW+=v; betaV+=v*s.beta; }
+  }
+  rows.forEach(r=> r.weight = value ? r.value/value*100 : 0);
+  return { rows, value, cost, dayChg, bySector, signal: sigW? sigV/sigW : null, beta: betaW? betaV/betaW : null };
+}
+async function pfBenchmark(rows){
+  const b = await getBench(); const last = b.c[b.c.length-1];
+  let ex=0, base=0, spyGain=0;
+  for(const r of rows){
+    if(!r.h.date) continue;
+    const b0 = closeOn(b, r.h.date); if(!b0) continue;
+    const spyRet = last/b0 - 1, ret = r.s.price/r.h.cost - 1;
+    r.vsSpy = (ret - spyRet)*100; ex += r.cost*(ret-spyRet); base += r.cost; spyGain += r.cost*spyRet;
+  }
+  return base ? { excessPct: ex/base*100, spyPct: spyGain/base*100, covered: base } : null;
+}
+function pfConsiderations(P){
+  const out = [], today = Date.now();
+  for(const r of P.rows){
+    const s = r.s, t = `<b>${s.ticker}</b>`;
+    if(r.weight > 25){ const trim = Math.floor((r.value - 0.20*P.value)/s.price); out.push(['warn', `${t} is ${r.weight.toFixed(0)}% of the portfolio. One stock above 25% concentrates risk; selling about ${trim} share${trim===1?'':'s'} would bring it to 20%, or add to other holdings.`]); }
+    if(isNum(s.signal) && s.signal < 20 && isNum(s.vsSma200) && s.vsSma200 < 0) out.push(['neg', `${t} has a Very Weak signal (${s.signal}) and trades ${s.vsSma200.toFixed(1)}% below its 200-day average. Re-check why you own it.`]);
+    if(r.pnlPct <= -15 && isNum(s.signal) && s.signal < 40) out.push(['neg', `${t} is down ${Math.abs(r.pnlPct).toFixed(1)}% from your cost with a weak signal (${s.signal}). Decide your exit or average-down plan in advance.`]);
+    if(isNum(s.rsi) && s.rsi >= 75 && r.pnlPct >= 20) out.push(['info', `${t} is up ${r.pnlPct.toFixed(0)}% and overbought (RSI ${s.rsi.toFixed(0)}). Some investors take partial profits here.`]);
+    if(isNum(s.signal) && s.signal >= 80 && r.weight < 5) out.push(['pos', `${t} has a Strong signal (${s.signal}) but is only ${r.weight.toFixed(1)}% of the portfolio.`]);
+    if(s.earningsDate){ const d = Date.parse(s.earningsDate+'T12:00:00'); if(d>=today-864e5 && d<=today+7*864e5) out.push(['info', `${t} reports earnings on ${fDate(s.earningsDate)}. Expect a bigger move than usual.`]); }
+  }
+  const secs = Object.entries(P.bySector).sort((a,b)=>b[1]-a[1]);
+  if(secs.length && P.value && secs[0][1]/P.value > 0.4) out.push(['warn', `${secs[0][0]} is ${(secs[0][1]/P.value*100).toFixed(0)}% of the portfolio. Over 40% in one sector makes results depend on that sector.`]);
+  if(P.rows.length < 5) out.push(['info', `${P.rows.length} holding${P.rows.length===1?'':'s'}. Most of the diversification benefit comes from about 10–20 stocks across sectors.`]);
+  if(isNum(P.beta) && P.beta > 1.3) out.push(['warn', `Portfolio beta is ${P.beta.toFixed(2)}: expect moves about ${(P.beta*100-100).toFixed(0)}% larger than the S&P 500, both ways.`]);
+  return out;
+}
+async function renderPortfolio(){
+  document.getElementById('pfTickers').innerHTML = stockData.map(s=>`<option value="${s.ticker}">${s.name}</option>`).join('');
+  const p = pf.prefs || {}; document.getElementById('pfWeekly').checked = !!p.weekly; document.getElementById('pfDaily').checked = !!p.daily; document.getElementById('pfAlerts').checked = !!p.alerts;
+  pfPrefsNote();
+  const has = pf.holdings.length > 0;
+  document.getElementById('pfEmpty').style.display = has ? 'none' : '';
+  document.getElementById('pfBody').style.display = has ? '' : 'none';
+  if(!has) return;
+  const P = pfCompute(); const B = await pfBenchmark(P.rows);
+  const money = v => (v<0?'-':'')+'$'+Math.abs(v).toLocaleString(undefined,{maximumFractionDigits:0});
+  const cls = v => v>0?'pos':v<0?'neg':'';
+  const prevVal = P.value - P.dayChg;
+  document.getElementById('pfCards').innerHTML = [
+    ['Value', money(P.value)],
+    ['Day', `<span class="${cls(P.dayChg)}">${money(P.dayChg)} (${(P.dayChg/prevVal*100).toFixed(2)}%)</span>`],
+    ['Total P&amp;L', `<span class="${cls(P.value-P.cost)}">${money(P.value-P.cost)} (${((P.value/P.cost-1)*100).toFixed(2)}%)</span>`],
+    ['vs S&amp;P 500', B ? `<span class="${cls(B.excessPct)}">${B.excessPct>=0?'+':''}${B.excessPct.toFixed(2)} pts</span><small>S&amp;P ${B.spyPct>=0?'+':''}${B.spyPct.toFixed(1)}% same dates</small>` : '<small>add purchase dates</small>'],
+    ['Portfolio signal', isNum(P.signal) ? `${scoreBadge(Math.round(P.signal))} <small>${label5(P.signal)}</small>` : NA],
+    ['Beta', isNum(P.beta) ? P.beta.toFixed(2) : NA],
+  ].map(([k,v])=>`<div><span class="dim-note">${k}</span><b>${v}</b></div>`).join('');
+  document.getElementById('pfTable').innerHTML = '<thead><tr><th>Ticker</th><th class="r">Shares</th><th class="r">Cost</th><th class="r">Price</th><th class="r">Day</th><th class="r">Value</th><th class="r">P&amp;L</th><th class="r">P&amp;L %</th><th class="r">vs S&amp;P</th><th class="r">Weight</th><th>Signal</th><th></th></tr></thead><tbody>'+
+    P.rows.sort((a,b)=>b.value-a.value).map(r=>`<tr>
+      <td><a href="#" onclick="openModal('${r.s.ticker}');return false"><b class="tk">${r.s.ticker}</b></a> <span class="dim-note pf-nm">${r.s.name}</span></td>
+      <td class="r">${r.h.shares}</td><td class="r">${r.h.cost.toFixed(2)}</td><td class="r">${r.s.price.toFixed(2)}</td><td class="r">${fPct(r.s.changePercent)}</td>
+      <td class="r">${money(r.value)}</td><td class="r ${cls(r.pnl)}">${money(r.pnl)}</td><td class="r">${fPct(r.pnlPct)}</td>
+      <td class="r">${isNum(r.vsSpy)?fPct(r.vsSpy):'<span class="na" title="Add a purchase date">-</span>'}</td><td class="r">${r.weight.toFixed(1)}%</td>
+      <td>${scoreBadge(r.s.signal)} <span class="sig-txt ${sigClass(r.s.signal)}">${r.s.signalLabel||''}</span></td>
+      <td class="pf-row-act"><button class="q-ico" onclick="pfEdit('${r.h.id}')" title="Edit">✎</button><button class="q-ico" onclick="pfDelete('${r.h.id}')" title="Remove">✕</button></td></tr>`).join('')+'</tbody>';
+  const cons = pfConsiderations(P);
+  document.getElementById('pfCons').innerHTML = cons.length ? cons.map(([k,t])=>`<li class="pc-${k}">${t}</li>`).join('') : '<li class="pc-pos">Nothing stands out: no concentration, weak-signal or earnings flags.</li>';
+  const secs = Object.entries(P.bySector).sort((a,b)=>b[1]-a[1]);
+  const palette = ['#4f8cff','#22c55e','#f5a623','#a78bfa','#ef5350','#2dd4bf','#f472b6','#94a3b8','#eab308','#38bdf8','#fb923c'];
+  let acc = 0; const C = 2*Math.PI*42;
+  const arcs = secs.map(([n,v],i)=>{ const f=v/P.value, seg=`<circle r="42" cx="60" cy="60" fill="none" stroke="${palette[i%palette.length]}" stroke-width="16" stroke-dasharray="${(f*C).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-acc*C).toFixed(2)}" transform="rotate(-90 60 60)"/>`; acc+=f; return seg; }).join('');
+  document.getElementById('pfAlloc').innerHTML = `<div class="pf-alloc"><svg viewBox="0 0 120 120" width="130" height="130">${arcs}</svg><div>${secs.map(([n,v],i)=>`<div class="pf-leg"><i style="background:${palette[i%palette.length]}"></i>${n}<b>${(v/P.value*100).toFixed(1)}%</b></div>`).join('')}</div></div>`;
+  const held = new Set(P.rows.map(r=>r.s.ticker));
+  const weightOf = sec => (P.bySector[sec]||0)/P.value*100;
+  const ideas = stockData.filter(s=> !held.has(s.ticker) && isNum(s.signal) && s.signal>=80 && weightOf(s.sector) < 10)
+    .sort((a,b)=> weightOf(a.sector)-weightOf(b.sector) || b.signal-a.signal)
+    .filter((s,i,arr)=> arr.slice(0,i).filter(x=>x.sector===s.sector).length < 2).slice(0,8);
+  const why = s => { const r = (s.reasons||[]).filter(x=>!/^(Up|Down)trend/.test(x)); return (r.length ? r : (s.reasons||[])).slice(0,2).join(' · '); };
+  document.getElementById('pfIdeas').innerHTML = ideas.length ? '<thead><tr><th>Ticker</th><th>Sector</th><th class="r">Your weight</th><th>Signal</th><th>Why</th></tr></thead><tbody>'+
+    ideas.map(s=>`<tr onclick="openModal('${s.ticker}')" style="cursor:pointer"><td><b class="tk">${s.ticker}</b> <span class="dim-note">${s.name}</span></td><td>${s.sector}</td><td class="r">${weightOf(s.sector).toFixed(1)}%</td><td>${scoreBadge(s.signal)}</td><td class="dim-note">${why(s)}</td></tr>`).join('')+'</tbody>'
+    : '<tr><td class="dim-note">No strong-signal ideas outside your sectors right now.</td></tr>';
+}
+function label5(v){ return !isNum(v) ? '' : v>=80?'Strong':v>=60?'Positive':v>=40?'Neutral':v>=20?'Weak':'Very Weak'; }
+function pfExport(){
+  const blob = new Blob([JSON.stringify(pf, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'finstr-portfolio.json'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+function pfImport(inp){
+  const f = inp.files && inp.files[0]; if(!f) return;
+  f.text().then(t=>{ const j = JSON.parse(t); if(!Array.isArray(j.holdings)) throw new Error('bad');
+    pf = Object.assign(PF_DEFAULT(), j); pfStore(); renderPortfolio(); showToast(`Imported ${pf.holdings.length} holdings.`); })
+   .catch(()=> showToast('That file is not a FinSTR portfolio export.')).finally(()=>{ inp.value=''; });
+}
+async function pfCopyBrief(){
+  if(!pf.holdings.length){ showToast('Add holdings first.'); return; }
+  const P = pfCompute(); const B = await pfBenchmark(P.rows); const cons = pfConsiderations(P);
+  const asOf = dataMeta ? new Date(dataMeta.generatedAt*1000).toISOString().slice(0,16).replace('T',' ')+' UTC' : '';
+  const n = v => isNum(v) ? (+v).toFixed(2) : 'n/a';
+  const lines = [
+    `# My paper portfolio (FinSTR data as of ${asOf})`, '',
+    `Value $${P.value.toFixed(0)} · cost $${P.cost.toFixed(0)} · P&L ${((P.value/P.cost-1)*100).toFixed(2)}% · ${B?`vs S&P 500 ${B.excessPct.toFixed(2)} pts`:'no purchase dates'} · portfolio signal ${isNum(P.signal)?Math.round(P.signal):'n/a'} · beta ${n(P.beta)}`, '',
+    '| Ticker | Weight | P&L % | Signal | Trend | Momentum | Value | Quality | Growth | Low risk | P/E | Fwd P/E | Perf YTD | RSI | vs SMA200 | Next earnings |',
+    '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|',
+    ...P.rows.map(r=>{ const s=r.s, f=s.factors||{}; return `| ${s.ticker} | ${r.weight.toFixed(1)}% | ${r.pnlPct.toFixed(1)}% | ${s.signal??'n/a'} ${s.signalLabel||''} | ${f.trend??''} | ${f.momentum??''} | ${f.value??''} | ${f.quality??''} | ${f.growth??''} | ${f.risk??''} | ${n(s.pe)} | ${n(s.forwardPE)} | ${n(s.perfYTD)}% | ${n(s.rsi)} | ${n(s.vsSma200)}% | ${s.earningsDate||'n/a'} |`; }),
+    '', '## Rule-based points from FinSTR', ...cons.map(([,t])=>'- '+t.replace(/<[^>]+>/g,'')),
+    '', '## Request',
+    'Review this portfolio using only the data above. For each holding say whether the data argues to hold, add, trim or review it, and why, citing the numbers. Then give 3 portfolio-level suggestions (diversification, risk, upcoming events). Be explicit about uncertainty; this is for education, not financial advice.',
+  ];
+  try{ await navigator.clipboard.writeText(lines.join('\n')); showToast('AI brief copied. Paste it into any AI assistant (or your local model).'); }
+  catch(e){ showToast('Copy failed: your browser blocked clipboard access.'); }
+}
+
 // ---------- SIGNALS PAGE ----------
 let _sigData = null;
 async function renderSignalsPage(){
@@ -1725,7 +2000,7 @@ function selectAutocomplete(ticker){
 function hideAutocomplete(){ document.getElementById('autocompleteBox').style.display='none'; }
 
 // ---------- VIEW SWITCH ----------
-const ALL_SECTIONS = ['home','screener','heatmap','news','charts','groups','futures','forex','crypto','insider','calendar','quote','signals'];
+const ALL_SECTIONS = ['home','screener','heatmap','news','charts','groups','futures','forex','crypto','insider','calendar','quote','signals','portfolio'];
 // Grouped nav dropdowns (Markets / Analytics) — declutters the top nav from 12 flat
 // links down to a handful, per user request to "club the analytics into dropdowns."
 const NAV_DROPDOWN_GROUPS = {
@@ -1764,6 +2039,7 @@ function setView(view){
   if(view==='insider') renderInsider();
   if(view==='calendar') renderCalendar();
   if(view==='signals') renderSignalsPage();
+  if(view==='portfolio') renderPortfolio();
   encodeStateToHash();
   closeMobileMenu();
 }

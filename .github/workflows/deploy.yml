@@ -51,7 +51,7 @@ jobs:
       - name: Assemble site
         run: |
           mkdir -p _site
-          cp index.html _site/
+          cp index.html llms.txt _site/
           cp -r assets data _site/
           touch _site/.nojekyll
 

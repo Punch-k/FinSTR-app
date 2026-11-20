@@ -1,0 +1,82 @@
+# FinSTR Digest: emails your paper portfolio's review (weekly / daily / alerts).
+#
+# Self-hosted: fork the repo, then in your fork set
+#   Settings > Secrets and variables > Actions
+#     Secrets:   PORTFOLIO_JSON (the file exported from the FinSTR Portfolio page)
+#                SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_TO
+#                (optional) LLM_BASE_URL, LLM_API_KEY for a hosted OpenAI-compatible model
+#     Variables: FINSTR_DIGEST = true            (switches the schedule on)
+#                FINSTR_LOCAL_AI = true          (optional: run an open model on the runner with Ollama)
+#                LLM_MODEL = llama3.2          (optional)
+# Your portfolio stays in your fork's encrypted secrets; nothing is sent anywhere except your mailbox.
+
+name: FinSTR Digest
+
+on:
+  schedule:
+    - cron: "15 12 * * 1-5"   # morning (before the US open): weekly digest on Mondays
+    - cron: "50 21 * * 1-5"   # evening (after the close): daily summary and trigger alerts
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "What to send"
+        type: choice
+        options: [auto, weekly, daily, alerts]
+        default: weekly
+
+permissions:
+  contents: read
+
+jobs:
+  digest:
+    if: vars.FINSTR_DIGEST == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Restore last run's signals (for "signal changed" alerts)
+        uses: actions/cache/restore@v4
+        with:
+          path: .digest-state.json
+          key: digest-state-${{ github.run_id }}
+          restore-keys: digest-state-
+
+      - name: Start a local open model (optional)
+        if: vars.FINSTR_LOCAL_AI == 'true'
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          (ollama serve > /tmp/ollama.log 2>&1 &)
+          sleep 6
+          ollama pull "${{ vars.LLM_MODEL || 'llama3.2' }}"
+
+      - name: Build and send the digest
+        env:
+          PORTFOLIO_JSON: ${{ secrets.PORTFOLIO_JSON }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+          LLM_BASE_URL: ${{ vars.FINSTR_LOCAL_AI == 'true' && 'http://localhost:11434/v1' || secrets.LLM_BASE_URL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ vars.LLM_MODEL || 'llama3.2' }}
+          FINSTR_SLOT: ${{ github.event.schedule == '15 12 * * 1-5' && 'morning' || (github.event.schedule == '50 21 * * 1-5' && 'evening' || 'any') }}
+        run: |
+          if [ -z "$PORTFOLIO_JSON" ]; then
+            echo "::notice::No PORTFOLIO_JSON secret set, so there is nothing to send. See README > Email digests."
+            exit 0
+          fi
+          python pipeline/digest.py --mode "${{ inputs.mode || 'auto' }}" --state .digest-state.json --send
+
+      - name: Save signals for next run
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: .digest-state.json
+          key: digest-state-${{ github.run_id }}

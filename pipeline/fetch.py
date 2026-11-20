@@ -606,6 +606,12 @@ def main():
     with open(os.path.join(DATA, "markets.json"), "w", encoding="utf-8") as f:
         json.dump(markets, f, separators=(",", ":"))
 
+    # benchmark (S&P 500 via SPY) daily closes, for "portfolio vs S&P since purchase"
+    if "SPY" in hist:
+        b = hist["SPY"]["Close"].dropna()
+        with open(os.path.join(DATA, "benchmark.json"), "w", encoding="utf-8") as f:
+            json.dump({"symbol": "SPY", "d": [d.strftime("%Y-%m-%d") for d in b.index], "c": [round(float(x), 2) for x in b]}, f, separators=(",", ":"))
+
     # news tabs: market / pulse / etf from index & macro feeds, stocks from company feeds
     def dedupe(items):
         seen, out = set(), []

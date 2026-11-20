@@ -43,14 +43,59 @@ GitHub Actions (schedule / push)
 The data is generated on every deploy and published with the site, so it is never committed
 to the repository.
 
+## Portfolio and email digests
+
+The **Portfolio** page tracks a paper portfolio in your browser: profit and loss, return against the S&P 500 since
+each purchase, sector mix, beta, the value-weighted FinSTR Signal, rule-based points to consider for each position,
+and strong-signal ideas in sectors you don't hold. You choose your email cadence there (weekly digest, daily summary,
+trigger alerts) and export the portfolio as a JSON file.
+
+### Email digests (self-hosted)
+
+`pipeline/digest.py` turns that file plus the latest FinSTR data into a mobile-friendly email. It uses only the Python
+standard library. An AI paragraph is optional: point it at any OpenAI-compatible model (a local Ollama model by default).
+The model gets only the computed facts, must not use numbers (the email's tables carry them), and any text that cites
+a number or a ticker outside the facts is discarded in favour of the rule-based summary.
+
+Set it up in about 5 minutes, free, on your own GitHub account:
+
+1. Fork this repository.
+2. In your fork: **Settings > Secrets and variables > Actions**
+   - Secrets: `PORTFOLIO_JSON` (paste the exported file), `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USER`, `SMTP_PASS`, `MAIL_TO`.
+     For Gmail use `smtp.gmail.com` and an [app password](https://support.google.com/accounts/answer/185833).
+   - Variables: `FINSTR_DIGEST` = `true`. Optional: `FINSTR_LOCAL_AI` = `true` to run an open model on the runner,
+     `LLM_MODEL` (default `llama3.2`), or secrets `LLM_BASE_URL` / `LLM_API_KEY` for a hosted model.
+3. **Actions > FinSTR Digest > Run workflow** sends a test digest. After that it runs on schedule: Monday morning
+   (weekly digest) and after each close (daily summary and trigger alerts), as your preferences say.
+
+Run it locally instead:
+
+```bash
+python pipeline/digest.py --portfolio finstr-portfolio.json --mode weekly --out digest.html
+LLM_BASE_URL=http://localhost:11434/v1 LLM_MODEL=llama3.2 python pipeline/digest.py --portfolio finstr-portfolio.json --mode weekly --out digest.html
+```
+
+Alerts fire when a holding falls 7% or more in a day, crosses its 200-day average, reports earnings within 3 days,
+or its signal label changes.
+
+## For AI agents and automation
+
+Every number on the site is a static JSON file, documented in [`llms.txt`](https://punch-k.github.io/FinSTR-app/llms.txt):
+`data/screener.json` (all companies, ~90 fields including the signal and its reasons), `data/quote/{TICKER}.json`
+(price history, financials, estimates, rating changes), `data/signals.json` (weights and backtest), and more. Use them
+from n8n, Zapier, scripts or an LLM tool with no API key. The Portfolio page's **Copy AI brief** button produces a
+ready-made prompt with your holdings and their data for any AI assistant.
+
 ## Repository layout
 
 | Path | What it is |
 |---|---|
 | `index.html` | The site (screener, maps, quote panel, markets, analytics) |
 | `assets/` | Images (logo) |
-| `pipeline/` | `fetch.py` data builder, `universe.csv` (S&P 500 list), `requirements.txt` |
+| `pipeline/` | `fetch.py` data builder, `signals.py` signal engine and backtest, `digest.py` email digest, `universe.csv` (S&P 500 list), `requirements.txt` |
+| `llms.txt` | Data documentation for AI agents and automation tools |
 | `.github/workflows/deploy.yml` | Scheduled build and GitHub Pages deploy |
+| `.github/workflows/digest.yml` | Self-hosted email digest (fork, add secrets, receive emails) |
 | `server/` | Optional local Flask app: MyShare portfolio/lot tracker (adapted from Vlad Litvak's MyShare) and the experimental Quant Desk. Not part of the live site. |
 | `docs/` | Project notes and the earlier code-quality report |
 

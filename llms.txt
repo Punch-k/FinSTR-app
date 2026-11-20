@@ -1,0 +1,30 @@
+# FinSTR
+
+> FinSTR is an open-source, Finviz-style research tool for the S&P 500: screener, market maps, quote pages, a
+> six-factor signal with a published backtest, and a paper-portfolio tracker. All data is published as static JSON,
+> so AI agents and automation tools (n8n, Zapier, scripts, LLM tools) can read it directly. No API key.
+
+Base URL: https://punch-k.github.io/FinSTR-app
+Refresh: several times per US trading day. Every file is a snapshot; check data/meta.json "generatedAt" (Unix time).
+Source: Yahoo Finance via yfinance and Yahoo Finance RSS. Educational use; not investment advice.
+
+## Data endpoints
+
+- [data/meta.json](https://punch-k.github.io/FinSTR-app/data/meta.json): snapshot time, coverage, failed tickers, sources
+- [data/screener.json](https://punch-k.github.io/FinSTR-app/data/screener.json): one object per S&P 500 company (~90 fields). Key fields: ticker, name, sector, industry, price, changePercent, marketCap ($B), pe, forwardPE, peg, ps, pb, evEbitda, eps, fwdEps, epsGrowthQ, salesGrowthQ, epsNextYGrowth, roe, roa, grossMargin, operMargin, profitMargin, debtEq, dividendYield, insiderOwn, instOwn, shortFloat, perfW/perfM/perfQ/perfH/perfYTD/perfY (%), vsSma20/vsSma50/vsSma200 (%), rsi, beta, atr, volW/volM, relVol, high52, low52, target, upside, recMean (1 = Strong Buy, 5 = Sell), analysts, earningsDate, signal (0-100 percentile), signalLabel, factors {trend, momentum, value, quality, growth, risk}, reasons [text], news [{title, link, source, ts}], insiderTransactions
+- [data/signals.json](https://punch-k.github.io/FinSTR-app/data/signals.json): factor weights, label distribution, monthly backtest (top vs bottom fifth vs equal-weight S&P 500) for the composite and each price factor, with method and caveats
+- data/quote/{TICKER}.json (e.g. [AAPL](https://punch-k.github.io/FinSTR-app/data/quote/AAPL.json)): 2 years of daily OHLCV, company profile, headlines, and "deep" data (annual and quarterly EPS, sales, net income, shares; EPS estimates; earnings surprises; analyst rating changes)
+- [data/groups.json](https://punch-k.github.io/FinSTR-app/data/groups.json): sector and industry aggregates (market-cap weighted performance, P/E, advancers/decliners)
+- [data/markets.json](https://punch-k.github.io/FinSTR-app/data/markets.json): index cards, 26 futures, 12 currency pairs, crypto
+- [data/news.json](https://punch-k.github.io/FinSTR-app/data/news.json): headline lists for market, macro, stocks and ETFs
+- [data/benchmark.json](https://punch-k.github.io/FinSTR-app/data/benchmark.json): SPY daily closes (for "vs S&P 500" comparisons)
+
+## Portfolio file format
+
+The Portfolio page exports JSON: {"version":1, "name":..., "holdings":[{"ticker":"AAPL","shares":20,"cost":201.7,"date":"2025-06-02"}], "prefs":{"weekly":true,"daily":false,"alerts":true}}
+
+## Guidance for agents
+
+- Quote numbers from the files; do not estimate missing values ("-" or null means not reported).
+- The signal is a relative rank within the S&P 500, not a forecast. Its backtest (data/signals.json) shows how the price factors actually performed, including periods when they did not work.
+- Source code and the digest workflow: https://github.com/Punch-k/FinSTR-app
