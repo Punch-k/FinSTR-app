@@ -1358,7 +1358,9 @@
     <div class="dim-note">Python data pipeline (yfinance, pandas) on a scheduled GitHub Action · static site with D3 and TradingView Lightweight Charts · no server, no tracking.</div>
     <h3>Links</h3>
     <ul>
+      <li><a href="stock/">All S&amp;P 500 stocks (one page per company)</a></li>
       <li><a href="https://github.com/Punch-k/FinSTR-app" target="_blank" rel="noopener">Source code on GitHub</a></li>
+      <li><a href="llms.txt">Data for AI agents (llms.txt)</a></li>
       <li><a href="https://punch-k.github.io/Portfolio/" target="_blank" rel="noopener">Prapanch's portfolio</a></li>
     </ul>
   </div>
@@ -3539,7 +3541,7 @@ async function loadSnapshot(){
   banner.className = 'banner' + (stale ? ' banner-warn' : '');
   banner.innerHTML = `<b>${stale ? 'Snapshot (delayed)' : 'Market snapshot'}</b> · Data as of ${asOfText} · `+
     `${stockData.length} S&amp;P 500 companies · Source: Yahoo Finance · Refreshed on US trading days, not real time · `+
-    `<a href="#" onclick="openAbout();return false">Methodology</a>`;
+    `<a href="#" onclick="openAbout();return false">Methodology</a> · <a href="stock/">All stocks</a>`;
   const lu = document.getElementById('lastUpdated'); if(lu) lu.textContent = asOf ? 'Data: '+asOfText : '';
 }
 

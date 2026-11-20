@@ -19,6 +19,11 @@ Source: Yahoo Finance via yfinance and Yahoo Finance RSS. Educational use; not i
 - [data/news.json](https://punch-k.github.io/FinSTR-app/data/news.json): headline lists for market, macro, stocks and ETFs
 - [data/benchmark.json](https://punch-k.github.io/FinSTR-app/data/benchmark.json): SPY daily closes (for "vs S&P 500" comparisons)
 
+## Pages
+
+- [stock/](https://punch-k.github.io/FinSTR-app/stock/): every S&P 500 company by sector; stock/{TICKER}/ is a no-JavaScript summary (key numbers, signal, factors, reasons)
+- [sitemap.xml](https://punch-k.github.io/FinSTR-app/sitemap.xml)
+
 ## Portfolio file format
 
 The Portfolio page exports JSON: {"version":1, "name":..., "holdings":[{"ticker":"AAPL","shares":20,"cost":201.7,"date":"2025-06-02"}], "prefs":{"weekly":true,"daily":false,"alerts":true}}

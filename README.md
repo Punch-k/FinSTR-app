@@ -19,6 +19,7 @@ Built by [Prapanch Kokkalemada](https://punch-k.github.io/Portfolio/).
 | **Screener** | 70+ fields per stock · 12 column views (Overview, Valuation, Financial, Ownership, Performance, Technical, Analysts, …) · filters by sector, industry, market cap, P/E, PEG, dividend, ROE, margin, moving average, beta · 16 signals (52-week highs/lows, unusual volume, RSI overbought/oversold, earnings this week, …) · presets, watchlist, CSV export, shareable links |
 | **Maps** | Market-cap treemap and bubble view, coloured by 1-day, 1-week, 1-month, 3-month, 6-month, YTD or 1-year performance |
 | **Quote page** | Finviz-order layout: candlestick chart with SMA 20/50/200 and volume · peers · 78-field snapshot table · 5-year and quarterly EPS, sales, net income and shares · earnings surprises · analyst consensus and rating changes · headlines · profile · insider trades · valuation sandbox. On phones: sticky header, swipeable tabs and grouped data cards. |
+| **Stock pages** | A fast, no-JavaScript page per company at `/stock/TICKER/` (key numbers, signal, factors, reasons) plus an [A-Z index by sector](https://punch-k.github.io/FinSTR-app/stock/) and `sitemap.xml`, rebuilt on every deploy by `pipeline/pages.py` |
 | **Markets** | Index cards, 26 futures, 12 currency pairs, 11 crypto assets |
 | **Analytics** | Candlestick charts, sector and industry groups, insider transactions, earnings and ex-dividend calendar, news by topic |
 
@@ -93,6 +94,7 @@ ready-made prompt with your holdings and their data for any AI assistant.
 | `index.html` | The site (screener, maps, quote panel, markets, analytics) |
 | `assets/` | Images (logo) |
 | `pipeline/` | `fetch.py` data builder, `signals.py` signal engine and backtest, `digest.py` email digest, `universe.csv` (S&P 500 list), `requirements.txt` |
+| `pipeline/pages.py` | Generates the per-stock pages, stock index and sitemap at deploy time |
 | `llms.txt` | Data documentation for AI agents and automation tools |
 | `.github/workflows/deploy.yml` | Scheduled build and GitHub Pages deploy |
 | `.github/workflows/digest.yml` | Self-hosted email digest (fork, add secrets, receive emails) |

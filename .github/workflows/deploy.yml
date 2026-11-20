@@ -53,6 +53,7 @@ jobs:
           mkdir -p _site
           cp index.html llms.txt _site/
           cp -r assets data _site/
+          python pipeline/pages.py --data data --out _site   # per-stock pages, sitemap, robots
           touch _site/.nojekyll
 
       - uses: actions/upload-pages-artifact@v3
