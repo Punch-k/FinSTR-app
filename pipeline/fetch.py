@@ -27,6 +27,7 @@ import json
 import math
 import os
 import sys
+import threading
 import time
 import urllib.parse
 import urllib.request
@@ -270,6 +271,10 @@ def info_row(sym):
         "insiderOwn": num(i.get("heldPercentInsiders"), 2, 100),
         "instOwn": num(i.get("heldPercentInstitutions"), 2, 100),
         "shortFloat": num(i.get("shortPercentOfFloat"), 2, 100), "shortRatio": num(i.get("shortRatio")),
+        "shortInterest": num(i.get("sharesShort"), 0),
+        "divTTM": num(i.get("trailingAnnualDividendRate")) or None,
+        "divYieldTTM": num(i.get("trailingAnnualDividendYield"), 2, 100) or None,
+        "ipo": iso_date((i.get("firstTradeDateMilliseconds") or 0) / 1000),
         "target": tgt, "targetHigh": num(i.get("targetHighPrice")), "targetLow": num(i.get("targetLowPrice")),
         "upside": num((tgt / price - 1) * 100) if tgt else None,
         "recMean": num(i.get("recommendationMean")), "analysts": i.get("numberOfAnalystOpinions"),
@@ -345,6 +350,121 @@ def insiders(sym, n=6):
     return rows
 
 
+# ───────────────────────── deep data (financials, estimates, rating changes) ─────────────────────────
+# Slow-moving and costly in requests, so it is refreshed about once a day per ticker on a rotation
+# (at most DEEP_PER_RUN tickers per run) and otherwise reused from the previous publish.
+DEEP_MAX_AGE_H = 20
+DEEP_PER_RUN = int(os.environ.get("FINSTR_DEEP_PER_RUN", "200"))
+_deep_lock = threading.Lock()
+_deep_budget = [DEEP_PER_RUN]
+
+
+def previous_quote(sym):
+    path = os.path.join(QUOTE_DIR, f"{sym}.json")
+    try:
+        if PREVIOUS_URL:
+            req = urllib.request.Request(f"{PREVIOUS_URL}/data/quote/{sym}.json", headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=20) as r:
+                return json.loads(r.read().decode("utf-8"))
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:  # noqa: BLE001
+        return None
+    return None
+
+
+def _series(df, row, scale=1.0, nd=2):
+    if df is None or df.empty or row not in df.index:
+        return None
+    cols = sorted(df.columns)  # oldest -> newest
+    return {"periods": [c.strftime("%Y-%m") for c in cols],
+            "values": [num(df.loc[row, c], nd, scale) for c in cols]}
+
+
+def fetch_deep(sym):
+    t = yf.Ticker(sym)
+    a = retry(lambda: t.income_stmt)
+    q = retry(lambda: t.quarterly_income_stmt)
+    deep = {
+        "asOf": int(time.time()),
+        "annual": {"eps": _series(a, "Diluted EPS"), "sales": _series(a, "Total Revenue", 1e-9, 2),
+                   "shares": _series(a, "Diluted Average Shares", 1e-9, 3), "netIncome": _series(a, "Net Income", 1e-9, 2)},
+        "quarterly": {"eps": _series(q, "Diluted EPS"), "sales": _series(q, "Total Revenue", 1e-9, 2),
+                      "shares": _series(q, "Diluted Average Shares", 1e-9, 3), "netIncome": _series(q, "Net Income", 1e-9, 2)},
+        "ratings": [], "estimates": {}, "surprises": [], "ltg": None,
+    }
+    try:
+        u = t.upgrades_downgrades
+        if u is not None and not u.empty:
+            for d, r in u.sort_index(ascending=False).head(25).iterrows():
+                deep["ratings"].append({
+                    "date": d.strftime("%Y-%m-%d"), "firm": str(r.get("Firm") or ""), "action": str(r.get("Action") or ""),
+                    "from": str(r.get("FromGrade") or ""), "to": str(r.get("ToGrade") or ""),
+                    "ptAction": str(r.get("priceTargetAction") or ""),
+                    "pt": num(r.get("currentPriceTarget")) or None, "priorPt": num(r.get("priorPriceTarget")) or None})
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        e = t.earnings_estimate
+        for k, label in (("0q", "thisQ"), ("+1q", "nextQ"), ("0y", "thisY"), ("+1y", "nextY")):
+            if e is not None and k in e.index:
+                r = e.loc[k]
+                deep["estimates"][label] = {"avg": num(r.get("avg")), "low": num(r.get("low")), "high": num(r.get("high")),
+                                            "n": int(r["numberOfAnalysts"]) if r.get("numberOfAnalysts") == r.get("numberOfAnalysts") and r.get("numberOfAnalysts") is not None else None,
+                                            "growth": num(r.get("growth"), 2, 100), "yearAgo": num(r.get("yearAgoEps"))}
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        h = t.earnings_history
+        if h is not None and not h.empty:
+            for d, r in h.sort_index().iterrows():
+                deep["surprises"].append({"period": d.strftime("%Y-%m"), "actual": num(r.get("epsActual")),
+                                          "estimate": num(r.get("epsEstimate")), "surprise": num(r.get("surprisePercent"), 2, 100)})
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        g = t.growth_estimates
+        if g is not None and "LTG" in g.index:
+            deep["ltg"] = num(g.loc["LTG", "stockTrend"], 2, 100)
+    except Exception:  # noqa: BLE001
+        pass
+    return deep
+
+
+def get_deep(sym):
+    """Fresh-enough previous deep data, else a new fetch while this run's budget lasts."""
+    prev = previous_quote(sym) or {}
+    old = prev.get("deep")
+    if old and time.time() - old.get("asOf", 0) < DEEP_MAX_AGE_H * 3600:
+        return old
+    with _deep_lock:
+        if _deep_budget[0] <= 0:
+            return old  # may be None or older; refreshed on a later run
+        _deep_budget[0] -= 1
+    try:
+        return fetch_deep(sym)
+    except Exception as e:  # noqa: BLE001
+        print(f"  [deep] {sym}: {e}", file=sys.stderr)
+        return old
+
+
+def deep_fields(d):
+    """Screener columns derived from the deep data (Finviz's EPS this/next Y, next 5Y, surprise...)."""
+    if not d:
+        return {}
+    est, sur = d.get("estimates") or {}, d.get("surprises") or []
+    last = sur[-1] if sur else {}
+    ann = (d.get("annual") or {}).get("sales") or {}
+    vals = [v for v in (ann.get("values") or []) if v]
+    sales3y = num(((vals[-1] / vals[-4]) ** (1 / 3) - 1) * 100) if len(vals) >= 4 and vals[-4] > 0 else None
+    return {
+        "epsNextQ": (est.get("thisQ") or {}).get("avg"), "epsThisY": (est.get("thisY") or {}).get("growth"),
+        "epsNextYGrowth": (est.get("nextY") or {}).get("growth"), "epsNext5Y": d.get("ltg"),
+        "epsSurprise": last.get("surprise"), "salesPast3Y": sales3y,
+    }
+
+
 def compat(r):
     """Field names and units the existing index.html expects, next to the new fields."""
     c = dict(r)
@@ -407,6 +527,8 @@ def main():
         row.update(technicals(h))
         row["news"] = news(s, u["name"])
         row["insiderTransactions"] = insiders(s)
+        row["_deep"] = get_deep(s)
+        row.update(deep_fields(row["_deep"]))
         return row, h, row["news"]
 
     def run(batch, workers):
@@ -436,10 +558,11 @@ def main():
         print(f"  [fail] {u['ticker']}: {e}", file=sys.stderr)
     for row, h, nw in done:
         profile = row.pop("_profile")
+        deep = row.pop("_deep", None)
         rows.append(compat(row))
         h = h.dropna(subset=["Close"])
         quote = {
-            "ticker": row["ticker"], "profile": profile, "news": nw,
+            "ticker": row["ticker"], "profile": profile, "news": nw, "deep": deep,
             "history": {
                 "d": [d.strftime("%Y-%m-%d") for d in h.index],
                 "o": [round(float(x), 2) for x in h["Open"]], "h": [round(float(x), 2) for x in h["High"]],

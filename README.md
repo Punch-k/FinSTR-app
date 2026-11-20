@@ -18,7 +18,7 @@ Built by [Prapanch Kokkalemada](https://punch-k.github.io/Portfolio/).
 |---|---|
 | **Screener** | 70+ fields per stock · 12 column views (Overview, Valuation, Financial, Ownership, Performance, Technical, Analysts, …) · filters by sector, industry, market cap, P/E, PEG, dividend, ROE, margin, moving average, beta · 16 signals (52-week highs/lows, unusual volume, RSI overbought/oversold, earnings this week, …) · presets, watchlist, CSV export, shareable links |
 | **Maps** | Market-cap treemap and bubble view, coloured by 1-day, 1-week, 1-month, 3-month, 6-month, YTD or 1-year performance |
-| **Quote panel** | 2-year price chart with 50/200-day moving averages · 72-field snapshot table · company profile · analyst targets · headlines · valuation sandbox (your own growth and discount assumptions) |
+| **Quote page** | Finviz-order layout: candlestick chart with SMA 20/50/200 and volume · peers · 78-field snapshot table · 5-year and quarterly EPS, sales, net income and shares · earnings surprises · analyst consensus and rating changes · headlines · profile · insider trades · valuation sandbox. On phones: sticky header, swipeable tabs and grouped data cards. |
 | **Markets** | Index cards, 26 futures, 12 currency pairs, 11 crypto assets |
 | **Analytics** | Candlestick charts, sector and industry groups, insider transactions, earnings and ex-dividend calendar, news by topic |
 
