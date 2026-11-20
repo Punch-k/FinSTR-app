@@ -729,6 +729,9 @@
   .pf-add .dim-note{font-size:11px;}
   .pf-empty{border:1px dashed var(--border);border-radius:8px;padding:18px;font-size:13.5px;line-height:1.6;margin-bottom:12px;}
   .pf-empty button{margin-top:10px;}
+  .pf-since{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px;font-size:12.5px;}
+  .pf-chip{border:1px solid var(--border);border-radius:12px;padding:2px 9px;}
+  .pf-chip.pos{border-color:rgba(38,166,91,.5);} .pf-chip.neg{border-color:rgba(239,83,80,.5);}
   .pf-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:10px;}
   .pf-cards > div{border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--panel);display:flex;flex-direction:column;gap:2px;}
   .pf-cards b{font-size:16px;} .pf-cards small{display:block;font-size:10.5px;color:var(--dim);font-weight:400;}
@@ -1133,13 +1136,14 @@
       <div><button class="live-btn" onclick="pfSample()">Try a sample portfolio</button></div>
     </div>
     <div id="pfBody" style="display:none">
+      <div class="pf-since" id="pfSince" style="display:none"></div>
       <div class="pf-cards" id="pfCards"></div>
       <div class="q-table-wrap"><table class="q-table pf-table" id="pfTable"></table></div>
       <div class="sg-grid" style="margin-top:12px">
         <div class="sg-card"><h3>Points to consider</h3><ul class="pf-cons" id="pfCons"></ul><div class="dim-note">Rule-based and explainable, from the signals and your positions. Educational, not investment advice.</div></div>
         <div class="sg-card"><h3>Allocation by sector</h3><div id="pfAlloc"></div></div>
       </div>
-      <div class="sg-card"><h3>Ideas to diversify <span class="dim-note">strong signals in sectors you don't hold or hold little of</span></h3><div class="q-table-wrap"><table class="q-table" id="pfIdeas"></table></div></div>
+      <div class="sg-card"><h3>Ideas to diversify <span class="dim-note">strong signals in sectors you don't hold or hold little of; skips companies reporting earnings within 5 days</span></h3><div class="q-table-wrap"><table class="q-table" id="pfIdeas"></table></div></div>
     </div>
     <div class="sg-card" id="pfPrefs">
       <h3>Email updates</h3>
@@ -1872,6 +1876,7 @@ async function renderPortfolio(){
       <td class="r">${isNum(r.vsSpy)?fPct(r.vsSpy):'<span class="na" title="Add a purchase date">-</span>'}</td><td class="r">${r.weight.toFixed(1)}%</td>
       <td>${scoreBadge(r.s.signal)} <span class="sig-txt ${sigClass(r.s.signal)}">${r.s.signalLabel||''}</span></td>
       <td class="pf-row-act"><button class="q-ico" onclick="pfEdit('${r.h.id}')" title="Edit">✎</button><button class="q-ico" onclick="pfDelete('${r.h.id}')" title="Remove">✕</button></td></tr>`).join('')+'</tbody>';
+  pfSinceLast(P);
   const cons = pfConsiderations(P);
   document.getElementById('pfCons').innerHTML = cons.length ? cons.map(([k,t])=>`<li class="pc-${k}">${t}</li>`).join('') : '<li class="pc-pos">Nothing stands out: no concentration, weak-signal or earnings flags.</li>';
   const secs = Object.entries(P.bySector).sort((a,b)=>b[1]-a[1]);
@@ -1881,13 +1886,37 @@ async function renderPortfolio(){
   document.getElementById('pfAlloc').innerHTML = `<div class="pf-alloc"><svg viewBox="0 0 120 120" width="130" height="130">${arcs}</svg><div>${secs.map(([n,v],i)=>`<div class="pf-leg"><i style="background:${palette[i%palette.length]}"></i>${n}<b>${(v/P.value*100).toFixed(1)}%</b></div>`).join('')}</div></div>`;
   const held = new Set(P.rows.map(r=>r.s.ticker));
   const weightOf = sec => (P.bySector[sec]||0)/P.value*100;
-  const ideas = stockData.filter(s=> !held.has(s.ticker) && isNum(s.signal) && s.signal>=80 && weightOf(s.sector) < 10)
+  const reportsSoon = s => { if(!s.earningsDate) return false; const d = (Date.parse(s.earningsDate+'T12:00:00')-Date.now())/864e5; return d >= -1 && d <= 5; };
+  const ideas = stockData.filter(s=> !held.has(s.ticker) && isNum(s.signal) && s.signal>=80 && weightOf(s.sector) < 10 && !reportsSoon(s))
     .sort((a,b)=> weightOf(a.sector)-weightOf(b.sector) || b.signal-a.signal)
     .filter((s,i,arr)=> arr.slice(0,i).filter(x=>x.sector===s.sector).length < 2).slice(0,8);
   const why = s => { const r = (s.reasons||[]).filter(x=>!/^(Up|Down)trend/.test(x)); return (r.length ? r : (s.reasons||[])).slice(0,2).join(' · '); };
   document.getElementById('pfIdeas').innerHTML = ideas.length ? '<thead><tr><th>Ticker</th><th>Sector</th><th class="r">Your weight</th><th>Signal</th><th>Why</th></tr></thead><tbody>'+
     ideas.map(s=>`<tr onclick="openModal('${s.ticker}')" style="cursor:pointer"><td><b class="tk">${s.ticker}</b> <span class="dim-note">${s.name}</span></td><td>${s.sector}</td><td class="r">${weightOf(s.sector).toFixed(1)}%</td><td>${scoreBadge(s.signal)}</td><td class="dim-note">${why(s)}</td></tr>`).join('')+'</tbody>'
     : '<tr><td class="dim-note">No strong-signal ideas outside your sectors right now.</td></tr>';
+}
+// "Since the data you last saw": compares this snapshot with the previous one this browser saw.
+const PF_SEEN = 'finstr_pf_seen_v1';
+function pfSinceLast(P){
+  const el = document.getElementById('pfSince'); if(!el) return;
+  const at = dataMeta ? dataMeta.generatedAt : 0;
+  const cur = {}; P.rows.forEach(r=> cur[r.s.ticker] = {lab:r.s.signalLabel||null, sig:r.s.signal, px:r.s.price, s200:r.s.vsSma200});
+  let st = {}; try{ st = JSON.parse(localStorage.getItem(PF_SEEN)||'{}') || {}; }catch(e){}
+  if(st.at !== at){ st = {at, prevAt: st.at||null, prev: st.cur||null, cur}; }
+  else { st.cur = Object.assign({}, cur, st.cur); }   // holdings added since keep their first-seen values
+  try{ localStorage.setItem(PF_SEEN, JSON.stringify(st)); }catch(e){}
+  if(!st.prev || !st.prevAt){ el.style.display='none'; return; }
+  const when = new Date(st.prevAt*1000).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' ET';
+  const items = [];
+  for(const [t,c] of Object.entries(cur)){
+    const p = st.prev[t]; if(!p) continue;
+    if(p.lab && c.lab && p.lab !== c.lab){ const up = (c.sig??0) > (p.sig??0); items.push([up?'pos':'neg', `<b>${t}</b> signal ${p.lab} → ${c.lab}`]); }
+    if(isNum(p.px) && isNum(c.px) && p.px > 0){ const ch = (c.px/p.px-1)*100; if(Math.abs(ch) >= 5) items.push([ch>0?'pos':'neg', `<b>${t}</b> ${ch>0?'+':''}${ch.toFixed(1)}%`]); }
+    if(isNum(p.s200) && isNum(c.s200) && (p.s200 >= 0) !== (c.s200 >= 0)) items.push([c.s200>=0?'pos':'neg', `<b>${t}</b> crossed ${c.s200>=0?'above':'below'} its 200-day average`]);
+  }
+  el.style.display = '';
+  el.innerHTML = `<span class="dim-note">Since the data you last saw (${when}):</span> ` +
+    (items.length ? items.map(([k,t])=>`<span class="pf-chip ${k}">${t}</span>`).join('') : '<span class="dim-note">no signal changes, 5%+ moves or 200-day crossings.</span>');
 }
 function label5(v){ return !isNum(v) ? '' : v>=80?'Strong':v>=60?'Positive':v>=40?'Neutral':v>=20?'Weak':'Very Weak'; }
 function pfExport(){

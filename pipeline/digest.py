@@ -14,10 +14,14 @@ Inputs
 
 AI write-up (optional): set LLM_BASE_URL to any OpenAI-compatible endpoint, e.g.
   http://localhost:11434/v1 (Ollama), plus LLM_MODEL (default llama3.2) and LLM_API_KEY if needed.
-The model only receives the computed facts and is told to cite nothing else; if its text mentions a
-ticker that is not in the facts, the write-up is dropped and the rule-based summary is used instead.
+The model only receives the computed facts. Its text is checked (numbers, tickers, sectors, S&P comparison,
+gain or loss direction); if any check fails the rule-based summary is used instead.
 
-Email: SMTP_HOST, SMTP_PORT (587), SMTP_USER, SMTP_PASS, MAIL_TO, MAIL_FROM (defaults to SMTP_USER).
+Delivery (--send goes to every channel that is configured; set at least one):
+  Email     SMTP_HOST, SMTP_PORT (587), SMTP_USER, SMTP_PASS, MAIL_TO, MAIL_FROM (defaults to SMTP_USER)
+  Telegram  TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+  Slack / Discord / any chat webhook   WEBHOOK_URL
+  Phone push via ntfy (free, no account)   NTFY_TOPIC, optional NTFY_SERVER (default https://ntfy.sh)
 """
 
 import argparse
@@ -134,7 +138,13 @@ def analyse(pf, rows, bench, base):
     held = {r["s"]["ticker"] for r in hold}
     wsec = lambda sec: sectors.get(sec, 0) / value * 100 if value else 0
     ideas, per = [], {}
-    for s in sorted((x for x in rows if x["ticker"] not in held and isnum(x.get("signal")) and x["signal"] >= 80 and wsec(x["sector"]) < 10),
+    def reports_soon(x):  # skip ideas that report within 5 days: results can gap the price either way
+        try:
+            return -1 <= (dt.date.fromisoformat(x.get("earningsDate") or "") - today).days <= 5
+        except ValueError:
+            return False
+    for s in sorted((x for x in rows if x["ticker"] not in held and isnum(x.get("signal")) and x["signal"] >= 80
+                     and wsec(x["sector"]) < 10 and not reports_soon(x)),
                     key=lambda x: (wsec(x["sector"]), -x["signal"])):
         if per.get(s["sector"], 0) < 2:
             ideas.append(s); per[s["sector"]] = per.get(s["sector"], 0) + 1
@@ -310,6 +320,29 @@ def rule_summary(A):
     return s
 
 
+def chat_text(A, mode, as_of, ai_text, flips):
+    """Short plain-text version for Telegram, Slack, Discord and phone push."""
+    pnl = (A["value"] / A["cost"] - 1) * 100 if A["cost"] else 0
+    head = {"weekly": "FinSTR weekly digest", "daily": "FinSTR daily summary", "alerts": "FinSTR alert"}[mode]
+    lines = [f"{head} ({as_of})",
+             f"Value ${A['value']:,.0f} | day {'-' if A['day'] < 0 else '+'}${abs(A['day']):,.0f} | P&L {pnl:+.2f}%"
+             + ("" if A["excess"] is None else f" | vs S&P 500 {A['excess']:+.2f} pts")
+             + ("" if A["signal"] is None else f" | signal {A['signal']:.0f}")]
+    alerts = A["alerts"] + flips
+    if alerts:
+        lines += ["", "Alerts:"] + [f"- {x}" for x in alerts]
+    if mode != "alerts":
+        lines += ["", ai_text or rule_summary(A)]
+        if A["considerations"]:
+            lines += ["", "Points to consider:"] + [f"- {x}" for x in A["considerations"][:4]]
+    if mode == "weekly" and A["ideas"]:
+        lines += ["", "Ideas to diversify:"] + [f"- {s['ticker']} ({s['sector']}), signal {s['signal']}" for s in A["ideas"][:4]]
+    if A["earnings"]:
+        lines += ["", "Earnings soon: " + ", ".join(f"{t} {d}" for t, d in A["earnings"])]
+    lines += ["", f"{DEFAULT_DATA}/  ·  educational, not investment advice"]
+    return "\n".join(lines)
+
+
 # ───────────────────────── render ─────────────────────────
 def render(A, mode, as_of, ai_text, flips, ai_tried=False):
     e = html.escape
@@ -372,10 +405,55 @@ def resolve_mode(mode, prefs, slot):
     return out
 
 
+def post_json(url, payload, headers=None):
+    req = urllib.request.Request(url, data=json.dumps(payload).encode(), method="POST",
+                                 headers={"Content-Type": "application/json", "User-Agent": UA, **(headers or {})})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return r.status
+
+
+def deliver(subject, html_body, text_body, chat):
+    """Send to every configured channel. Returns the channels that worked; raises if none is configured."""
+    env = os.environ.get
+    sent, errors = [], []
+    channels = []
+    if all(env(k) for k in ("SMTP_HOST", "SMTP_USER", "SMTP_PASS", "MAIL_TO")):
+        channels.append(("email", lambda: send(subject, html_body, text_body)))
+    if env("TELEGRAM_BOT_TOKEN") and env("TELEGRAM_CHAT_ID"):
+        api = env("FINSTR_TELEGRAM_API", "https://api.telegram.org")
+        channels.append(("telegram", lambda: post_json(f"{api}/bot{env('TELEGRAM_BOT_TOKEN')}/sendMessage",
+                                                       {"chat_id": env("TELEGRAM_CHAT_ID"), "text": chat[:4000],
+                                                        "disable_web_page_preview": True})))
+    if env("WEBHOOK_URL"):
+        url = env("WEBHOOK_URL")
+        body = {"content": chat[:1900]} if "discord" in url else {"text": chat[:3900]}   # Discord vs Slack-style
+        channels.append(("webhook", lambda: post_json(url, body)))
+    if env("NTFY_TOPIC"):
+        def ntfy():
+            url = env("NTFY_SERVER", "https://ntfy.sh").rstrip("/") + "/" + env("NTFY_TOPIC")
+            req = urllib.request.Request(url, data=chat[:3900].encode(), method="POST",
+                                         headers={"Title": subject.replace("·", "-").encode("ascii", "ignore").decode(), "Tags": "chart_with_upwards_trend",
+                                                  "Click": DEFAULT_DATA + "/#view=portfolio", "User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return r.status
+        channels.append(("ntfy", ntfy))
+    if not channels:
+        raise SystemExit("No delivery channel configured: set SMTP_* + MAIL_TO, TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID, "
+                         "WEBHOOK_URL or NTFY_TOPIC (see the docstring).")
+    for name, fn in channels:
+        try:
+            fn()
+            sent.append(name)
+        except Exception as e:  # noqa: BLE001  one failing channel must not stop the others
+            errors.append(f"{name}: {e}")
+            print(f"[deliver] {name} failed: {e}", file=sys.stderr)
+    if not sent:
+        raise SystemExit("Every delivery channel failed: " + "; ".join(errors))
+    return sent
+
+
 def send(subject, html_body, text_body):
     host, user, pw, to = (os.environ.get(k) for k in ("SMTP_HOST", "SMTP_USER", "SMTP_PASS", "MAIL_TO"))
-    if not all((host, user, pw, to)):
-        raise SystemExit("SMTP_HOST, SMTP_USER, SMTP_PASS and MAIL_TO must be set to send email.")
     msg = EmailMessage()
     msg["Subject"], msg["From"], msg["To"] = subject, os.environ.get("MAIL_FROM", user), to
     msg.set_content(text_body)
@@ -432,8 +510,8 @@ def main():
                 f.write(body)
             print(f"[{mode}] wrote {out}")
         if a.send:
-            send(subject, body, text)
-            print(f"[{mode}] sent to {os.environ.get('MAIL_TO')}")
+            sent = deliver(subject, body, text, chat_text(A, mode, as_of, ai, flips))
+            print(f"[{mode}] sent via {', '.join(sent)}")
 
 
 if __name__ == "__main__":

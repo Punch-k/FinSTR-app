@@ -53,17 +53,33 @@ trigger alerts) and export the portfolio as a JSON file.
 
 ### Email digests (self-hosted)
 
-`pipeline/digest.py` turns that file plus the latest FinSTR data into a mobile-friendly email. It uses only the Python
-standard library. An AI paragraph is optional: point it at any OpenAI-compatible model (a local Ollama model by default).
-The model gets only the computed facts, must not use numbers (the email's tables carry them), and any text that cites
-a number or a ticker outside the facts is discarded in favour of the rule-based summary.
+`pipeline/digest.py` turns that file plus the latest FinSTR data into a mobile-friendly email, and a short text
+version for Telegram, Slack, Discord or phone push. It uses only the Python standard library.
+
+An AI paragraph is optional: point it at any OpenAI-compatible model (a local Ollama model by default). Code computes
+every number; the model only writes the paragraph, and its text is checked before it is sent. It is dropped, and the
+rule-based summary used instead, if it:
+
+- uses a number that is not in the computed facts (rounding allowed),
+- names a ticker that is not in the portfolio or the ideas,
+- puts a stock in the wrong sector, or quotes the wrong figure as the S&P 500 comparison,
+- calls a gain a loss or the reverse.
+
+The email says when this happened, so a degraded run is never silent.
 
 Set it up in about 5 minutes, free, on your own GitHub account:
 
 1. Fork this repository.
 2. In your fork: **Settings > Secrets and variables > Actions**
-   - Secrets: `PORTFOLIO_JSON` (paste the exported file), `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USER`, `SMTP_PASS`, `MAIL_TO`.
-     For Gmail use `smtp.gmail.com` and an [app password](https://support.google.com/accounts/answer/185833).
+   - Secret `PORTFOLIO_JSON`: paste the exported file.
+   - At least one way to reach you (set any or all):
+
+     | Channel | Secrets |
+     |---|---|
+     | Email | `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USER`, `SMTP_PASS`, `MAIL_TO`. Gmail: `smtp.gmail.com` and an [app password](https://support.google.com/accounts/answer/185833) |
+     | Telegram | `TELEGRAM_BOT_TOKEN` (from @BotFather), `TELEGRAM_CHAT_ID` |
+     | Slack or Discord | `WEBHOOK_URL` (an incoming-webhook URL) |
+     | Phone push | `NTFY_TOPIC`: install the free [ntfy](https://ntfy.sh) app and subscribe to a long random topic name only you know |
    - Variables: `FINSTR_DIGEST` = `true`. Optional: `FINSTR_LOCAL_AI` = `true` to run an open model on the runner,
      `LLM_MODEL` (default `llama3.2`), or secrets `LLM_BASE_URL` / `LLM_API_KEY` for a hosted model.
 3. **Actions > FinSTR Digest > Run workflow** sends a test digest. After that it runs on schedule: Monday morning
@@ -77,7 +93,7 @@ LLM_BASE_URL=http://localhost:11434/v1 LLM_MODEL=llama3.2 python pipeline/digest
 ```
 
 Alerts fire when a holding falls 7% or more in a day, crosses its 200-day average, reports earnings within 3 days,
-or its signal label changes.
+or its signal label changes. Ideas skip companies that report earnings within 5 days.
 
 ## For AI agents and automation
 

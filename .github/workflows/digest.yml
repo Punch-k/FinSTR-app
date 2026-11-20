@@ -3,7 +3,11 @@
 # Self-hosted: fork the repo, then in your fork set
 #   Settings > Secrets and variables > Actions
 #     Secrets:   PORTFOLIO_JSON (the file exported from the FinSTR Portfolio page)
-#                SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_TO
+#                and at least one way to reach you:
+#                  email     SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_TO
+#                  Telegram  TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+#                  Slack or Discord   WEBHOOK_URL
+#                  phone push (ntfy app, no account)   NTFY_TOPIC (a long random name only you know)
 #                (optional) LLM_BASE_URL, LLM_API_KEY for a hosted OpenAI-compatible model
 #     Variables: FINSTR_DIGEST = true            (switches the schedule on)
 #                FINSTR_LOCAL_AI = true          (optional: run an open model on the runner with Ollama)
@@ -62,6 +66,10 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           LLM_BASE_URL: ${{ vars.FINSTR_LOCAL_AI == 'true' && 'http://localhost:11434/v1' || secrets.LLM_BASE_URL }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_MODEL: ${{ vars.LLM_MODEL || 'llama3.2' }}
