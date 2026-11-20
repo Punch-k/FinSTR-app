@@ -25,3 +25,9 @@ server/database/*.db
 stock/
 sitemap.xml
 robots.txt
+
+# Local secrets: never commit
+API Keys passwords/
+*secret*
+*.env
+.env*

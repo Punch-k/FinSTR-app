@@ -586,6 +586,13 @@
   .modal-news-section .news-headline{color:var(--text);text-decoration:none;}
   .modal-news-section .news-headline:hover{color:var(--accent);}
   /* About panel */
+  .auth-panel{max-width:420px;font-size:13px;line-height:1.55;}
+  .auth-panel h2{margin:0 0 6px;font-size:18px;}
+  .auth-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin:16px 0 8px;padding:11px 14px;border-radius:8px;border:1px solid var(--border);background:#fff;color:#1f1f1f;font-weight:600;font-size:14px;cursor:pointer;}
+  .auth-google:hover{box-shadow:0 0 0 2px var(--accent);}
+  .auth-or{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:12px;margin:8px 0;} .auth-or::before,.auth-or::after{content:'';flex:1;border-top:1px solid var(--border);}
+  .auth-email{display:flex;flex-direction:column;gap:8px;} .auth-email input{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:9px 11px;font-size:14px;}
+  .auth-fine{margin-top:12px;font-size:11.5px;} .auth-actions{display:flex;gap:8px;margin-top:12px;}
   .about-panel{max-width:720px;font-size:13px;line-height:1.6;}
   .about-panel h2{margin:0 0 4px;font-size:20px;}
   .about-panel h3{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--dim);margin:18px 0 6px;}
@@ -838,6 +845,7 @@
         <span id="lastUpdated"></span>
         <span id="liveClock" class="live-clock"></span>
         <label class="theme-switch"><input type="checkbox" id="themeSwitchInput" onchange="toggleTheme()"><span class="switch-track"><span class="switch-thumb">🌙</span></span></label>
+        <button class="nav-ghost-btn" id="authBtn" onclick="openAuth()">Sign in</button>
         <button class="nav-ghost-btn" onclick="openAbout()">About</button>
       </div>
     </div>
@@ -1401,6 +1409,29 @@
 
 
 <!-- About / methodology -->
+<div class="modal-overlay" id="authOverlay">
+  <div class="modal-panel auth-panel">
+    <button class="modal-close" onclick="closeAuth()">✕</button>
+    <div id="authOut">
+      <h2>Sign in to FinSTR</h2>
+      <div class="dim-note">Optional. FinSTR works fully without an account; signing in keeps your paper portfolio, watchlist and screen alerts in sync across your devices.</div>
+      <button class="auth-google" onclick="authGoogle()"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.3-.4-3.5z"/></svg> Continue with Google</button>
+      <div class="auth-or"><span>or</span></div>
+      <form onsubmit="authEmail(event)" class="auth-email">
+        <input type="email" id="authEmail" placeholder="you@example.com" required autocomplete="email" aria-label="Email address">
+        <button class="live-btn" type="submit">Email me a sign-in link</button>
+      </form>
+      <div class="dim-note" id="authMsg"></div>
+      <div class="dim-note auth-fine">We store only your email and the portfolio you save. No password is ever stored by FinSTR. Educational tool, not investment advice.</div>
+    </div>
+    <div id="authIn" style="display:none">
+      <h2>Your account</h2>
+      <div id="authWho" class="dim-note"></div>
+      <div class="dim-note" id="authSync"></div>
+      <div class="auth-actions"><button class="live-btn" onclick="authSyncNow()">Sync now</button><button class="q-ico" onclick="authSignOut()">Sign out</button></div>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="aboutOverlay">
   <div class="modal-panel about-panel">
     <button class="modal-close" onclick="closeAbout()">✕</button>
@@ -1781,6 +1812,7 @@ function toggleWatch(ticker, evt){
   const adding = !watchlist.has(ticker);
   if(watchlist.has(ticker)) watchlist.delete(ticker); else watchlist.add(ticker);
   try{ localStorage.setItem('finstr_watchlist', JSON.stringify([...watchlist])); }catch(e){}
+  authSchedulePush();
   // First-ever star: confirm it actually persists, since there's no account system to
   // otherwise reassure the user their watchlist survives closing the tab.
   if(adding){
@@ -1856,7 +1888,7 @@ const PF_KEY = 'finstr_portfolio_v1';
 const PF_DEFAULT = () => ({ version:1, name:'My Portfolio', holdings:[], prefs:{weekly:true, daily:false, alerts:true} });
 let pf = (()=>{ try{ return JSON.parse(localStorage.getItem(PF_KEY)) || PF_DEFAULT(); }catch(e){ return PF_DEFAULT(); } })();
 let pfEditId = null, _bench = null;
-function pfStore(){ try{ localStorage.setItem(PF_KEY, JSON.stringify(pf)); }catch(e){} }
+function pfStore(){ try{ localStorage.setItem(PF_KEY, JSON.stringify(pf)); }catch(e){} if(typeof authSchedulePush==='function') authSchedulePush(); }
 async function getBench(){ if(!_bench){ try{ _bench = await fetch('data/benchmark.json',{cache:'no-cache'}).then(r=>r.json()); }catch(e){ _bench = {d:[],c:[]}; } } return _bench; }
 function closeOn(series, date){            // close on or before a date (series: {d:[], c:[]})
   if(!series || !series.d || !series.d.length || !date) return null;
@@ -2017,6 +2049,95 @@ async function renderPortfolio(){
   document.getElementById('pfIdeas').innerHTML = ideas.length ? '<thead><tr><th>Ticker</th><th>Sector</th><th class="r">Your weight</th><th>Signal</th><th>Why</th></tr></thead><tbody>'+
     ideas.map(s=>`<tr onclick="openModal('${s.ticker}')" style="cursor:pointer"><td><b class="tk">${s.ticker}</b> <span class="dim-note">${s.name}</span></td><td>${s.sector}</td><td class="r">${weightOf(s.sector).toFixed(1)}%</td><td>${scoreBadge(s.signal)}</td><td class="dim-note">${why(s)}</td></tr>`).join('')+'</tbody>'
     : '<tr><td class="dim-note">No strong-signal ideas outside your sectors right now.</td></tr>';
+}
+
+// ---------- ACCOUNTS (optional) ----------
+// Supabase Auth (Google or email link). The publishable key is public by design: every row is protected
+// by row-level security, so a signed-in user can only read and write their own portfolio.
+const SB_URL = 'https://qfepedbeyeefhmxqfpis.supabase.co';
+const SB_KEY = 'sb_publishable_2QGOK7TcD4p_Y0u9A6TCQg_EINWDhHr';
+const SB_LIB = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js';
+let _sb = null, _sbUser = null, _syncTimer = null, _syncing = false;
+function sbLoad(){
+  if(_sb) return Promise.resolve(_sb);
+  return new Promise((res, rej)=>{
+    const sc = document.createElement('script'); sc.src = SB_LIB; sc.async = true;
+    sc.onload = ()=>{ _sb = window.supabase.createClient(SB_URL, SB_KEY, {auth:{flowType:'pkce', persistSession:true, detectSessionInUrl:true}}); res(_sb); };
+    sc.onerror = ()=> rej(new Error('Could not load the sign-in library'));
+    document.head.appendChild(sc);
+  });
+}
+function openAuth(){ document.getElementById('authOverlay').classList.add('show'); renderAuth(); }
+function closeAuth(){ document.getElementById('authOverlay').classList.remove('show'); }
+function authRedirect(){ return location.origin + location.pathname; }
+async function authGoogle(){
+  try{ const sb = await sbLoad(); const {error} = await sb.auth.signInWithOAuth({provider:'google', options:{redirectTo: authRedirect()}}); if(error) throw error; }
+  catch(e){ document.getElementById('authMsg').textContent = 'Google sign-in is not available right now: ' + e.message; }
+}
+async function authEmail(ev){
+  ev.preventDefault();
+  const email = document.getElementById('authEmail').value.trim(), msg = document.getElementById('authMsg');
+  msg.textContent = 'Sending…';
+  try{ const sb = await sbLoad(); const {error} = await sb.auth.signInWithOtp({email, options:{emailRedirectTo: authRedirect()}}); if(error) throw error;
+    msg.textContent = `Check ${email}: the link signs you in on this device.`; }
+  catch(e){ msg.textContent = 'Could not send the link: ' + e.message; }
+}
+async function authSignOut(){ try{ const sb = await sbLoad(); await sb.auth.signOut(); }catch(e){} _sbUser = null; renderAuth(); showToast('Signed out. Your portfolio stays in this browser.'); }
+function renderAuth(){
+  const btn = document.getElementById('authBtn');
+  if(btn) btn.textContent = _sbUser ? '● ' + (_sbUser.email||'Account').split('@')[0] : 'Sign in';
+  const o = document.getElementById('authOut'), i = document.getElementById('authIn'); if(!o) return;
+  o.style.display = _sbUser ? 'none' : ''; i.style.display = _sbUser ? '' : 'none';
+  if(_sbUser){
+    document.getElementById('authWho').textContent = `Signed in as ${_sbUser.email}.`;
+    const last = localStorage.getItem('finstr_last_sync');
+    document.getElementById('authSync').textContent = last ? `Portfolio, watchlist and screen alerts last synced ${new Date(+last).toLocaleString()}.` : 'Not synced yet.';
+  }
+}
+function cloudPayload(){ return Object.assign({}, pf, {watchlist:[...watchlist]}); }
+function mergeById(a=[], b=[]){ const m = new Map(); [...a, ...b].forEach(x=>{ if(x && x.id && !m.has(x.id)) m.set(x.id, x); }); return [...m.values()]; }
+async function authPull(){
+  const sb = await sbLoad();
+  const {data, error} = await sb.from('portfolios').select('data,updated_at').eq('user_id', _sbUser.id).maybeSingle();
+  if(error) throw error;
+  const remote = data && data.data;
+  if(remote && remote.holdings){
+    pf.holdings = mergeById(remote.holdings, pf.holdings);
+    pf.screens = mergeById(remote.screens, pf.screens);
+    pf.prefs = Object.assign({}, pf.prefs, remote.prefs);
+    (remote.watchlist||[]).forEach(t=> watchlist.add(t));
+    try{ localStorage.setItem('finstr_watchlist', JSON.stringify([...watchlist])); }catch(e){}
+    try{ localStorage.setItem(PF_KEY, JSON.stringify(pf)); }catch(e){}
+  }
+  await authPush();
+}
+async function authPush(){
+  if(!_sbUser || _syncing) return;
+  _syncing = true;
+  try{
+    const sb = await sbLoad();
+    const {error} = await sb.from('portfolios').upsert({user_id:_sbUser.id, data: cloudPayload(), updated_at: new Date().toISOString()});
+    if(error) throw error;
+    try{ localStorage.setItem('finstr_last_sync', String(Date.now())); }catch(e){}
+  }catch(e){ console.warn('sync failed', e); showToast('Could not sync to your account: ' + e.message); }
+  finally{ _syncing = false; renderAuth(); }
+}
+function authSchedulePush(){ if(!_sbUser) return; clearTimeout(_syncTimer); _syncTimer = setTimeout(authPush, 1500); }
+async function authSyncNow(){ if(!_sbUser) return; try{ await authPull(); showToast('Synced.'); if(state.view==='portfolio') renderPortfolio(); }catch(e){ showToast('Sync failed: ' + e.message); } }
+async function authInit(){
+  // Only load the library when there is (or is about to be) a session: guests download nothing extra.
+  const returning = /[?&](code|error_description)=/.test(location.search) || Object.keys(localStorage).some(k=> k.startsWith('sb-') && k.endsWith('-auth-token'));
+  if(!returning) return;
+  try{
+    const sb = await sbLoad();
+    const {data} = await sb.auth.getSession();
+    _sbUser = data.session ? data.session.user : null;
+    sb.auth.onAuthStateChange((evt, session)=>{ const was = _sbUser; _sbUser = session ? session.user : null; renderAuth();
+      if(_sbUser && !was) authPull().then(()=>{ if(state.view==='portfolio') renderPortfolio(); renderHomeBrief && renderHomeBrief(); }).catch(e=>console.warn(e)); });
+    if(/[?&]code=/.test(location.search)) history.replaceState(null, '', location.pathname + location.hash);
+    renderAuth();
+    if(_sbUser){ await authPull(); if(state.view==='portfolio') renderPortfolio(); try{ renderHomeBrief(); }catch(e){} showToast(`Signed in as ${_sbUser.email}. Portfolio synced.`); }
+  }catch(e){ console.warn('auth init', e); }
 }
 
 // ---------- HOME: YOUR BRIEF + MARKET INTERNALS ----------
@@ -4009,7 +4130,9 @@ async function init(){
 
   document.getElementById('compareOverlay').addEventListener('click', (e)=>{ if(e.target.id==='compareOverlay') closeCompare(); });
   document.getElementById('aboutOverlay').addEventListener('click', (e)=>{ if(e.target.id==='aboutOverlay') closeAbout(); });
-  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ closeModal(); closeCompare(); closeAbout(); } });
+  document.getElementById('authOverlay').addEventListener('click', (e)=>{ if(e.target.id==='authOverlay') closeAuth(); });
+  authInit();
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ closeModal(); closeCompare(); closeAbout(); closeAuth(); } });
   document.getElementById('screenerSection').setAttribute('tabindex','0');
   document.getElementById('screenerSection').addEventListener('keydown', handleTableKeydown);
   window.addEventListener('resize', ()=>{ if(state.view==='heatmap') renderHeatmap(getFilteredData()); });
