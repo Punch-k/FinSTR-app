@@ -4,7 +4,7 @@
 #   Settings > Secrets and variables > Actions
 #     Secrets:   PORTFOLIO_JSON (the file exported from the FinSTR Portfolio page)
 #                and at least one way to reach you:
-#                  email     SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_TO
+#                  email     RESEND_API_KEY + MAIL_TO   (or SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_TO)
 #                  Telegram  TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 #                  Slack or Discord   WEBHOOK_URL
 #                  phone push (ntfy app, no account)   NTFY_TOPIC (a long random name only you know)
@@ -66,6 +66,8 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}

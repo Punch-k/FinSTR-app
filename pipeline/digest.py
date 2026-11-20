@@ -18,7 +18,9 @@ The model only receives the computed facts. Its text is checked (numbers, ticker
 gain or loss direction); if any check fails the rule-based summary is used instead.
 
 Delivery (--send goes to every channel that is configured; set at least one):
-  Email     SMTP_HOST, SMTP_PORT (587), SMTP_USER, SMTP_PASS, MAIL_TO, MAIL_FROM (defaults to SMTP_USER)
+  Email     RESEND_API_KEY + MAIL_TO (Resend; optional MAIL_FROM, default "FinSTR <onboarding@resend.dev>",
+            which only delivers to the Resend account's own address until you verify a domain), or
+            SMTP_HOST, SMTP_PORT (587), SMTP_USER, SMTP_PASS, MAIL_TO, MAIL_FROM (defaults to SMTP_USER)
   Telegram  TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
   Slack / Discord / any chat webhook   WEBHOOK_URL
   Phone push via ntfy (free, no account)   NTFY_TOPIC, optional NTFY_SERVER (default https://ntfy.sh)
@@ -495,7 +497,12 @@ def deliver(subject, html_body, text_body, chat):
     env = os.environ.get
     sent, errors = [], []
     channels = []
-    if all(env(k) for k in ("SMTP_HOST", "SMTP_USER", "SMTP_PASS", "MAIL_TO")):
+    if env("RESEND_API_KEY") and env("MAIL_TO"):
+        channels.append(("resend", lambda: post_json("https://api.resend.com/emails", {
+            "from": env("MAIL_FROM") or "FinSTR <onboarding@resend.dev>", "to": [x.strip() for x in env("MAIL_TO").split(",")],
+            "subject": subject, "html": html_body, "text": text_body},
+            headers={"Authorization": f"Bearer {env('RESEND_API_KEY')}"})))
+    elif all(env(k) for k in ("SMTP_HOST", "SMTP_USER", "SMTP_PASS", "MAIL_TO")):
         channels.append(("email", lambda: send(subject, html_body, text_body)))
     if env("TELEGRAM_BOT_TOKEN") and env("TELEGRAM_CHAT_ID"):
         api = env("FINSTR_TELEGRAM_API", "https://api.telegram.org")
@@ -516,7 +523,7 @@ def deliver(subject, html_body, text_body, chat):
                 return r.status
         channels.append(("ntfy", ntfy))
     if not channels:
-        raise SystemExit("No delivery channel configured: set SMTP_* + MAIL_TO, TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID, "
+        raise SystemExit("No delivery channel configured: set RESEND_API_KEY + MAIL_TO, SMTP_* + MAIL_TO, TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID, "
                          "WEBHOOK_URL or NTFY_TOPIC (see the docstring).")
     for name, fn in channels:
         try:

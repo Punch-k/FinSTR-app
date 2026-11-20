@@ -86,7 +86,8 @@ Set it up in about 5 minutes, free, on your own GitHub account:
 
      | Channel | Secrets |
      |---|---|
-     | Email | `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USER`, `SMTP_PASS`, `MAIL_TO`. Gmail: `smtp.gmail.com` and an [app password](https://support.google.com/accounts/answer/185833) |
+     | Email (Resend) | `RESEND_API_KEY`, `MAIL_TO`. Free; without a verified domain Resend only delivers to your own Resend account address |
+     | Email (SMTP) | `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USER`, `SMTP_PASS`, `MAIL_TO`. Gmail: `smtp.gmail.com` and an [app password](https://support.google.com/accounts/answer/185833) |
      | Telegram | `TELEGRAM_BOT_TOKEN` (from @BotFather), `TELEGRAM_CHAT_ID` |
      | Slack or Discord | `WEBHOOK_URL` (an incoming-webhook URL) |
      | Phone push | `NTFY_TOPIC`: install the free [ntfy](https://ntfy.sh) app and subscribe to a long random topic name only you know |
