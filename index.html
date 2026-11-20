@@ -592,7 +592,7 @@
   .auth-google:hover{box-shadow:0 0 0 2px var(--accent);}
   .auth-or{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:12px;margin:8px 0;} .auth-or::before,.auth-or::after{content:'';flex:1;border-top:1px solid var(--border);}
   .auth-email{display:flex;flex-direction:column;gap:8px;} .auth-email input{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:9px 11px;font-size:14px;}
-  .auth-fine{margin-top:12px;font-size:11.5px;} .auth-actions{display:flex;gap:8px;margin-top:12px;}
+  .auth-fine{margin-top:12px;font-size:11.5px;} .auth-fine a,.auth-danger a{color:var(--accent);} .auth-danger{margin-top:14px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;} .auth-actions{display:flex;gap:8px;margin-top:12px;}
   .about-panel{max-width:720px;font-size:13px;line-height:1.6;}
   .about-panel h2{margin:0 0 4px;font-size:20px;}
   .about-panel h3{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--dim);margin:18px 0 6px;}
@@ -1422,13 +1422,14 @@
         <button class="live-btn" type="submit">Email me a sign-in link</button>
       </form>
       <div class="dim-note" id="authMsg"></div>
-      <div class="dim-note auth-fine">We store only your email and the portfolio you save. No password is ever stored by FinSTR. Educational tool, not investment advice.</div>
+      <div class="dim-note auth-fine">We store only your email (and name from Google) plus the portfolio you save. No password is ever stored by FinSTR. By signing in you agree to the <a href="terms.html" target="_blank">Terms</a> and <a href="privacy.html" target="_blank">Privacy Policy</a>. Educational tool, not investment advice.</div>
     </div>
     <div id="authIn" style="display:none">
       <h2>Your account</h2>
       <div id="authWho" class="dim-note"></div>
       <div class="dim-note" id="authSync"></div>
       <div class="auth-actions"><button class="live-btn" onclick="authSyncNow()">Sync now</button><button class="q-ico" onclick="authSignOut()">Sign out</button></div>
+      <div class="auth-danger"><button class="q-ico" id="authDelBtn" onclick="authDeleteData()">Delete my saved data</button> <span class="dim-note">Removes your portfolio, watchlist and screen alerts from our database (this browser keeps its own copy). To close the account entirely see the <a href="privacy.html" target="_blank">Privacy Policy</a>.</span></div>
     </div>
   </div>
 </div>
@@ -1463,6 +1464,7 @@
       <li><a href="stock/">All S&amp;P 500 stocks (one page per company)</a></li>
       <li><a href="https://github.com/Punch-k/FinSTR-app" target="_blank" rel="noopener">Source code on GitHub</a></li>
       <li><a href="llms.txt">Data for AI agents (llms.txt)</a></li>
+      <li><a href="privacy.html">Privacy Policy</a> · <a href="terms.html">Terms of Use</a></li>
       <li><a href="https://punch-k.github.io/Portfolio/" target="_blank" rel="noopener">Prapanch's portfolio</a></li>
     </ul>
   </div>
@@ -2081,6 +2083,14 @@ async function authEmail(ev){
   try{ const sb = await sbLoad(); const {error} = await sb.auth.signInWithOtp({email, options:{emailRedirectTo: authRedirect()}}); if(error) throw error;
     msg.textContent = `Check ${email}: the link signs you in on this device.`; }
   catch(e){ msg.textContent = 'Could not send the link: ' + e.message; }
+}
+async function authDeleteData(){
+  const b = document.getElementById('authDelBtn');
+  if(b.dataset.armed !== '1'){ b.dataset.armed = '1'; b.textContent = 'Click again to delete'; setTimeout(()=>{ b.dataset.armed=''; b.textContent='Delete my saved data'; }, 5000); return; }
+  try{ const sb = await sbLoad(); const {error} = await sb.from('portfolios').delete().eq('user_id', _sbUser.id); if(error) throw error;
+    localStorage.removeItem('finstr_last_sync'); clearTimeout(_syncTimer); await sb.auth.signOut(); _sbUser = null; renderAuth(); closeAuth();
+    showToast('Your saved data was deleted from FinSTR and you are signed out. This browser still has its local copy.'); }
+  catch(e){ showToast('Could not delete: ' + e.message); }
 }
 async function authSignOut(){ try{ const sb = await sbLoad(); await sb.auth.signOut(); }catch(e){} _sbUser = null; renderAuth(); showToast('Signed out. Your portfolio stays in this browser.'); }
 function renderAuth(){
