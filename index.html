@@ -700,6 +700,7 @@
   .sg-stats > div{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:6px;padding:6px 8px;}
   .sg-stats b{font-size:16px;}
   .sg-chart svg{width:100%;height:200px;display:block;}
+  .pf-perf-ax{display:flex;justify-content:space-between;font-size:11px;margin:2px 0 6px;}
   .sg-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;margin:4px 0 8px;}
   .sg-legend i{display:inline-block;width:12px;height:3px;margin-right:5px;vertical-align:middle;}
   .sg-weights > div{display:grid;grid-template-columns:80px 1fr 40px;align-items:center;gap:8px;font-size:12px;margin:3px 0;}
@@ -1139,6 +1140,7 @@
       <div class="pf-since" id="pfSince" style="display:none"></div>
       <div class="pf-cards" id="pfCards"></div>
       <div class="q-table-wrap"><table class="q-table pf-table" id="pfTable"></table></div>
+      <div class="sg-card" id="pfPerfCard" style="margin-top:12px;display:none"><h3>Performance vs S&amp;P 500 <span class="dim-note">the same money put into SPY on each purchase date</span></h3><div id="pfPerf"></div></div>
       <div class="sg-grid" style="margin-top:12px">
         <div class="sg-card"><h3>Points to consider</h3><ul class="pf-cons" id="pfCons"></ul><div class="dim-note">Rule-based and explainable, from the signals and your positions. Educational, not investment advice.</div></div>
         <div class="sg-card"><h3>Allocation by sector</h3><div id="pfAlloc"></div></div>
@@ -1877,6 +1879,7 @@ async function renderPortfolio(){
       <td>${scoreBadge(r.s.signal)} <span class="sig-txt ${sigClass(r.s.signal)}">${r.s.signalLabel||''}</span></td>
       <td class="pf-row-act"><button class="q-ico" onclick="pfEdit('${r.h.id}')" title="Edit">✎</button><button class="q-ico" onclick="pfDelete('${r.h.id}')" title="Remove">✕</button></td></tr>`).join('')+'</tbody>';
   pfSinceLast(P);
+  pfPerfChart(P);
   const cons = pfConsiderations(P);
   document.getElementById('pfCons').innerHTML = cons.length ? cons.map(([k,t])=>`<li class="pc-${k}">${t}</li>`).join('') : '<li class="pc-pos">Nothing stands out: no concentration, weak-signal or earnings flags.</li>';
   const secs = Object.entries(P.bySector).sort((a,b)=>b[1]-a[1]);
@@ -1895,6 +1898,42 @@ async function renderPortfolio(){
     ideas.map(s=>`<tr onclick="openModal('${s.ticker}')" style="cursor:pointer"><td><b class="tk">${s.ticker}</b> <span class="dim-note">${s.name}</span></td><td>${s.sector}</td><td class="r">${weightOf(s.sector).toFixed(1)}%</td><td>${scoreBadge(s.signal)}</td><td class="dim-note">${why(s)}</td></tr>`).join('')+'</tbody>'
     : '<tr><td class="dim-note">No strong-signal ideas outside your sectors right now.</td></tr>';
 }
+// Portfolio value over time vs the same cash flows invested in SPY on each purchase date.
+async function pfPerfChart(P){
+  const card = document.getElementById('pfPerfCard'), el = document.getElementById('pfPerf');
+  const dated = P.rows.filter(r=> r.h.date);
+  if(!dated.length){ card.style.display='none'; return; }
+  const [b, ...qs] = await Promise.all([getBench(), ...dated.map(r=> getQuote(r.s.ticker))]);
+  const hist = dated.map((r,i)=> qs[i] && qs[i].history ? {d: qs[i].history.d, c: qs[i].history.c} : null);
+  const start = dated.map(r=>r.h.date).sort()[0];
+  const days = b.d.filter(d=> d >= start);
+  if(days.length < 5 || hist.some(h=>!h)){ card.style.display='none'; return; }
+  const units = dated.map(r=> { const c0 = closeOn(b, r.h.date); return c0 ? r.h.shares*r.h.cost/c0 : 0; });
+  const step = Math.max(1, Math.ceil(days.length/260));
+  const pts = [];
+  days.forEach((d,k)=>{
+    if(k % step && k !== days.length-1) return;
+    let val=0, spy=0, inv=0; const sc = closeOn(b, d);
+    dated.forEach((r,i)=>{ if(r.h.date > d) return; const c = closeOn(hist[i], d); if(!c) return;
+      val += r.h.shares*c; inv += r.h.shares*r.h.cost; spy += units[i]*sc; });
+    pts.push({d, val, spy, inv});
+  });
+  const last = pts[pts.length-1]; last.val = dated.reduce((a,r)=> a + r.h.shares*r.s.price, 0);
+  const all = pts.flatMap(p=>[p.val,p.spy,p.inv]), mn = Math.min(...all), mx = Math.max(...all), W = 600, H = 190, n = pts.length;
+  const xy = (i,v)=> `${(i/(n-1)*W).toFixed(1)},${(H-6-(v-mn)/(mx-mn||1)*(H-12)).toFixed(1)}`;
+  const line = (k, col, dash) => `<polyline fill="none" stroke="${col}" stroke-width="${dash?1.2:2}" ${dash?'stroke-dasharray="4 4"':''} vector-effect="non-scaling-stroke" points="${pts.map((p,i)=>xy(i,p[k])).join(' ')}"/>`;
+  const money = v => '$'+Math.round(v).toLocaleString();
+  const pctOf = (v, base) => base ? `${v>=base?'+':''}${((v/base-1)*100).toFixed(1)}%` : '';
+  const md = d => new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',year:'numeric'});
+  card.style.display = '';
+  el.innerHTML = `<div class="sg-legend"><span><i style="background:#4f8cff"></i>Your portfolio ${money(last.val)} <b class="${last.val>=last.inv?'pos':'neg'}">${pctOf(last.val,last.inv)}</b></span>
+      <span><i style="background:#8b94a3"></i>Same money in S&amp;P 500 ${money(last.spy)} <b class="${last.spy>=last.inv?'pos':'neg'}">${pctOf(last.spy,last.inv)}</b></span>
+      <span><i style="background:transparent;border-top:1px dashed #8b94a3"></i>Invested ${money(last.inv)}</span></div>
+    <div class="sg-chart"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:190px">${line('inv','#8b94a3',true)}${line('spy','#8b94a3')}${line('val','#4f8cff')}</svg></div>
+    <div class="pf-perf-ax dim-note"><span>${md(pts[0].d)}</span><span>range ${money(mn)} – ${money(mx)}</span><span>${md(last.d)}</span></div>
+    <div class="dim-note">Daily closes; positions without a purchase date are left out${dated.length < P.rows.length ? ` (${P.rows.length-dated.length} here)` : ''}. SPY is price only, without dividends.</div>`;
+}
+
 // "Since the data you last saw": compares this snapshot with the previous one this browser saw.
 const PF_SEEN = 'finstr_pf_seen_v1';
 function pfSinceLast(P){
