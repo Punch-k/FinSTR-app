@@ -713,6 +713,7 @@
   .sg-stats > div{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:6px;padding:6px 8px;}
   .sg-stats b{font-size:16px;}
   .sg-chart svg{width:100%;height:200px;display:block;}
+  .lv-saved{font-size:12.5px;line-height:1.9;margin:8px 0;} .lv-saved a{color:var(--accent);text-decoration:none;font-weight:600;margin-right:4px;}
   .pf-perf-ax{display:flex;justify-content:space-between;font-size:11px;margin:2px 0 6px;}
   .sg-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;margin:4px 0 8px;}
   .sg-legend i{display:inline-block;width:12px;height:3px;margin-right:5px;vertical-align:middle;}
@@ -2139,7 +2140,14 @@ async function renderLiveRecord(){
   const intro = document.getElementById('lvIntro');
   if(!st.days){
     intro.innerHTML = `Recording started ${md(t.started)}. Every trading day the top and bottom fifth are saved <i>before</i> their returns happen; the first result appears after the next trading day's close. The backtest below shows the past.`;
-    document.getElementById('lvStats').innerHTML = ''; document.getElementById('lvChart').innerHTML = ''; return;
+    const last = (t.snapshots||[])[t.snapshots.length-1] || {top:[], bottom:[]};
+    document.getElementById('lvStats').innerHTML = [
+      ['Recording since', md(t.started)], ['Lists saved', String(st.snapshots||0)], ['First result', 'after the next close'],
+      ['Top fifth today', `${last.top.length} stocks`], ['Bottom fifth today', `${last.bottom.length} stocks`], ['Days measured', '0'],
+    ].map(([k,v])=>`<div><span class="dim-note">${k}</span><b>${v}</b></div>`).join('');
+    const strongest = stockData.filter(s=> last.top.includes(s.ticker)).sort((a,b)=> (b.signal||0)-(a.signal||0)).slice(0,20);
+    document.getElementById('lvChart').innerHTML = strongest.length ? `<div class="lv-saved"><span class="dim-note">Strongest names saved today:</span> ${strongest.map(s=>`<a href="#" onclick="openModal('${s.ticker}');return false">${s.ticker}</a>`).join(' ')}</div>` : '';
+    return;
   }
   intro.innerHTML = `Out-of-sample: picks were saved before the returns they are measured on.${st.days < 60 ? ' Fewer than 60 trading days: treat this as noise, not proof.' : ''}${st.provisional ? ' The latest day is provisional until the close.' : ''}`;
   document.getElementById('lvStats').innerHTML = [
