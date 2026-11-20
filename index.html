@@ -520,6 +520,7 @@
   .brand-word .bw-dot{width:11px;height:11px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ff6b6b,#d61f1f);box-shadow:0 0 8px rgba(239,83,80,.55);}
   .brand-word b{color:var(--accent);font-weight:800;}
   .banner a{color:var(--accent);text-decoration:none;}
+  .q-why a, .pf-cons a, #pfScreens a, .pf-since a{color:var(--accent);text-decoration:none;} .q-why a:hover, .pf-cons a:hover, #pfScreens a:hover{text-decoration:underline;}
   .banner a:hover{text-decoration:underline;}
   .banner-warn{border-left:3px solid #e0a800 !important;}
   .banner-error{border-left:3px solid var(--neg) !important;}
@@ -690,6 +691,7 @@
   .fbar{display:inline-block;width:46px;height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;vertical-align:middle;}
   .fbar i{display:block;height:100%;}
   .fbar-n{display:inline-block;width:22px;text-align:right;font-size:11px;margin-left:4px;font-variant-numeric:tabular-nums;}
+  .q-why{border:1px solid var(--border);border-left:3px solid var(--accent, #4f8cff);border-radius:6px;padding:8px 12px;margin:0 0 8px;background:var(--panel);font-size:13px;line-height:1.5;}
   .q-signal{display:grid;grid-template-columns:auto 1fr 1.2fr auto;gap:10px 18px;align-items:center;border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin:0 0 8px;background:var(--panel);}
   .q-signal:empty{display:none;}
   .qs-score{display:flex;align-items:center;gap:10px;}
@@ -1189,7 +1191,8 @@
       <p>Every S&amp;P 500 company is scored 0–100 on six factors and ranked against the rest of the index. The signal is a <b>percentile</b>: 85 means stronger than 85% of the S&amp;P 500 on these factors. Below is how the price-based factors actually performed, month by month. Signals are educational, not investment advice.</p>
     </div>
     <div class="sg-grid">
-      <div class="sg-card"><h3>Track record <span class="dim-note" id="sgPeriod"></span></h3><div id="sgStats" class="sg-stats"></div><div id="sgChart" class="sg-chart"></div><div class="dim-note" id="sgMethod"></div></div>
+      <div class="sg-card" id="lvCard"><h3>Live record <span class="dim-note" id="lvPeriod"></span></h3><div class="dim-note" id="lvIntro"></div><div id="lvStats" class="sg-stats"></div><div id="lvChart" class="sg-chart"></div><div class="dim-note" id="lvMethod"></div></div>
+      <div class="sg-card"><h3>Backtest <span class="dim-note" id="sgPeriod"></span></h3><div id="sgStats" class="sg-stats"></div><div id="sgChart" class="sg-chart"></div><div class="dim-note" id="sgMethod"></div></div>
       <div class="sg-card"><h3>Factor scorecard</h3><div class="q-table-wrap"><table class="q-table" id="sgFactors"></table></div>
         <h3 style="margin-top:14px;">Factor weights</h3><div id="sgWeights" class="sg-weights"></div></div>
     </div>
@@ -1293,6 +1296,7 @@
       <button class="q-ico" onclick="compareFromModal()">⇄ Compare</button>
       <button class="q-ico" onclick="copyShareLink()">🔗 Share</button></div>
 
+    <div class="q-why" id="qWhy" style="display:none"></div>
     <div class="q-signal" id="qSignal"></div>
     <div class="q-block" id="qOverview">
       <div class="q-chart-bar">
@@ -1382,6 +1386,9 @@
       <li>Performance, moving averages, RSI (14, Wilder), volatility (std. dev. of daily returns), ATR and 52-week levels are computed from daily closes, the same way for every stock.</li>
       <li>Valuation, margins, ownership, short interest and analyst targets are Yahoo Finance's reported figures. A missing value shows as "-", never as zero.</li>
       <li>The FinSTR Signal ranks every stock 0-100 against the S&amp;P 500 on six factors (trend, momentum, value, quality, growth, low risk). Its price-based factors are backtested monthly and the results, good or bad, are on the Signals page. The valuation sandbox uses your own growth and discount assumptions. Neither is investment advice.</li>
+      <li>Relative volume is pace-adjusted during the session: today's volume so far is compared with the share of a normal day's volume that has usually traded by that time.</li>
+      <li>"Why it moved" notes (moves of 3% or more) check three things: an earnings report in the last trading day, how the stock's industry moved, and the latest headline that names the company. They describe; they do not claim a cause.</li>
+      <li>The Live record on the Signals page saves the strongest and weakest fifth every trading day and measures them afterwards, so it is out-of-sample by construction.</li>
       <li>Data refreshes several times each US trading day. It is a snapshot, not a live feed.</li>
     </ul>
     <h3>Built with</h3>
@@ -1912,6 +1919,7 @@ function pfConsiderations(P){
   const out = [], today = Date.now();
   for(const r of P.rows){
     const s = r.s, t = `<b>${s.ticker}</b>`;
+    if(s.why) out.push([s.changePercent>=0?'pos':'neg', `${t} ${s.changePercent>=0?'+':''}${s.changePercent.toFixed(1)}% today. ${whyHtml(s)}`]);
     if(r.weight > 25){ const trim = Math.floor((r.value - 0.20*P.value)/s.price); out.push(['warn', `${t} is ${r.weight.toFixed(0)}% of the portfolio. One stock above 25% concentrates risk; selling about ${trim} share${trim===1?'':'s'} would bring it to 20%, or add to other holdings.`]); }
     if(isNum(s.signal) && s.signal < 20 && isNum(s.vsSma200) && s.vsSma200 < 0) out.push(['neg', `${t} has a Very Weak signal (${s.signal}) and trades ${s.vsSma200.toFixed(1)}% below its 200-day average. Re-check why you own it.`]);
     if(r.pnlPct <= -15 && isNum(s.signal) && s.signal < 40) out.push(['neg', `${t} is down ${Math.abs(r.pnlPct).toFixed(1)}% from your cost with a weak signal (${s.signal}). Decide your exit or average-down plan in advance.`]);
@@ -2114,8 +2122,37 @@ async function pfCopyBrief(){
 }
 
 // ---------- SIGNALS PAGE ----------
-let _sigData = null;
+let _sigData = null, _track;
+function growthSvg(series, cols, label){
+  const all = series.flat(), mn = Math.min(...all), mx = Math.max(...all), W = 600, H = 200, n = series[0].length;
+  const xy = (i,v)=> `${(i/Math.max(1,n-1)*(W-40)+30).toFixed(1)},${(H-20-(v-mn)/(mx-mn||1)*(H-40)).toFixed(1)}`;
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${series.map((sr,j)=>
+    `<polyline fill="none" stroke="${cols[j]}" stroke-width="2" vector-effect="non-scaling-stroke" points="${sr.map((v,i)=>xy(i,v)).join(' ')}"/>`).join('')}</svg>`;
+}
+async function renderLiveRecord(){
+  if(_track === undefined){ try{ _track = await fetch('data/track.json',{cache:'no-cache'}).then(r=> r.ok ? r.json() : null); }catch(e){ _track = null; } }
+  const card = document.getElementById('lvCard'); if(!card) return;
+  if(!_track){ card.style.display = 'none'; return; }
+  const t = _track, st = t.stats || {}, md = d => new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('lvMethod').textContent = t.method || '';
+  document.getElementById('lvPeriod').textContent = `since ${md(t.started)} · ${st.days||0} trading day${st.days===1?'':'s'} measured`;
+  const intro = document.getElementById('lvIntro');
+  if(!st.days){
+    intro.innerHTML = `Recording started ${md(t.started)}. Every trading day the top and bottom fifth are saved <i>before</i> their returns happen; the first result appears after the next trading day's close. The backtest below shows the past.`;
+    document.getElementById('lvStats').innerHTML = ''; document.getElementById('lvChart').innerHTML = ''; return;
+  }
+  intro.innerHTML = `Out-of-sample: picks were saved before the returns they are measured on.${st.days < 60 ? ' Fewer than 60 trading days: treat this as noise, not proof.' : ''}${st.provisional ? ' The latest day is provisional until the close.' : ''}`;
+  document.getElementById('lvStats').innerHTML = [
+    ['Top fifth', fPct(st.cumTop)], ['S&P 500 equal-weight', fPct(st.cumUniverse)], ['Bottom fifth', fPct(st.cumBottom)],
+    ['Days top beat index', isNum(st.hitRate) ? `${st.hitRate}%` : '-'], ['Top minus index', isNum(st.cumTop)&&isNum(st.cumUniverse) ? `${(st.cumTop-st.cumUniverse>=0?'+':'')}${(st.cumTop-st.cumUniverse).toFixed(2)} pts` : '-'], ['Lists saved', String(st.snapshots||0)],
+  ].map(([k,v])=>`<div><span class="dim-note">${k}</span><b>${v}</b></div>`).join('');
+  const ser = ['top','universe','bottom'].map(k=> t.series.map(p=>p[k]));
+  const cols = ['#26a65b','#8b94a3','#ef5350'], names = ['Top fifth','S&P 500 (equal-weight)','Bottom fifth'];
+  document.getElementById('lvChart').innerHTML = growthSvg(ser, cols) +
+    `<div class="sg-legend">${names.map((nm,j)=>`<span><i style="background:${cols[j]}"></i>${nm} ${fPct(ser[j][ser[j].length-1]-100)}</span>`).join('')}</div>`;
+}
 async function renderSignalsPage(){
+  renderLiveRecord();
   if(!_sigData){ try{ _sigData = await fetch('data/signals.json',{cache:'no-cache'}).then(r=>r.json()); }catch(e){ _sigData = {}; } }
   const bt = _sigData.backtest;
   const pctTxt = v => isNum(v) ? `${v>0?'+':''}${v.toFixed(2)}%` : '-';
@@ -2719,6 +2756,7 @@ function openModal(ticker){
   document.querySelectorAll('.q-star').forEach(b=> b.textContent = watchlist.has(ticker) ? '★ Watching' : '☆ Watch');
   document.getElementById('qSectorM').innerHTML = document.getElementById('modalSector').innerHTML;
   document.getElementById('liveStatus').textContent = dataMeta ? new Date(dataMeta.generatedAt*1000).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' ET' : '';
+  renderWhy(s);
   renderSignalStrip(s);
   renderSnapshot(s);
   renderPeers(s);
@@ -2768,6 +2806,20 @@ function renderSnapshot(s){
   document.getElementById('modalSnapshot').innerHTML = html;
   document.getElementById('qSnapMobile').innerHTML = Object.entries(snapCols(s)).map(([g,rows])=>
     `<details class="q-card"${g==='Valuation'||g==='Performance'?' open':''}><summary>${g}</summary><div class="q-card-grid">${rows.map(([k,val])=>`<span>${k}</span><b>${val}</b>`).join('')}</div></details>`).join('');
+}
+// "Why it moved": computed by the pipeline (pipeline/context.py) for 3%+ moves. Describes, never claims a cause.
+function safeUrl(u){ return /^https?:\/\//i.test(u||'') ? u : '#'; }
+function whyHtml(s, opts={}){
+  const w = s.why; if(!w) return '';
+  const h = w.headline, ago = h && h.ts && dataMeta ? Math.max(1, Math.round((dataMeta.generatedAt - h.ts)/3600)) : null;
+  const hl = h ? ` Latest company headline: <a href="${safeUrl(h.link)}" target="_blank" rel="noopener">“${escapeHtml(h.title)}”</a> <span class="dim-note">(${escapeHtml(h.source||'')}${ago?`, ${ago}h before the snapshot`:''})</span>` : '';
+  return `${opts.lead ? opts.lead : ''}${escapeHtml(w.text)}${hl}`;
+}
+function renderWhy(s){
+  const el = document.getElementById('qWhy'); if(!el) return;
+  if(!s.why){ el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = '';
+  el.innerHTML = `<b>${s.changePercent>=0?'Up':'Down'} ${Math.abs(s.changePercent).toFixed(1)}% today</b> · ` + whyHtml(s);
 }
 function renderSignalStrip(s){
   const el = document.getElementById('qSignal');

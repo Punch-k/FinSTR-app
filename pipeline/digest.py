@@ -65,6 +65,15 @@ def isnum(v):
 
 
 # ───────────────────────── analysis (mirrors the site's Portfolio page) ─────────────────────────
+def why_text(s):
+    """Move context computed by the FinSTR pipeline (pipeline/context.py): describes, never claims a cause."""
+    w = s.get("why")
+    if not w:
+        return ""
+    h = w.get("headline")
+    return w.get("text", "") + (f' Latest company headline: "{h["title"]}" ({h.get("source") or "news"}).' if h else "")
+
+
 def analyse(pf, rows, bench, base):
     by = {r["ticker"]: r for r in rows}
     hold, value, cost, day = [], 0.0, 0.0, 0.0
@@ -95,12 +104,15 @@ def analyse(pf, rows, bench, base):
     spy = (sum(r["cost"] * r["spyPct"] for r in dated) / sum(r["cost"] for r in dated)) if dated else None
 
     # trigger alerts: big daily drop, 200-day cross, earnings soon, signal flip (needs state)
-    alerts = []
+    alerts, moves = [], []
     today = dt.date.today()
     for r in hold:
         s, t = r["s"], r["s"]["ticker"]
+        ctx = why_text(s)
+        if ctx:
+            moves.append({"ticker": t, "change": s["changePercent"], "text": ctx, "headline": (s.get("why") or {}).get("headline")})
         if isnum(s.get("changePercent")) and s["changePercent"] <= -7:
-            alerts.append(f"{t} fell {s['changePercent']:.1f}% on the day.")
+            alerts.append(f"{t} fell {s['changePercent']:.1f}% on the day." + (f" {ctx}" if ctx else ""))
         if s.get("earningsDate"):
             d = dt.date.fromisoformat(s["earningsDate"])
             if 0 <= (d - today).days <= 3:
@@ -154,7 +166,7 @@ def analyse(pf, rows, bench, base):
                        and 0 <= (dt.date.fromisoformat(r["s"]["earningsDate"]) - today).days <= 14), key=lambda x: x[1])
     return {"holdings": hold, "value": value, "cost": cost, "day": day, "excess": excess, "spy": spy,
             "signal": wsum("signal"), "beta": wsum("beta"), "sectors": sectors,
-            "alerts": alerts, "considerations": cons, "ideas": ideas, "earnings": upcoming}
+            "alerts": alerts, "considerations": cons, "ideas": ideas, "earnings": upcoming, "moves": moves}
 
 
 def load_state(path):
@@ -355,6 +367,14 @@ def ai_summary(A):
     return text
 
 
+def track_line(A):
+    st, t = (A.get("track") or {}).get("stats") or {}, A.get("track") or {}
+    if not st.get("days"):
+        return ""
+    return (f"Live record since {t.get('started')} ({st['days']} trading days, saved before the returns): top fifth "
+            f"{st['cumTop']:+.2f}%, S&P 500 equal-weight {st['cumUniverse']:+.2f}%, bottom fifth {st['cumBottom']:+.2f}%.")
+
+
 def rule_summary(A):
     pnl = (A["value"] / A["cost"] - 1) * 100 if A["cost"] else 0
     parts = [f"Your paper portfolio is worth ${A['value']:,.0f}, {pnl:+.1f}% versus cost"]
@@ -379,6 +399,8 @@ def chat_text(A, mode, as_of, ai_text, flips):
     alerts = A["alerts"] + flips
     if alerts:
         lines += ["", "Alerts:"] + [f"- {x}" for x in alerts]
+    if A.get("moves"):
+        lines += ["", "Moves today:"] + [f"- {m['ticker']} {m['change']:+.1f}%: {m['text']}" for m in A["moves"]]
     if mode != "alerts":
         lines += ["", ai_text or rule_summary(A)]
         if A["considerations"]:
@@ -387,6 +409,8 @@ def chat_text(A, mode, as_of, ai_text, flips):
         lines += ["", "Ideas to diversify:"] + [f"- {s['ticker']} ({s['sector']}), signal {s['signal']}" for s in A["ideas"][:4]]
     if A["earnings"]:
         lines += ["", "Earnings soon: " + ", ".join(f"{t} {d}" for t, d in A["earnings"])]
+    if mode == "weekly" and track_line(A):
+        lines += ["", track_line(A)]
     lines += ["", f"{DEFAULT_DATA}/  ·  educational, not investment advice"]
     return "\n".join(lines)
 
@@ -407,6 +431,10 @@ def render(A, mode, as_of, ai_text, flips, ai_tried=False):
     li = lambda items: "".join(f'<li style="margin:4px 0">{e(x)}</li>' for x in items)
     ideas = "".join(f'<li style="margin:4px 0"><b>{e(s["ticker"])}</b> {e(s["name"])} ({e(s["sector"])}) · signal {s["signal"]} · {e((s.get("reasons") or [""])[0])}</li>' for s in A["ideas"])
     alerts = A["alerts"] + flips
+    link = lambda h: (f' <a href="{e(h["link"])}" style="color:#3b6fe0">{e(h["title"])}</a> <span style="color:#888">({e(h.get("source") or "")})</span>'
+                      if h and str(h.get("link", "")).startswith("http") else "")
+    moves = "".join(f'<li style="margin:4px 0"><b>{e(m["ticker"])}</b> {pct(m["change"])}: {e((m["text"].split(" Latest company headline:")[0]))}'
+                    f'{" Latest company headline:" + link(m["headline"]) if m.get("headline") else ""}</li>' for m in A.get("moves", []))
     sec = lambda h, body: f'<h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:#666;margin:20px 0 6px">{h}</h3>{body}' if body else ""
     return f"""<!doctype html><html><body style="margin:0;background:#f5f6f8;font-family:Segoe UI,Arial,sans-serif;color:#111">
 <div style="max-width:620px;margin:0 auto;padding:18px">
@@ -422,9 +450,11 @@ def render(A, mode, as_of, ai_text, flips, ai_tried=False):
 <p style="font-size:14px;line-height:1.55;margin:12px 0 0">{e(ai_text or rule_summary(A))}</p>
 {'<div style="color:#999;font-size:11px">Written by an AI model from the numbers below; every number it uses was checked against them.</div>' if ai_text else ('<div style="color:#999;font-size:11px">AI note unavailable this run (model unreachable or its text failed the fact check); rule-based summary shown.</div>' if ai_tried else '')}
 {sec("Alerts", f'<ul style="padding-left:18px;font-size:13px;margin:0">{li(alerts)}</ul>' if alerts else "")}
+{sec("Moves today, with context", f'<ul style="padding-left:18px;font-size:13px;margin:0">{moves}</ul>' if moves else "")}
 {sec("Holdings", f'<table width="100%" cellspacing="0" style="font-size:13px;border-collapse:collapse"><tr style="color:#888;font-size:11px"><td style="padding:4px 8px">Stock</td><td style="padding:4px 8px;text-align:right">Price / day</td><td style="padding:4px 8px;text-align:right">P&amp;L / weight</td><td style="padding:4px 8px;text-align:right">Signal</td></tr>{rows}</table>')}
 {sec("Points to consider", f'<ul style="padding-left:18px;font-size:13px;margin:0">{li(A["considerations"])}</ul>' if A["considerations"] and mode != "alerts" else "")}
 {sec("Ideas to diversify", f'<ul style="padding-left:18px;font-size:13px;margin:0">{ideas}</ul>' if ideas and mode == "weekly" else "")}
+{sec("FinSTR Signal live record", f'<p style="font-size:13px;margin:0">{e(track_line(A))}</p>' if mode == "weekly" and track_line(A) else "")}
 {sec("Earnings in the next 2 weeks", f'<ul style="padding-left:18px;font-size:13px;margin:0">{li([f"{t}: {d}" for t, d in A["earnings"]])}</ul>' if A["earnings"] else "")}
 </div>
 <p style="color:#999;font-size:11px;line-height:1.5">FinSTR is open source. Signals are rule-based and educational, not investment advice.
@@ -539,6 +569,10 @@ def main():
     except Exception:  # noqa: BLE001
         bench = None
     A = analyse(pf, rows, bench, a.data)
+    try:
+        A["track"] = load(a.data, "data/track.json")
+    except Exception:  # noqa: BLE001
+        A["track"] = None
     state = load_state(a.state)
     flips = signal_flips(A, state) + screen_alerts(pf, rows, state)
     if a.state:

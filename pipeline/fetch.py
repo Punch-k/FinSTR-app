@@ -7,6 +7,7 @@ Builds every file the static site reads, from free Yahoo Finance data:
     data/market.json          index / ETF / macro tiles for the home page
     data/groups.json          sector and industry performance
     data/meta.json            run time, counts, failures, data source notes
+    data/track.json           live, out-of-sample record of the FinSTR Signal (see pipeline/track.py)
     data/quote/<TICKER>.json  per-company detail: 2y daily OHLCV, profile, news
 
 Design rules
@@ -40,12 +41,16 @@ import yfinance as yf
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import signals  # noqa: E402  (pipeline/signals.py)
+import context  # noqa: E402  (pipeline/context.py: session pace, why-it-moved)
+import track  # noqa: E402  (pipeline/track.py: live signal record)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
 QUOTE_DIR = os.path.join(DATA, "quote")
 UNIVERSE = os.path.join(ROOT, "pipeline", "universe.csv")
 PREVIOUS_URL = os.environ.get("FINSTR_PREVIOUS_URL", "")  # live site, for keep-last-good in CI
+TRACK_CACHE = os.environ.get("FINSTR_TRACK_CACHE", os.path.join(DATA, "track.json"))  # backup copy of the live record
+NOW_ET = context.et_now()   # one clock for the whole run (volume pace, move context)
 
 WORKERS = 6
 NEWS_PER_TICKER = 6
@@ -229,8 +234,10 @@ def technicals(h):
     t["volM"] = num(ret.tail(21).std() * 100) if len(ret) >= 21 else None
     tr = pd.concat([hi - lo, (hi - c.shift()).abs(), (lo - c.shift()).abs()], axis=1).max(axis=1)
     t["atr"] = num(tr.tail(14).mean())
-    t["avgVol3m"] = num(v.tail(63).mean(), 0)
-    t["relVol"] = num(float(v.iloc[-1]) / t["avgVol3m"]) if t["avgVol3m"] else None
+    t["avgVol3m"] = num(v.iloc[:-1].tail(63).mean(), 0)          # completed days only
+    # Mid-session, today's volume is partial: compare it with the share of a normal day that has traded so far.
+    pace = context.session_pace(h.index[-1].date(), NOW_ET)
+    t["relVol"] = num(float(v.iloc[-1]) / (t["avgVol3m"] * pace)) if t["avgVol3m"] else None
     t["spark"] = [round(float(x), 2) for x in c.dropna().tail(30)]
     return t
 
@@ -512,6 +519,10 @@ def main():
         universe = universe[: args.limit]
     prev = load_previous()
     syms = [u["ticker"] for u in universe]
+    track_prev, live_ok = track.load(PREVIOUS_URL, TRACK_CACHE, UA)
+    if not live_ok and track_prev is None:
+        raise SystemExit("track: the live signal record could not be read and there is no backup copy; "
+                         "stopping so the record is not reset. The site stays as it is; the next run retries.")
 
     extra = sorted({m[0] for m in MARKET} | set(FUTURES.values()) | set(FOREX.values())
                    | set(CRYPTO.values()) | {v[0] for v in INDICES.values()})
@@ -590,6 +601,16 @@ def main():
     dist = {}
     for r in rows:
         dist[r.get("signalLabel") or "n/a"] = dist.get(r.get("signalLabel") or "n/a", 0) + 1
+    # "why it moved" context for 3%+ movers; live (out-of-sample) record of the signal
+    context.move_context(rows, int(time.time()), NOW_ET.date())
+    ref = hist.get("SPY")      # the US trading date (crypto trades at weekends, so not "any symbol")
+    last_bar = ref.dropna(subset=["Close"]).index[-1] if ref is not None and len(ref) else None
+    day = last_bar.strftime("%Y-%m-%d") if last_bar is not None else NOW_ET.strftime("%Y-%m-%d")
+    pace_now = context.session_pace(last_bar.date(), NOW_ET) if last_bar is not None else 1.0
+    if not args.limit:      # a partial test run must not overwrite the record
+        rec = track.update(track_prev, rows, hist, day, provisional=pace_now < 1)
+        with open(os.path.join(DATA, "track.json"), "w", encoding="utf-8") as f:
+            json.dump(rec, f, separators=(",", ":"))
     with open(os.path.join(DATA, "signals.json"), "w", encoding="utf-8") as f:
         json.dump({"asOf": int(time.time()), "weights": signals.WEIGHTS, "distribution": dist, "backtest": bt}, f, separators=(",", ":"))
 
@@ -687,6 +708,7 @@ def main():
     meta = {
         "generatedAt": int(time.time()), "seconds": round(time.time() - started),
         "tickers": len(rows), "requested": len(universe), "failed": failed, "stale": stale,
+        "sessionPace": round(pace_now, 3),   # <1: run during the session; relVol is pace-adjusted
         "source": "Yahoo Finance (prices, fundamentals, analyst data) via yfinance; Yahoo Finance RSS (headlines). "
                   "Universe: S&P 500 constituents with GICS sectors (Wikipedia list).",
     }

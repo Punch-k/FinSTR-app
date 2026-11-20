@@ -53,6 +53,14 @@ def page(s, as_of):
     factors = "".join(f"<div><span>{lab}</span><i style='width:{f.get(k) or 0}%'></i><b>{f.get(k) if f.get(k) is not None else '-'}</b></div>"
                       for k, lab in (("trend", "Trend"), ("momentum", "Momentum"), ("value", "Value"), ("quality", "Quality"), ("growth", "Growth"), ("risk", "Low Risk")))
     reasons = "".join(f"<li>{e(r)}</li>" for r in (s.get("reasons") or [])) or "<li>No standout signals.</li>"
+    w, chg = s.get("why"), s.get("changePercent")
+    why = ""
+    if w and chg is not None:
+        h = w.get("headline") or {}
+        hl = (f' Latest company headline: <a href="{e(h["link"])}" rel="nofollow noopener">&ldquo;{e(h["title"])}&rdquo;</a> '
+              f'<span class="meta">({e(h.get("source") or "")})</span>') if str(h.get("link", "")).startswith("http") else ""
+        why = f'<div class="card why"><b>{"Up" if chg >= 0 else "Down"} {abs(chg):.1f}% today.</b> {e(w.get("text", ""))}{hl}</div>'
+        desc = f"{t} {'up' if chg >= 0 else 'down'} {abs(chg):.1f}% today. {w.get('text', '')} " + desc
     ld = {"@context": "https://schema.org", "@type": "WebPage", "name": f"{name} ({t}) stock analysis",
           "description": desc, "dateModified": as_of, "about": {"@type": "Corporation", "name": name, "tickerSymbol": t}}
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
@@ -84,6 +92,7 @@ ul{{margin:8px 0 0;padding-left:18px}}
 .g div{{display:flex;justify-content:space-between;padding:6px 10px;border-bottom:1px solid var(--b);font-size:13px}}
 .g span{{color:var(--d)}} .cta{{display:inline-block;background:var(--a);color:#fff;border-radius:6px;padding:9px 14px;font-weight:600;margin:6px 0}}
 footer{{color:var(--d);font-size:11.5px;margin:20px 0}}
+.why{{border-left:3px solid var(--a);font-size:13.5px}}
 @media (max-width:640px){{.g{{grid-template-columns:1fr 1fr}} .f{{grid-template-columns:1fr 1fr}}}}
 </style></head><body><main>
 <header><a class="brand" href="../../">● Fin<b>STR</b></a><a href="../">All S&amp;P 500 stocks →</a></header>
@@ -91,6 +100,7 @@ footer{{color:var(--d);font-size:11.5px;margin:20px 0}}
 <div class="px">{fmt(s.get('price'))} <span style="font-size:15px;color:{'var(--p)' if (s.get('changePercent') or 0) >= 0 else 'var(--n)'}">{pct(s.get('changePercent'))}</span></div>
 <div class="meta">{e(s.get('sector', ''))} · {e(s.get('industry', ''))} · {e(s.get('exchange') or '')} · data as of {e(as_of[:16].replace('T', ' '))} UTC</div>
 <a class="cta" href="../../#stock={t}">Open the full quote page: chart, financials, analysts →</a>
+{why}
 <div class="card"><div class="sig"><span class="n" style="background:{tone}">{sig if sig is not None else '-'}</span><div><b>FinSTR Signal: {e(s.get('signalLabel') or 'n/a')}</b><br>
 <span class="meta">Stronger than {sig if sig is not None else '-'}% of the S&amp;P 500 on six factors. <a href="../../#view=signals">How it is built and how it has performed</a></span></div></div>
 <div class="f">{factors}</div><ul>{reasons}</ul></div>

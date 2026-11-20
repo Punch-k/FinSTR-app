@@ -33,6 +33,14 @@ Built by [Prapanch Kokkalemada](https://punch-k.github.io/Portfolio/).
 - **Keep-last-good.** If a ticker fails on a run, its previous values are carried over and flagged, so one bad run never blanks the site.
 - **Freshness.** The site shows the snapshot time on every page. It refreshes several times per trading day; it is not a live feed.
 - **FinSTR Signal.** Six factor scores (trend, momentum, value, quality, growth, low risk), each a percentile vs the S&P 500; value and quality are ranked within sector. The price-based factors are backtested monthly (top vs bottom fifth vs the index) and published on the Signals page, including when they did not work.
+- **Live record.** Separately from the backtest, the top and bottom fifth by signal are saved every trading day and
+  measured afterwards ([`data/track.json`](https://punch-k.github.io/FinSTR-app/data/track.json), Signals page), so the
+  record is out-of-sample by construction. It started on 20 Nov 2026; until it has months of data it is mostly noise.
+- **Why it moved.** For every move of 3% or more, the pipeline checks for an earnings report in the last trading day,
+  compares the move with its industry (market-cap weighted, the stock excluded) and picks the latest headline that names
+  the company. It describes; it does not claim a cause. Shown on quote pages, stock pages, the Portfolio page and in digests.
+- **Relative volume** is pace-adjusted during the session, so a stock that has traded half its usual volume by noon reads
+  as busy, not quiet.
 - **Not investment advice.** Signals and the valuation sandbox are transparent, educational tools.
 
 ## How it works

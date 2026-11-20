@@ -48,11 +48,29 @@ jobs:
           REPO: ${{ github.event.repository.name }}
         run: echo "FINSTR_SITE=https://${OWNER,,}.github.io/${REPO}" >> "$GITHUB_ENV"
 
+      - name: Restore the backup copy of the live signal record
+        uses: actions/cache/restore@v4
+        with:
+          path: .track-cache
+          key: track-${{ github.run_id }}
+          restore-keys: track-
+
       - name: Fetch market data (S&P 500, markets, news)
         env:
+          FINSTR_TRACK_CACHE: .track-cache/track.json
           # keep-last-good: tickers that fail this run reuse the currently published values
           FINSTR_PREVIOUS_URL: ${{ env.FINSTR_SITE }}
         run: python pipeline/fetch.py
+
+      - name: Keep a backup copy of the live signal record
+        run: mkdir -p .track-cache && cp data/track.json .track-cache/track.json
+
+      - name: Save the backup copy
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: .track-cache
+          key: track-${{ github.run_id }}
 
       - name: Assemble site
         run: |
