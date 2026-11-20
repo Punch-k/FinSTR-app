@@ -38,6 +38,9 @@ from datetime import datetime, timezone
 import pandas as pd
 import yfinance as yf
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import signals  # noqa: E402  (pipeline/signals.py)
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
 QUOTE_DIR = os.path.join(DATA, "quote")
@@ -556,9 +559,11 @@ def main():
             rows.append(old)
             stale.append(u["ticker"])
         print(f"  [fail] {u['ticker']}: {e}", file=sys.stderr)
+    deep_map = {}
     for row, h, nw in done:
         profile = row.pop("_profile")
         deep = row.pop("_deep", None)
+        deep_map[row["ticker"]] = deep
         rows.append(compat(row))
         h = h.dropna(subset=["Close"])
         quote = {
@@ -574,6 +579,20 @@ def main():
             json.dump(quote, f, separators=(",", ":"))
 
     rows.sort(key=lambda r: r.get("marketCap") or 0, reverse=True)
+
+    # signal engine: factor scores, composite, reasons; price-factor backtest
+    signals.score_rows(rows, deep_map)
+    try:
+        bt = signals.backtest(hist, [r["ticker"] for r in rows])
+    except Exception as e:  # noqa: BLE001
+        print(f"[warn] backtest failed: {e}", file=sys.stderr)
+        bt = None
+    dist = {}
+    for r in rows:
+        dist[r.get("signalLabel") or "n/a"] = dist.get(r.get("signalLabel") or "n/a", 0) + 1
+    with open(os.path.join(DATA, "signals.json"), "w", encoding="utf-8") as f:
+        json.dump({"asOf": int(time.time()), "weights": signals.WEIGHTS, "distribution": dist, "backtest": bt}, f, separators=(",", ":"))
+
     with open(os.path.join(DATA, "screener.json"), "w", encoding="utf-8") as f:
         json.dump(rows, f, separators=(",", ":"))
 

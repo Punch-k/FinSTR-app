@@ -29,7 +29,8 @@ Built by [Prapanch Kokkalemada](https://punch-k.github.io/Portfolio/).
 - **No invented numbers.** A field Yahoo does not report shows as "-", never as zero. There is no synthetic fallback data.
 - **Keep-last-good.** If a ticker fails on a run, its previous values are carried over and flagged, so one bad run never blanks the site.
 - **Freshness.** The site shows the snapshot time on every page. It refreshes several times per trading day; it is not a live feed.
-- **Not investment advice.** The FinSTR Score and valuation sandbox are transparent, assumption-driven illustrations.
+- **FinSTR Signal.** Six factor scores (trend, momentum, value, quality, growth, low risk), each a percentile vs the S&P 500; value and quality are ranked within sector. The price-based factors are backtested monthly (top vs bottom fifth vs the index) and published on the Signals page, including when they did not work.
+- **Not investment advice.** Signals and the valuation sandbox are transparent, educational tools.
 
 ## How it works
 

@@ -670,6 +670,49 @@
     .q-consensus{gap:16px;justify-content:flex-start;}
   }
   @media (max-width: 380px){ .q-card-grid{grid-template-columns:1fr auto;} }
+
+  /* ───────── FinSTR Signal ───────── */
+  .sig-badge{display:inline-block;min-width:30px;text-align:center;font-weight:800;font-size:12px;padding:2px 7px;border-radius:4px;color:#fff;}
+  .sig-5{background:#15803d;} .sig-4{background:#4d9a4a;} .sig-3{background:#5b6475;} .sig-2{background:#c2410c;} .sig-1{background:#b91c1c;}
+  .sig-txt{background:none !important;font-weight:700;}
+  .sig-txt.sig-5{color:#22c55e;} .sig-txt.sig-4{color:#86c96d;} .sig-txt.sig-3{color:var(--dim);} .sig-txt.sig-2{color:#fb923c;} .sig-txt.sig-1{color:#ef4444;}
+  .fbar{display:inline-block;width:46px;height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;vertical-align:middle;}
+  .fbar i{display:block;height:100%;}
+  .fbar-n{display:inline-block;width:22px;text-align:right;font-size:11px;margin-left:4px;font-variant-numeric:tabular-nums;}
+  .q-signal{display:grid;grid-template-columns:auto 1fr 1.2fr auto;gap:10px 18px;align-items:center;border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin:0 0 8px;background:var(--panel);}
+  .q-signal:empty{display:none;}
+  .qs-score{display:flex;align-items:center;gap:10px;}
+  .qs-n{font-size:22px;font-weight:800;color:#fff;border-radius:6px;padding:4px 9px;min-width:46px;text-align:center;}
+  .qs-score b{display:block;font-size:14px;} .qs-score .dim-note{font-size:11px;}
+  .qs-factors{display:grid;grid-template-columns:repeat(3,auto);gap:3px 14px;font-size:11.5px;color:var(--dim);}
+  .qs-f{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+  .qs-reasons{margin:0;padding-left:16px;font-size:12px;line-height:1.5;}
+  .qs-how{font-size:11.5px;color:var(--accent);text-decoration:none;white-space:nowrap;align-self:start;}
+  #signalsSection{padding:6px 0 24px;}
+  .sg-intro h2{margin:6px 0 4px;font-size:20px;} .sg-intro p{margin:0 0 12px;font-size:13px;color:var(--dim);max-width:900px;line-height:1.55;}
+  .sg-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;margin-bottom:12px;}
+  .sg-card{border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--panel);margin-bottom:12px;}
+  .sg-grid .sg-card{margin-bottom:0;}
+  .sg-card h3{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);margin:0 0 8px;}
+  .sg-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;}
+  .sg-stats > div{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:6px;padding:6px 8px;}
+  .sg-stats b{font-size:16px;}
+  .sg-chart svg{width:100%;height:200px;display:block;}
+  .sg-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;margin:4px 0 8px;}
+  .sg-legend i{display:inline-block;width:12px;height:3px;margin-right:5px;vertical-align:middle;}
+  .sg-weights > div{display:grid;grid-template-columns:80px 1fr 40px;align-items:center;gap:8px;font-size:12px;margin:3px 0;}
+  .sg-weights .fbar{width:100%;}
+  .sg-defs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 16px;font-size:12.5px;line-height:1.5;}
+  .sg-defs b{display:block;}
+  .sg-list td:nth-child(4){max-width:320px;overflow:hidden;text-overflow:ellipsis;}
+  @media (max-width: 900px){
+    .q-signal{grid-template-columns:1fr;}
+    .qs-factors{grid-template-columns:repeat(2,1fr);}
+    .sg-grid{grid-template-columns:1fr;}
+    .sg-stats{grid-template-columns:repeat(2,1fr);}
+    .sg-defs{grid-template-columns:1fr;}
+    .sg-list td:nth-child(4){display:none;}
+  }
 </style>
 </head>
 <body>
@@ -687,6 +730,7 @@
         <span class="nav-link" data-nav="home" onclick="setView('home')">Home</span>
         <span class="nav-link active" data-nav="screener" onclick="setView('screener')">Screener</span>
         <span class="nav-link" data-nav="news" onclick="setView('news')">News</span>
+        <span class="nav-link" data-nav="signals" onclick="setView('signals')">Signals</span>
         <div class="nav-dropdown" id="navDropdownMarkets">
           <span class="nav-link nav-dropdown-toggle" onclick="toggleNavDropdown('navDropdownMarkets', event)">Markets ▾</span>
           <div class="nav-dropdown-menu">
@@ -763,6 +807,9 @@
         <option value="below_ma200">Below 200-Day SMA</option>
         <option value="earnings_week">Earnings This Week</option>
         <option value="upgrades_room">Largest Upside to Analyst Target</option>
+        <option value="sig_strong">FinSTR Signal: Strong</option>
+        <option value="sig_weak">FinSTR Signal: Very Weak</option>
+        <option value="sig_turn">Strong Signal, Oversold (RSI ≤ 40)</option>
       </select>
       <span class="ctrl-divider"></span>
       <div class="search-wrap">
@@ -855,7 +902,7 @@
       <div class="ctab" data-view="technical" onclick="setColumnView('technical')">Technical</div>
       <div class="ctab" data-view="analyst" onclick="setColumnView('analyst')">Analysts</div>
       <div class="ctab" data-view="insights" onclick="setColumnView('insights')">Insights</div>
-      <div class="ctab" data-view="finstr" onclick="setColumnView('finstr')">FinSTR Score</div>
+      <div class="ctab" data-view="finstr" onclick="setColumnView('finstr')">Signals</div>
       <div class="ctab" data-view="volume" onclick="setColumnView('volume')">Volume</div>
       <div class="ctab" data-view="all" onclick="setColumnView('all')">All</div>
       <div class="ctab" data-view="custom" onclick="setColumnView('custom')">Custom</div>
@@ -1016,6 +1063,34 @@
     </div>
   </div>
 
+
+  <!-- ===================== SIGNALS PAGE ===================== -->
+  <div id="signalsSection" style="display:none;">
+    <div class="sg-intro">
+      <h2>FinSTR Signals</h2>
+      <p>Every S&amp;P 500 company is scored 0–100 on six factors and ranked against the rest of the index. The signal is a <b>percentile</b>: 85 means stronger than 85% of the S&amp;P 500 on these factors. Below is how the price-based factors actually performed, month by month. Signals are educational, not investment advice.</p>
+    </div>
+    <div class="sg-grid">
+      <div class="sg-card"><h3>Track record <span class="dim-note" id="sgPeriod"></span></h3><div id="sgStats" class="sg-stats"></div><div id="sgChart" class="sg-chart"></div><div class="dim-note" id="sgMethod"></div></div>
+      <div class="sg-card"><h3>Factor scorecard</h3><div class="q-table-wrap"><table class="q-table" id="sgFactors"></table></div>
+        <h3 style="margin-top:14px;">Factor weights</h3><div id="sgWeights" class="sg-weights"></div></div>
+    </div>
+    <div class="sg-grid">
+      <div class="sg-card"><h3>Strongest signals</h3><div class="q-table-wrap"><table class="q-table sg-list" id="sgTop"></table></div></div>
+      <div class="sg-card"><h3>Weakest signals</h3><div class="q-table-wrap"><table class="q-table sg-list" id="sgBottom"></table></div></div>
+    </div>
+    <div class="sg-card"><h3>What each factor measures</h3>
+      <div class="sg-defs">
+        <div><b>Trend</b> Price vs its 50- and 200-day averages, and the 50-day vs the 200-day.</div>
+        <div><b>Momentum</b> 12-month return excluding the latest month, plus 6-month return.</div>
+        <div><b>Value</b> Earnings yield, free-cash-flow yield and EBITDA/EV, ranked within the sector.</div>
+        <div><b>Quality</b> ROE, gross and operating margin, and low debt/equity, ranked within the sector.</div>
+        <div><b>Growth</b> Analysts' next-year EPS growth, sales growth, last earnings surprise and net upgrades in 90 days.</div>
+        <div><b>Low Risk</b> Low 1-month volatility and a small drawdown from the 52-week high.</div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===================== CALENDAR SECTION ===================== -->
   <div id="calendarSection" style="display:none;">
     <div class="news-loading" style="padding:12px 0;text-align:left;font-size:12px;">
@@ -1100,6 +1175,7 @@
       <button class="q-ico" onclick="compareFromModal()">⇄ Compare</button>
       <button class="q-ico" onclick="copyShareLink()">🔗 Share</button></div>
 
+    <div class="q-signal" id="qSignal"></div>
     <div class="q-block" id="qOverview">
       <div class="q-chart-bar">
         <span class="q-seg" id="qInterval"><button data-i="d" class="on">Daily</button><button data-i="w">Weekly</button></span>
@@ -1187,7 +1263,7 @@
     <ul>
       <li>Performance, moving averages, RSI (14, Wilder), volatility (std. dev. of daily returns), ATR and 52-week levels are computed from daily closes, the same way for every stock.</li>
       <li>Valuation, margins, ownership, short interest and analyst targets are Yahoo Finance's reported figures. A missing value shows as "-", never as zero.</li>
-      <li>The FinSTR Score is a simple 0-100 blend of a value score (P/E, PEG) and a momentum score. The valuation sandbox uses your own growth and discount assumptions. Neither is investment advice.</li>
+      <li>The FinSTR Signal ranks every stock 0-100 against the S&amp;P 500 on six factors (trend, momentum, value, quality, growth, low risk). Its price-based factors are backtested monthly and the results, good or bad, are on the Signals page. The valuation sandbox uses your own growth and discount assumptions. Neither is investment advice.</li>
       <li>Data refreshes several times each US trading day. It is a snapshot, not a live feed.</li>
     </ul>
     <h3>Built with</h3>
@@ -1313,6 +1389,9 @@ function applySignal(list){
     case 'most_active': return by('volume', 1).slice(0,30);
     case 'most_volatile': return by('volW', 1).slice(0,30);
     case 'earnings_week': { const t=Date.now(), w=t+7*864e5; return list.filter(s=>{ const d=s.earningsDate && Date.parse(s.earningsDate+'T12:00:00'); return d && d>=t-864e5 && d<=w; }); }
+    case 'sig_strong': return by('signal', 1).filter(s=> s.signal>=80);
+    case 'sig_weak': return by('signal', -1).filter(s=> s.signal<20);
+    case 'sig_turn': return by('signal', 1).filter(s=> s.signal>=70 && isNum(s.rsi) && s.rsi<=40);
     case 'upgrades_room': return by('upside', 1).filter(s=> (s.analysts||0)>=5).slice(0,30);
     default: return list;
   }
@@ -1502,6 +1581,44 @@ document.addEventListener('click', e=>{
   window.scrollTo({top: el.getBoundingClientRect().top + window.scrollY - off, behavior:'smooth'});
 });
 
+// ---------- SIGNALS PAGE ----------
+let _sigData = null;
+async function renderSignalsPage(){
+  if(!_sigData){ try{ _sigData = await fetch('data/signals.json',{cache:'no-cache'}).then(r=>r.json()); }catch(e){ _sigData = {}; } }
+  const bt = _sigData.backtest;
+  const pctTxt = v => isNum(v) ? `${v>0?'+':''}${v.toFixed(2)}%` : '-';
+  if(bt){
+    const st = bt.stats;
+    document.getElementById('sgPeriod').textContent = `${bt.months[0].start} to ${bt.months[bt.months.length-1].end} · ${st.periods} monthly periods`;
+    document.getElementById('sgStats').innerHTML = [
+      ['Top fifth, cumulative', fPct(st.cumTop)], ['S&P 500 equal-weight', fPct(st.cumUniverse)], ['Bottom fifth', fPct(st.cumBottom)],
+      ['Months top beat index', `${st.hitRate}%`], ['Avg monthly excess', fPct(st.avgExcess)], ['Top minus bottom / month', fPct(st.spread)],
+    ].map(([k,v])=>`<div><span class="dim-note">${k}</span><b>${v}</b></div>`).join('');
+    // cumulative growth of $100
+    const series = ['top','universe','bottom'].map(k=>{ let v=100; return [100, ...bt.months.map(m=> (v *= 1+m[k]/100))]; });
+    const all = series.flat(), mn = Math.min(...all), mx = Math.max(...all), W = 600, H = 200, n = series[0].length;
+    const xy = (i,v)=> `${(i/(n-1)*(W-40)+30).toFixed(1)},${(H-20-(v-mn)/(mx-mn||1)*(H-40)).toFixed(1)}`;
+    const cols = ['#26a65b','#8b94a3','#ef5350'], names = ['Top fifth','S&P 500 (equal-weight)','Bottom fifth'];
+    document.getElementById('sgChart').innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${series.map((sr,j)=>
+      `<polyline fill="none" stroke="${cols[j]}" stroke-width="2" points="${sr.map((v,i)=>xy(i,v)).join(' ')}"/>`).join('')}
+      <text x="30" y="14" class="fb-p">Growth of $100, monthly rebalance</text></svg>
+      <div class="sg-legend">${names.map((nm,j)=>`<span><i style="background:${cols[j]}"></i>${nm} ${pctTxt(series[j][n-1]-100)}</span>`).join('')}</div>`;
+    document.getElementById('sgMethod').textContent = bt.method;
+    const fac = bt.factors || {};
+    document.getElementById('sgFactors').innerHTML = '<thead><tr><th>Factor</th><th class="r">Hit rate</th><th class="r">Avg excess / mo</th><th class="r">Top vs bottom / mo</th><th class="r">Top fifth, cum.</th></tr></thead><tbody>'+
+      [['Composite (price factors)', st], ...Object.entries(fac).map(([k,v])=>[k==='risk'?'Low Risk':k[0].toUpperCase()+k.slice(1), v])]
+        .map(([k,v])=>`<tr><td>${k}</td><td class="r">${v.hitRate}%</td><td class="r">${fPct(v.avgExcess)}</td><td class="r">${fPct(v.spread)}</td><td class="r">${fPct(v.cumTop)}</td></tr>`).join('')+'</tbody>';
+  } else {
+    document.getElementById('sgStats').innerHTML = '<div class="dim-note">Backtest not available in this snapshot.</div>';
+  }
+  const w = _sigData.weights || {};
+  document.getElementById('sgWeights').innerHTML = FACTORS.map(([k,l])=>`<div><span>${l}</span><span class="fbar"><i class="sig-4" style="width:${(w[k]||0)*100*4}%"></i></span><b>${Math.round((w[k]||0)*100)}%</b></div>`).join('');
+  const rowsOf = list => '<tbody>'+list.map(s=>`<tr onclick="openModal('${s.ticker}')" style="cursor:pointer"><td><b class="tk">${s.ticker}</b></td><td>${s.name}</td><td>${scoreBadge(s.signal)}</td><td class="dim-note">${(s.reasons||[])[0]||''}</td></tr>`).join('')+'</tbody>';
+  const ranked = stockData.filter(s=>isNum(s.signal)).sort((a,b)=>b.signal-a.signal);
+  document.getElementById('sgTop').innerHTML = rowsOf(ranked.slice(0,12));
+  document.getElementById('sgBottom').innerHTML = rowsOf(ranked.slice(-12).reverse());
+}
+
 // ---------- ABOUT ----------
 function openAbout(){
   const el = document.getElementById('aboutData');
@@ -1608,7 +1725,7 @@ function selectAutocomplete(ticker){
 function hideAutocomplete(){ document.getElementById('autocompleteBox').style.display='none'; }
 
 // ---------- VIEW SWITCH ----------
-const ALL_SECTIONS = ['home','screener','heatmap','news','charts','groups','futures','forex','crypto','insider','calendar','quote'];
+const ALL_SECTIONS = ['home','screener','heatmap','news','charts','groups','futures','forex','crypto','insider','calendar','quote','signals'];
 // Grouped nav dropdowns (Markets / Analytics) — declutters the top nav from 12 flat
 // links down to a handful, per user request to "club the analytics into dropdowns."
 const NAV_DROPDOWN_GROUPS = {
@@ -1646,27 +1763,27 @@ function setView(view){
   if(view==='crypto' && !cryptoLoaded) loadCrypto();
   if(view==='insider') renderInsider();
   if(view==='calendar') renderCalendar();
+  if(view==='signals') renderSignalsPage();
   encodeStateToHash();
   closeMobileMenu();
 }
 
-// ---------- FINSTR SCORES ----------
-// Composite 0-100 scores so users don't have to mentally juggle P/E, PEG, and moving-
-// average distance separately. Pure functions of each stock's own fields.
-function finstrValueScore(s){
-  const peN  = s.pe>0  ? Math.min(s.pe/40, 1)  : 1;
-  const pegN = s.peg>0 ? Math.min(s.peg/3, 1)  : 1;
-  return Math.round(Math.max(0, 100 - (peN*55 + pegN*45)));
-}
-function finstrMomentumScore(s){
-  const distFromMA = s.ma50>0 ? (s.price - s.ma50)/s.ma50*100 : 0;
-  const raw = 50 + distFromMA*2.5 + s.changePercent*3;
-  return Math.round(Math.max(0, Math.min(100, raw)));
-}
-function finstrScore(s){ return Math.round((finstrValueScore(s) + finstrMomentumScore(s))/2); }
+// ---------- FINSTR SIGNAL ----------
+// Computed in pipeline/signals.py: six factor scores (trend, momentum, value, quality,
+// growth, risk), each a 0-100 percentile; the composite is a percentile too, so
+// "Signal 85" means stronger than 85% of the S&P 500 on these factors.
+const FACTORS = [['trend','Trend'],['momentum','Momentum'],['value','Value'],['quality','Quality'],['growth','Growth'],['risk','Low Risk']];
+function finstrScore(s){ return isNum(s.signal) ? s.signal : null; }
+function finstrValueScore(s){ return s.factors ? s.factors.value : null; }
+function finstrMomentumScore(s){ return s.factors ? s.factors.momentum : null; }
+function sigClass(v){ return !isNum(v) ? 'tag-neutral' : v>=80 ? 'sig-5' : v>=60 ? 'sig-4' : v>=40 ? 'sig-3' : v>=20 ? 'sig-2' : 'sig-1'; }
 function scoreBadge(score){
-  const cls = score>=70 ? 'tag-pos' : score<=35 ? 'tag-neg' : 'tag-neutral';
-  return `<span class="${cls}" style="font-size:13px;padding:3px 10px;font-weight:700;">${score}</span>`;
+  if(!isNum(score)) return NA;
+  return `<span class="sig-badge ${sigClass(score)}">${score}</span>`;
+}
+function factorBar(v){
+  if(!isNum(v)) return NA;
+  return `<span class="fbar"><i class="${sigClass(v)}" style="width:${Math.max(4,v)}%"></i></span><span class="fbar-n">${v}</span>`;
 }
 
 // Cell-level heatmap tint for P/E — low P/E (cheap) shades green, high P/E (expensive)
@@ -1753,8 +1870,17 @@ const COLUMN_DEFS = {
   upside:pct('upside','To Target','Mean analyst target vs price'),
   earningsDate:{label:'Earnings', render:s=> fDate(s.earningsDate)},
   valueScore:{label:'Value Score', value:s=>finstrValueScore(s), render:s=> scoreBadge(finstrValueScore(s))},
+  signal:{label:'Signal', title:'FinSTR Signal: percentile vs the S&P 500 on six factors', value:s=>s.signal, render:s=> scoreBadge(s.signal)},
+  signalLabel:{label:'Rating', value:s=>s.signal, render:s=> s.signalLabel ? `<span class="sig-txt ${sigClass(s.signal)}">${s.signalLabel}</span>` : NA},
+  f_trend:{label:'Trend', value:s=>s.factors?s.factors.trend:null, render:s=> factorBar(s.factors?s.factors.trend:null)},
+  f_momentum:{label:'Momentum', value:s=>s.factors?s.factors.momentum:null, render:s=> factorBar(s.factors?s.factors.momentum:null)},
+  f_value:{label:'Value', value:s=>s.factors?s.factors.value:null, render:s=> factorBar(s.factors?s.factors.value:null)},
+  f_quality:{label:'Quality', value:s=>s.factors?s.factors.quality:null, render:s=> factorBar(s.factors?s.factors.quality:null)},
+  f_growth:{label:'Growth', value:s=>s.factors?s.factors.growth:null, render:s=> factorBar(s.factors?s.factors.growth:null)},
+  f_risk:{label:'Low Risk', value:s=>s.factors?s.factors.risk:null, render:s=> factorBar(s.factors?s.factors.risk:null)},
+
   momentumScore:{label:'Momentum Score', value:s=>finstrMomentumScore(s), render:s=> scoreBadge(finstrMomentumScore(s))},
-  finstrScore:{label:'FinSTR Score', value:s=>finstrScore(s), render:s=> scoreBadge(finstrScore(s))},
+  finstrScore:{label:'FinSTR Signal', value:s=>finstrScore(s), render:s=> scoreBadge(finstrScore(s))},
   insight:{label:'Insight', render:s=> `<span class="insight-line">${computeInsight(s).join(' · ')}</span>`},
 };
 function sortValue(s, k){ const d = COLUMN_DEFS[k]; return d && d.value ? d.value(s) : s[k]; }
@@ -1790,7 +1916,7 @@ const COLUMN_SETS = {
   technical:['ticker','beta','atr','volW','volM','vsSma20','vsSma50','vsSma200','fromHigh52','fromLow52','rsi','price','changePercent','relVol'],
   analyst:['ticker','name','price','changePercent','target','targetLow','targetHigh','upside','recMean','analysts','earningsDate'],
   insights:['ticker','name','sector','price','changePercent','insight'],
-  finstr:['ticker','name','sector','price','changePercent','valueScore','momentumScore','finstrScore'],
+  finstr:['ticker','name','sector','signal','signalLabel','f_trend','f_momentum','f_value','f_quality','f_growth','f_risk','price','changePercent'],
   volume:['ticker','name','price','changePercent','volume','avgVolume','relVol'],
   all:['ticker','name','sector','industry','marketCap','pe','forwardPE','peg','ps','pb','evEbitda','eps','epsGrowthQ','salesGrowthQ','dividendYield','roa','roe','grossMargin','operMargin','profitMargin','debtEq','insiderOwn','instOwn','shortFloat','perfW','perfM','perfYTD','perfY','beta','rsi','vsSma50','vsSma200','fromHigh52','recMean','upside','earningsDate','price','changePercent','volume','relVol'],
   custom:['ticker','name','sector','marketCap','price','changePercent','pe','forwardPE','peg','perfYTD','rsi','volume']
@@ -2058,6 +2184,7 @@ function openModal(ticker){
   document.querySelectorAll('.q-star').forEach(b=> b.textContent = watchlist.has(ticker) ? '★ Watching' : '☆ Watch');
   document.getElementById('qSectorM').innerHTML = document.getElementById('modalSector').innerHTML;
   document.getElementById('liveStatus').textContent = dataMeta ? new Date(dataMeta.generatedAt*1000).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' ET' : '';
+  renderSignalStrip(s);
   renderSnapshot(s);
   renderPeers(s);
   renderInsidersFor(s);
@@ -2091,7 +2218,7 @@ function snapCols(s){
   const lo = isNum(s.low52) ? `${s.low52.toFixed(2)} <span class="${s.fromLow52>=0?'pos':'neg'}">${fPctTxt(s.fromLow52)}</span>` : NA;
   return {
     'Company': [['Index','S&P 500'],['Market Cap',fCap(s.marketCap)],['Enterprise Value',fBig(s.ev)],['Income',fBig(s.netIncome)],['Sales',fBig(s.revenue)],['Book/sh',v(s.bookPerShare)],['Cash/sh',v(s.cashPerShare)],['Dividend Est.',divEst],['Dividend TTM',divTTM],['Dividend Ex-Date',fDate(s.exDividendDate)],['Payout',v(s.payout,1,'%')],['Employees',isNum(s.employees)?s.employees.toLocaleString():NA],['IPO',s.ipo?new Date(s.ipo+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):NA]],
-    'Valuation': [['P/E',v(s.pe)],['Forward P/E',v(s.forwardPE)],['PEG',v(s.peg)],['P/S',v(s.ps)],['P/B',v(s.pb)],['P/C',v(pc)],['P/FCF',v(s.pfcf)],['EV/EBITDA',v(s.evEbitda)],['EV/Sales',v(s.evSales)],['Quick Ratio',v(s.quickRatio)],['Current Ratio',v(s.currentRatio)],['Debt/Eq',v(s.debtEq)],['FinSTR Score',scoreBadge(finstrScore(s))]],
+    'Valuation': [['P/E',v(s.pe)],['Forward P/E',v(s.forwardPE)],['PEG',v(s.peg)],['P/S',v(s.ps)],['P/B',v(s.pb)],['P/C',v(pc)],['P/FCF',v(s.pfcf)],['EV/EBITDA',v(s.evEbitda)],['EV/Sales',v(s.evSales)],['Quick Ratio',v(s.quickRatio)],['Current Ratio',v(s.currentRatio)],['Debt/Eq',v(s.debtEq)],['FinSTR Signal',scoreBadge(finstrScore(s))]],
     'Growth': [['EPS (ttm)',v(s.eps)],['EPS next Y',v(s.fwdEps)],['EPS next Q',v(s.epsNextQ)],['EPS this Y',fPct(s.epsThisY)],['EPS next Y %',fPct(s.epsNextYGrowth)],['EPS next 5Y',fPct(s.epsNext5Y)],['Sales past 3Y',fPct(s.salesPast3Y)],['EPS Q/Q',fPct(s.epsGrowthQ,1)],['Sales Q/Q',fPct(s.salesGrowthQ,1)],['EPS Surprise',fPct(s.epsSurprise)],['Earnings',fDate(s.earningsDate)],['ROA',v(s.roa,1,'%')],['ROE',v(s.roe,1,'%')]],
     'Ownership': [['Insider Own',v(s.insiderOwn,2,'%')],['Inst Own',v(s.instOwn,2,'%')],['Shs Outstand',fBig(s.shares)],['Shs Float',fBig(s.float)],['Short Float',v(s.shortFloat,2,'%')],['Short Ratio',v(s.shortRatio)],['Short Interest',fBig(s.shortInterest)],['Gross Margin',v(s.grossMargin,1,'%')],['Oper. Margin',v(s.operMargin,1,'%')],['Profit Margin',v(s.profitMargin,1,'%')],['SMA20',fPct(s.vsSma20)],['SMA50',fPct(s.vsSma50)],['SMA200',fPct(s.vsSma200)]],
     'Technical': [['52W High',hi],['52W Low',lo],['52W Range',rng(s.low52,s.high52)],['Volatility',vol],['ATR (14)',v(s.atr)],['RSI (14)',v(s.rsi,1)],['Beta',v(s.beta)],['Rel Volume',v(s.relVol)],['Avg Volume',fVolM(s.avgVolume)],['Volume',fVolM(s.volume)],['Prev Close',v(s.prevClose)],['Day Range',rng(s.dayLow,s.dayHigh)],['Open',v(s.open)]],
@@ -2106,6 +2233,15 @@ function renderSnapshot(s){
   document.getElementById('modalSnapshot').innerHTML = html;
   document.getElementById('qSnapMobile').innerHTML = Object.entries(snapCols(s)).map(([g,rows])=>
     `<details class="q-card"${g==='Valuation'||g==='Performance'?' open':''}><summary>${g}</summary><div class="q-card-grid">${rows.map(([k,val])=>`<span>${k}</span><b>${val}</b>`).join('')}</div></details>`).join('');
+}
+function renderSignalStrip(s){
+  const el = document.getElementById('qSignal');
+  if(!isNum(s.signal)){ el.innerHTML = ''; return; }
+  const f = s.factors || {};
+  el.innerHTML = `<div class="qs-score"><span class="qs-n ${sigClass(s.signal)}">${s.signal}</span><div><b class="sig-txt ${sigClass(s.signal)}">${s.signalLabel}</b><span class="dim-note">FinSTR Signal · stronger than ${s.signal}% of the S&amp;P 500</span></div></div>
+    <div class="qs-factors">${FACTORS.map(([k,l])=>`<div class="qs-f"><span>${l}</span>${factorBar(f[k])}</div>`).join('')}</div>
+    <ul class="qs-reasons">${(s.reasons||[]).map(r=>`<li>${r}</li>`).join('') || '<li class="dim-note">No standout signals.</li>'}</ul>
+    <a href="#" class="qs-how" onclick="setView('signals');return false">How it's built · track record →</a>`;
 }
 function renderPeers(s){
   const peers = stockData.filter(x=>x.industry===s.industry && x.ticker!==s.ticker).sort((a,b)=>(b.marketCap||0)-(a.marketCap||0)).slice(0,10);
@@ -2313,7 +2449,7 @@ function recalcModal(){
     `Model value $${fairValue.toFixed(2)} vs price $${s.price.toFixed(2)} (${upside>=0?'+':''}${upside.toFixed(1)}%)`;
   document.getElementById('modalNote').textContent = note;
   document.getElementById('modalMetricsGrid').innerHTML = `
-    <div class="mm-card"><div class="mm-label">FinSTR Score <span class="dim-note" title="Average of the Value score (P/E, PEG) and Momentum score (distance from 50-day average, day change). Separate from the model value.">ⓘ</span></div><div class="mm-value">${scoreBadge(finstrScore(s))}</div></div>
+    <div class="mm-card"><div class="mm-label">FinSTR Signal <span class="dim-note" title="Percentile vs the S&amp;P 500 on six factors (trend, momentum, value, quality, growth, low risk). Separate from this model value. See the Signals page.">ⓘ</span></div><div class="mm-value">${scoreBadge(finstrScore(s))}</div></div>
     <div class="mm-card"><div class="mm-label">Model Value</div><div class="mm-value">${fairValue==null?'-':'$'+fairValue.toFixed(2)}</div></div>
     <div class="mm-card"><div class="mm-label">vs Price</div><div class="mm-value ${upside>=0?'pos':'neg'}">${upside==null?'-':(upside>=0?'+':'')+upside.toFixed(1)+'%'}</div></div>
     <div class="mm-card"><div class="mm-label">Analyst Target</div><div class="mm-value">${isNum(s.target)?'$'+s.target.toFixed(2):'-'}</div></div>`;
