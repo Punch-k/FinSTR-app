@@ -71,7 +71,7 @@ def page(s, as_of):
 <meta property="og:title" content="{e(t)} {e(name)} | FinSTR"><meta property="og:description" content="{e(desc)}">
 <meta property="og:type" content="website"><meta property="og:url" content="{SITE}/stock/{t}/">
 <meta property="og:image" content="{SITE}/assets/img/finstr-og.jpg"><meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="../../assets/img/finstr-logo.png">
+<link rel="icon" href="../../assets/img/finstr-icon-32.png"><link rel="apple-touch-icon" href="../../assets/img/finstr-icon-180.png">
 <script type="application/ld+json">{json.dumps(ld)}</script>
 <style>
 :root{{--bg:#0b0e14;--panel:#131722;--b:#232838;--t:#e6e6e6;--d:#8b94a3;--a:#4f8cff;--p:#26a65b;--n:#ef5350}}
@@ -127,7 +127,7 @@ def index_page(rows, as_of):
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>All S&amp;P 500 Stocks by Sector | FinSTR</title>
 <meta name="description" content="Every S&amp;P 500 company by sector with today's change and its FinSTR Signal (0-100). Each links to a page with valuation, technicals and analyst targets.">
-<link rel="canonical" href="{SITE}/stock/"><link rel="icon" href="../assets/img/finstr-logo.png">
+<link rel="canonical" href="{SITE}/stock/"><link rel="icon" href="../assets/img/finstr-icon-32.png"><link rel="apple-touch-icon" href="../assets/img/finstr-icon-180.png">
 <meta property="og:title" content="All S&amp;P 500 Stocks | FinSTR"><meta property="og:image" content="{SITE}/assets/img/finstr-og.jpg"><meta name="twitter:card" content="summary_large_image">
 <style>
 :root{{--bg:#0b0e14;--panel:#131722;--b:#232838;--t:#e6e6e6;--d:#8b94a3;--a:#4f8cff}}

@@ -32,6 +32,10 @@ The Portfolio page exports JSON: {"version":1, "name":..., "holdings":[{"ticker"
 Screen rules are [field, op, a, b?] over screener.json fields. ops: < <= > >= (missing values never pass), abs<=, eq, in (list),
 falsy, text (ticker or name contains), days (date field within a..b days from now), >f >=f <f (compare with another field).
 
+## MCP server
+
+pipeline/mcp_server.py in the repository (stdio, standard library only): tools market_overview, search, stock, screen, signal_record, portfolio_review.
+
 ## Guidance for agents
 
 - Quote numbers from the files; do not estimate missing values ("-" or null means not reported).

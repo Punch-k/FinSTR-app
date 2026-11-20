@@ -109,6 +109,18 @@ report earnings within 5 days.
 
 ## For AI agents and automation
 
+### MCP server (Claude, Cursor and other AI assistants)
+
+`pipeline/mcp_server.py` lets any MCP client use FinSTR: no install beyond Python, no account, no API key.
+Tools: `market_overview`, `search`, `stock`, `screen` (FinSTR rule format), `signal_record`, `portfolio_review`.
+
+```json
+{"mcpServers": {"finstr": {"command": "python", "args": ["/path/to/FinSTR-app/pipeline/mcp_server.py"]}}}
+```
+
+Then ask, for example: "Using FinSTR, review this portfolio" or "find S&P 500 stocks with a strong signal on a pullback".
+
+
 Every number on the site is a static JSON file, documented in [`llms.txt`](https://punch-k.github.io/FinSTR-app/llms.txt):
 `data/screener.json` (all companies, ~90 fields including the signal and its reasons), `data/quote/{TICKER}.json`
 (price history, financials, estimates, rating changes), `data/signals.json` (weights and backtest), and more. Use them
@@ -123,6 +135,8 @@ ready-made prompt with your holdings and their data for any AI assistant.
 | `assets/` | Images (logo) |
 | `pipeline/` | `fetch.py` data builder, `signals.py` signal engine and backtest, `digest.py` email digest, `universe.csv` (S&P 500 list), `requirements.txt` |
 | `pipeline/pages.py` | Generates the per-stock pages, stock index and sitemap at deploy time |
+| `pipeline/mcp_server.py` | MCP server for AI assistants (stdio, standard library only) |
+| `docs/ROADMAP.md` | Product roadmap and comparison with other free tools |
 | `llms.txt` | Data documentation for AI agents and automation tools |
 | `.github/workflows/deploy.yml` | Scheduled build and GitHub Pages deploy |
 | `.github/workflows/digest.yml` | Self-hosted email digest (fork, add secrets, receive emails) |

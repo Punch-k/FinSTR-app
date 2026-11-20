@@ -17,7 +17,9 @@
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://punch-k.github.io/FinSTR-app/assets/img/finstr-og.jpg">
-<link rel="icon" type="image/png" href="assets/img/finstr-logo.png">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/img/finstr-icon-32.png">
+<link rel="icon" type="image/png" sizes="512x512" href="assets/img/finstr-icon.png">
+<link rel="apple-touch-icon" href="assets/img/finstr-icon-180.png">
 <style>
   :root{
     --bg:#0b0e14; --panel:#131722; --panel2:#171c28; --border:#232838;
@@ -714,6 +716,11 @@
   .sg-stats b{font-size:16px;}
   .sg-chart svg{width:100%;height:200px;display:block;}
   .lv-saved{font-size:12.5px;line-height:1.9;margin:8px 0;} .lv-saved a{color:var(--accent);text-decoration:none;font-weight:600;margin-right:4px;}
+  .nl-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px;}
+  .nl-bar input{flex:1 1 260px;min-width:0;background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:9px 11px;font-size:13.5px;}
+  .nl-bar input:focus{outline:none;border-color:var(--accent);}
+  .nl-out{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12.5px;}
+  .nl-out a{color:var(--accent);text-decoration:none;}
   .pf-perf-ax{display:flex;justify-content:space-between;font-size:11px;margin:2px 0 6px;}
   .sg-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;margin:4px 0 8px;}
   .sg-legend i{display:inline-block;width:12px;height:3px;margin-right:5px;vertical-align:middle;}
@@ -888,6 +895,11 @@
       <button class="reset-btn" onclick="resetFilters()">Reset</button>
     </div>
 
+    <div class="nl-bar">
+      <input id="nlInput" placeholder="Describe a screen, e.g. cheap profitable tech near its 52-week high" onkeydown="if(event.key==='Enter')applyNl()" aria-label="Describe a screen in plain English">
+      <button class="live-btn" onclick="applyNl()">Screen</button>
+      <div id="nlOut" class="nl-out"></div>
+    </div>
     <div id="alertSave" class="alert-save" style="display:none">
       <b>Save this screen as an alert</b>
       <input id="alertName" maxlength="60" placeholder="Name, e.g. Strong signal on a pullback" onkeydown="if(event.key==='Enter')saveAlert()">
@@ -1511,6 +1523,7 @@ function screenToRules(){
   for(const k of Object.keys(LEGACY_RULES)) if(state[k] && state[k]!=='All') rules.push(...LEGACY_RULES[k][state[k]]);
   for(const [id, v] of Object.entries(state.xf||{})){ const f = XF_BY[id], o = f && f[3].find(x=>x[0]===v); if(o) rules.push(...o[2]); }
   if(state.watchlistOnly) rules.push(R('ticker','in',[...watchlist]));
+  if(state.nl) rules.push(...state.nl.rules);
   if(state.search.trim()) rules.push(R('ticker','text',state.search.trim()));
   if(state.signal && state.signal!=='none'){
     if(!SIGNAL_RULES[state.signal]) return {rules:null, why:'Ranked lists such as Top Gainers or Most Active change every day, so they cannot be saved as an alert. Pick a filter-based signal instead.'};
@@ -1574,6 +1587,7 @@ function capBucket(cap){ if(cap>200) return 'mega'; if(cap>=10) return 'large'; 
 function passesFilters(s){
   const n = v => isNum(v);
   if(!passesExtraFilters(s)) return false;
+  if(state.nl && !rulesOk(s, state.nl.rules)) return false;
   if(state.sector!=='All' && s.sector!==state.sector) return false;
   if(state.industry!=='All' && s.industry!==state.industry) return false;
   if(state.cap!=='All' && capBucket(s.marketCap)!==state.cap) return false;
@@ -1640,7 +1654,7 @@ const PRESETS = {
 function countActiveFilters(){
   let n=0;
   ['sector','industry','cap','pe','peg','divYield','roe','margin','maPos','beta'].forEach(k=>{ if(state[k]!=='All') n++; });
-  n += Object.keys(state.xf||{}).length;
+  n += Object.keys(state.xf||{}).length + (state.nl ? state.nl.labels.length : 0);
   return n;
 }
 function updateFilterBadge(){
@@ -1653,7 +1667,7 @@ function updateFilterBadge(){
   } else if(badge){ badge.remove(); }
 }
 function resetFiltersSilent(){
-  Object.assign(state, {sector:'All',industry:'All',cap:'All',pe:'All',peg:'All',divYield:'All',roe:'All',margin:'All',maPos:'All',beta:'All',search:'',watchlistOnly:false,signal:'none',page:1,xf:{}});
+  Object.assign(state, {sector:'All',industry:'All',cap:'All',pe:'All',peg:'All',divYield:'All',roe:'All',margin:'All',maPos:'All',beta:'All',search:'',watchlistOnly:false,signal:'none',page:1,xf:{},nl:null});
 }
 function applyPreset(name){
   resetFiltersSilent();
@@ -1984,6 +1998,98 @@ async function renderPortfolio(){
     : '<tr><td class="dim-note">No strong-signal ideas outside your sectors right now.</td></tr>';
 }
 
+// ---------- PLAIN-ENGLISH SCREENER ----------
+// Deterministic phrase matching (no AI): each phrase maps to FinSTR rules and a label the user can check.
+const NL_SECTORS = [
+  [/\b(tech|technology|software|semis?|semiconductors?|chips?)\b/, 'Information Technology'], [/\b(health ?care|healthcare|pharma|biotech|medical)\b/, 'Health Care'],
+  [/\b(banks?|financials?|insurers?|insurance)\b/, 'Financials'], [/\b(energy|oil|gas)\b/, 'Energy'], [/\butilit(y|ies)\b/, 'Utilities'],
+  [/\b(consumer staples|staples)\b/, 'Consumer Staples'], [/\b(consumer discretionary|discretionary|retail(ers)?)\b/, 'Consumer Discretionary'],
+  [/\bindustrials?\b/, 'Industrials'], [/\bmaterials?\b/, 'Materials'], [/\b(real estate|reits?)\b/, 'Real Estate'],
+  [/\b(communication services|media|telecom)\b/, 'Communication Services'],
+];
+const NL_PHRASES = [
+  [/\b(cheap|undervalued|low p\/?e|value stocks?)\b/, 'P/E under 15', [R('pe','>',0), R('pe','<',15)]],
+  [/\bprofitable\b/, 'Profitable', [R('profitMargin','>',0)]],
+  [/\bhigh(ly)? (profit )?margins?\b/, 'Profit margin over 20%', [R('profitMargin','>',20)]],
+  [/\b(fast[- ]growing|high growth|growth stocks?|growing)\b/, 'EPS growth next year over 15%', [R('epsNextYGrowth','>',15)]],
+  [/\b(high (dividend|yield)|big dividends?)\b/, 'Dividend yield 4%+', [R('dividendYield','>=',4)]],
+  [/\b(dividends?|income|yield(ing)?)\b/, 'Dividend yield 2%+', [R('dividendYield','>=',2)]],
+  [/\bnear (its |their |the )?(52[- ]?w(ee)?k|yearly|annual|all[- ]time) highs?\b|\bat highs\b/, 'Within 5% of 52-week high', [R('fromHigh52','>=',-5)]],
+  [/\b(beaten[- ]down|near (its |their |the )?(52[- ]?w(ee)?k|yearly) lows?|fallen angels?)\b/, '30%+ below 52-week high', [R('fromHigh52','<=',-30)]],
+  [/\boversold\b/, 'RSI under 30', [R('rsi','<',30)]],
+  [/\boverbought\b/, 'RSI over 70', [R('rsi','>',70)]],
+  [/\b(pull ?backs?|dips?|pulling back)\b/, 'RSI under 40', [R('rsi','<',40)]],
+  [/\b(up ?trend(ing)?|above (the |its )?200(-| )?(day|dma|d)?( (moving )?average)?)\b/, 'Above 200-day average', [R('vsSma200','>=',0)]],
+  [/\b(down ?trend(ing)?|below (the |its )?200(-| )?(day|dma|d)?( (moving )?average)?)\b/, 'Below 200-day average', [R('vsSma200','<',0)]],
+  [/\b(momentum( leaders?)?|leaders?|strong performers?)\b/, 'Up 20%+ over a year', [R('perfY','>=',20)]],
+  [/\b(strong|top|high) signals?\b/, 'FinSTR Signal 80+', [R('signal','>=',80)]],
+  [/\bweak signals?\b/, 'FinSTR Signal under 20', [R('signal','<',20)]],
+  [/\b(low|little|no) debt\b|\bdebt[- ]free\b/, 'Debt/Equity under 0.5', [R('debtEq','<',0.5)]],
+  [/\b(low[- ]volatility|defensive|low[- ]beta|safe)\b/, 'Beta under 0.8', [R('beta','<',0.8)]],
+  [/\b(volatile|high[- ]beta|aggressive)\b/, 'Beta over 1.3', [R('beta','>',1.3)]],
+  [/\bmega[- ]?caps?\b/, 'Market cap over $200B', [R('marketCap','>',200)]],
+  [/\blarge[- ]?caps?\b/, 'Market cap $10B+', [R('marketCap','>=',10)]],
+  [/\b(mid[- ]?caps?|smaller)\b/, 'Market cap under $10B', [R('marketCap','<',10)]],
+  [/\b(analysts? (like|love|bullish)|upside|upgraded|buy[- ]rated)\b/, 'Analysts: Buy+ with 20%+ upside', [R('recMean','<=',2.5), R('upside','>=',20)]],
+  [/\b(unusual|heavy|high) volume\b/, 'Relative volume 1.5+', [R('relVol','>=',1.5)]],
+  [/\bearnings (this|next) week\b|\breporting soon\b/, 'Earnings within 7 days', [R('earningsDate','days',-1,7)]],
+  [/\b(gainers?|up today)\b/, 'Up today', [R('changePercent','>',0)]],
+  [/\b(losers?|down today)\b/, 'Down today', [R('changePercent','<',0)]],
+];
+const NL_NUM = [   // "p/e under 20", "yield over 3%", "rsi below 35", "market cap over 100b", "beta under 1"
+  [/\bp\/?e (?:under|below|less than|<) ?(\d+(?:\.\d+)?)/, v=>[`P/E under ${v}`, [R('pe','>',0), R('pe','<',+v)]]],
+  [/\bp\/?e (?:over|above|more than|>) ?(\d+(?:\.\d+)?)/, v=>[`P/E over ${v}`, [R('pe','>',+v)]]],
+  [/\byield (?:over|above|more than|>) ?(\d+(?:\.\d+)?)%?/, v=>[`Dividend yield over ${v}%`, [R('dividendYield','>',+v)]]],
+  [/\brsi (?:under|below|<) ?(\d+)/, v=>[`RSI under ${v}`, [R('rsi','<',+v)]]],
+  [/\brsi (?:over|above|>) ?(\d+)/, v=>[`RSI over ${v}`, [R('rsi','>',+v)]]],
+  [/\bbeta (?:under|below|<) ?(\d+(?:\.\d+)?)/, v=>[`Beta under ${v}`, [R('beta','<',+v)]]],
+  [/\b(?:market cap|mcap) (?:over|above|>) ?\$?(\d+(?:\.\d+)?) ?b/, v=>[`Market cap over $${v}B`, [R('marketCap','>',+v)]]],
+  [/\b(?:market cap|mcap) (?:under|below|<) ?\$?(\d+(?:\.\d+)?) ?b/, v=>[`Market cap under $${v}B`, [R('marketCap','<',+v)]]],
+  [/\bsignal (?:over|above|>|of at least) ?(\d+)/, v=>[`FinSTR Signal over ${v}`, [R('signal','>',+v)]]],
+];
+const NL_FILLER = /\b(stocks?|companies|shares|names|with|and|that|are|is|in|the|a|an|of|which|show|me|find|list|give|their|its|sp ?500|s&p ?500|but|or|to|for|have|has|good|great|best)\b/g;
+function parseNl(text){
+  let t = ' ' + String(text||'').toLowerCase().replace(/[,;]/g,' ') + ' ';
+  const out = [];
+  const take = (re, label, rules) => { if(!re.test(t)) return false; t = t.replace(new RegExp(re.source, 'g'), ' ');
+    if(rules.some(r=> numFields.has(r[0]))) return false;   // an explicit number ("p/e under 12") beats a vague word ("cheap")
+    out.push({label, rules}); return true; };
+  for(const [re, fn] of NL_NUM){ const m = t.match(re); if(m){ const [label, rules] = fn(m[1]); out.push({label, rules}); t = t.replace(re, ' '); } }
+  const numFields = new Set(out.flatMap(o=> o.rules.map(r=>r[0])));
+  for(const [re, label, rules] of NL_PHRASES) take(re, label, rules);
+  const secs = [];
+  for(const [re, name] of NL_SECTORS){ if(re.test(t)){ secs.push(name); t = t.replace(re, ' '); } }
+  if(secs.length) out.push({label: `Sector: ${secs.join(' or ')}`, rules: [R('sector','in',secs)]});
+  const ignored = t.replace(NL_FILLER, ' ').replace(/[^a-z0-9%$.\/ -]/g,' ').split(/\s+/).filter(w=> w.length > 1);
+  return {parts: out, ignored};
+}
+function applyNl(textArg){
+  const inp = document.getElementById('nlInput');
+  const text = (textArg !== undefined ? textArg : inp.value).trim();
+  if(textArg !== undefined) inp.value = text;
+  const {parts, ignored} = parseNl(text);
+  state.nl = parts.length ? {text, rules: parts.flatMap(p=>p.rules), labels: parts.map(p=>p.label)} : null;
+  state.page = 1;
+  renderNlOut(ignored, text);
+  updateFilterBadge(); renderAll(); encodeStateToHash();
+}
+function renderNlOut(ignored, text){
+  const el = document.getElementById('nlOut'); if(!el) return;
+  if(!state.nl){ el.innerHTML = text ? `<span class="dim-note">Nothing recognised. Try words like cheap, profitable, dividend, near 52-week high, oversold, strong signal, low debt, tech, p/e under 20.</span>` : ''; return; }
+  const n = getFilteredData().length;
+  let hint = '';
+  if(!n && state.nl.labels.length > 1){   // say which condition is the tightest
+    const parts = parseNl(state.nl.text).parts;
+    const best = parts.map((p,i)=>({label:p.label, n: stockData.filter(s=> rulesOk(s, parts.filter((_,j)=>j!==i).flatMap(x=>x.rules))).length})).sort((a,b)=>b.n-a.n)[0];
+    if(best && best.n) hint = ` <span class="dim-note">· without “${escapeHtml(best.label)}”: ${best.n} match${best.n===1?'':'es'}</span>`;
+  }
+  el.innerHTML = `<span class="dim-note">Understood:</span> ${state.nl.labels.map(l=>`<span class="pf-chip">${escapeHtml(l)}</span>`).join('')}` +
+    ` <b>${n}</b> <span class="dim-note">match${n===1?'':'es'}</span>` + hint +
+    (ignored && ignored.length ? ` <span class="dim-note">· ignored: ${escapeHtml(ignored.join(', '))}</span>` : '') +
+    ` <a href="#" onclick="clearNl();return false">clear</a>`;
+}
+function clearNl(){ state.nl = null; document.getElementById('nlInput').value = ''; renderNlOut([], ''); updateFilterBadge(); renderAll(); encodeStateToHash(); }
+
 // ---------- SCREEN ALERTS ----------
 function openSaveAlert(){
   const r = screenToRules(), box = document.getElementById('alertSave');
@@ -2244,6 +2350,7 @@ function encodeStateToHash(){
   if(state.view!=='screener') p.set('view', state.view);
   if(state.watchlistOnly) p.set('wl','1');
   const xf = Object.entries(state.xf||{}).map(([k,v])=>k+':'+v).join(','); if(xf) p.set('xf', xf);
+  if(state.nl) p.set('nl', state.nl.text);
   if(modalTicker) p.set('stock', modalTicker);
   const str=p.toString();
   history.replaceState(null,'', str? '#'+str: location.pathname+location.search);
@@ -2266,6 +2373,7 @@ function decodeStateFromHash(){
   if(p.has('view')) state.view=p.get('view');
   if(p.get('wl')==='1') state.watchlistOnly=true;
   if(p.has('xf')){ state.xf = {}; p.get('xf').split(',').forEach(x=>{ const [k,v]=x.split(':'); if(XF_BY[k]) state.xf[k]=v; }); }
+  if(p.has('nl')){ const r = parseNl(p.get('nl')); state.nl = r.parts.length ? {text: p.get('nl'), rules: r.parts.flatMap(x=>x.rules), labels: r.parts.map(x=>x.label)} : null; }
   if(p.has('stock')) state.pendingStockDeepLink=p.get('stock');
 }
 function copyShareLink(){
@@ -3743,6 +3851,7 @@ async function loadCrypto(){
 
 // ---------- INIT ----------
 function syncFilterUIFromState(){
+  { const ni = document.getElementById('nlInput'); if(ni){ ni.value = state.nl ? state.nl.text : ''; renderNlOut([], state.nl ? state.nl.text : ''); } }
   syncExtraFilterUI();
   document.getElementById('sectorFilter').value = state.sector;
   document.getElementById('industryFilter').value = state.industry;
