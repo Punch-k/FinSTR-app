@@ -265,6 +265,25 @@
   .bs-pct{font-size:10.5px;color:var(--dim);}
   .bs-bar{height:4px;border-radius:2px;margin-top:5px;background:var(--panel2);overflow:hidden;}
   .bs-bar-fill{height:100%;border-radius:2px;}
+  .brief{margin:0 0 10px;}
+  .brief-head{font-size:13px;margin:0 0 6px;}
+  .brief-empty{background:var(--panel);border:1px dashed var(--border);border-radius:8px;padding:10px 12px;font-size:13px;}
+  .brief-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+  .brief-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;min-width:0;}
+  .brief-card:hover{border-color:var(--accent);}
+  .brief-top{display:flex;gap:6px;align-items:baseline;font-size:13px;white-space:nowrap;overflow:hidden;}
+  .brief-top .dim-note{overflow:hidden;text-overflow:ellipsis;}
+  .brief-px{margin-left:auto;font-variant-numeric:tabular-nums;}
+  .brief-mid{display:flex;align-items:center;gap:8px;margin:6px 0;} .brief-mid svg{flex:1;height:34px;}
+  .brief-txt{font-size:12.5px;line-height:1.45;color:var(--text);}
+  .internals{display:grid;grid-template-columns:1.1fr 1.3fr 1fr;gap:10px;margin:0 0 10px;}
+  .int-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-width:0;}
+  .int-kv{display:grid;grid-template-columns:auto auto;gap:4px 12px;font-size:13px;margin:6px 0;font-variant-numeric:tabular-nums;} .int-kv span:nth-child(odd){color:var(--dim);}
+  .hist{display:flex;align-items:flex-end;gap:4px;height:110px;margin-top:6px;}
+  .hb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;background:none;border:0;cursor:pointer;color:var(--dim);padding:0;min-width:0;height:100%;}
+  .hb i{display:block;width:100%;border-radius:3px 3px 0 0;} .hb i.pos{background:var(--pos);} .hb i.neg{background:var(--neg);}
+  .hb:hover i{opacity:.75;} .hb-n{font-size:10.5px;color:var(--text);} .hb-l{font-size:9.5px;white-space:nowrap;margin-top:3px;}
+  @media(max-width:900px){.internals{grid-template-columns:1fr;} .brief-grid{grid-template-columns:1fr;}}
   .home-bottom{display:grid;grid-template-columns:1fr 1fr 300px;gap:10px;margin-top:10px;}
   @media(max-width:900px){.home-bottom{grid-template-columns:1fr 1fr;}}
   @media(max-width:640px){.home-bottom{grid-template-columns:1fr;}}
@@ -1006,6 +1025,7 @@
   <!-- ===================== HOME SECTION ===================== -->
   <div id="homeSection" style="display:none;">
     <div class="home-headline" id="homeHeadline"><span>📰</span> <span id="homeHeadlineText">Loading market headline…</span></div>
+    <div class="brief" id="homeBrief"></div>
     <div class="index-row">
       <div class="index-card" id="idxDow">
         <div class="idx-name">DOW <span class="idx-date"></span></div>
@@ -1029,6 +1049,7 @@
       <div class="breadth-stat"><div class="bs-label">Above 50D MA</div><div class="bs-vals"><span class="bs-val" id="brAbove">—</span><span class="bs-pct" id="brAbovePct"></span></div><div class="bs-bar"><div class="bs-bar-fill" id="brAboveBar" style="background:var(--accent)"></div></div></div>
       <div class="breadth-stat"><div class="bs-label">Below 50D MA</div><div class="bs-vals"><span class="bs-val" id="brBelow">—</span><span class="bs-pct" id="brBelowPct"></span></div><div class="bs-bar"><div class="bs-bar-fill" id="brBelowBar" style="background:var(--dim)"></div></div></div>
     </div>
+    <div class="internals" id="homeInternals"></div>
     <div class="home-bottom">
       <div class="gl-panel">
         <table class="gl-table"><thead><tr><th>Ticker</th><th>Last</th><th>Change</th><th>Volume</th><th>Signal</th></tr></thead><tbody id="gainersBody"></tbody></table>
@@ -1998,6 +2019,66 @@ async function renderPortfolio(){
     : '<tr><td class="dim-note">No strong-signal ideas outside your sectors right now.</td></tr>';
 }
 
+// ---------- HOME: YOUR BRIEF + MARKET INTERNALS ----------
+// Brief: up to three stocks you follow (largest holdings, then watchlist), one fact-based sentence each.
+function briefSentence(s){
+  if(s.why) return s.why.text + (s.why.headline ? ` Latest: “${s.why.headline.title}”.` : '');
+  if(s.earningsDate){ const d = (Date.parse(s.earningsDate+'T12:00:00')-Date.now())/864e5; if(d >= -1 && d <= 7) return `Reports earnings on ${fDate(s.earningsDate)}.`; }
+  const r = (s.reasons||[])[0];
+  return r ? `${r}.` : `FinSTR Signal ${s.signal ?? '-'} (${s.signalLabel||'n/a'}).`;
+}
+function renderHomeBrief(){
+  const el = document.getElementById('homeBrief'); if(!el) return;
+  const by = t => stockData.find(x=>x.ticker===t);
+  let picks = [];
+  try{ const P = pfCompute(); picks = P.rows.sort((a,b)=>b.value-a.value).map(r=>r.s.ticker); }catch(e){}
+  for(const t of watchlist) if(!picks.includes(t)) picks.push(t);
+  picks = picks.map(by).filter(Boolean).slice(0,3);
+  if(!picks.length){
+    el.innerHTML = `<div class="brief-empty"><b>Your brief</b> <span class="dim-note">Star a stock (☆ Watch) or add holdings on the Portfolio page, and the three you follow most show here with one plain-English line each.</span></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="brief-head"><b>Your brief</b> <span class="dim-note">from your portfolio and watchlist</span></div><div class="brief-grid">` +
+    picks.map(s=>`<div class="brief-card" onclick="openModal('${s.ticker}')">
+      <div class="brief-top"><b class="tk">${s.ticker}</b> <span class="dim-note">${escapeHtml(s.name)}</span><span class="brief-px">${s.price.toFixed(2)} <span class="${s.changePercent>=0?'pos':'neg'}">${s.changePercent>=0?'+':''}${s.changePercent.toFixed(2)}%</span></span></div>
+      <div class="brief-mid">${sparkSvg(s.spark, 160, 34, s.changePercent>=0?'#26a65b':'#ef5350')}${scoreBadge(s.signal)}</div>
+      <div class="brief-txt">${escapeHtml(briefSentence(s))}</div></div>`).join('') + '</div>';
+}
+const MOVE_BUCKETS = [[-Infinity,-5,'≤ -5%'],[-5,-3,'-5 to -3'],[-3,-1,'-3 to -1'],[-1,0,'-1 to 0'],[0,1,'0 to +1'],[1,3,'+1 to +3'],[3,5,'+3 to +5'],[5,Infinity,'≥ +5%']];
+function renderInternals(){
+  const el = document.getElementById('homeInternals'); if(!el) return;
+  const rows = stockData.filter(s=>isNum(s.changePercent));
+  if(!rows.length){ el.innerHTML=''; return; }
+  const ch = rows.map(s=>s.changePercent).sort((a,b)=>a-b);
+  const median = ch[Math.floor(ch.length/2)], mean = ch.reduce((a,b)=>a+b,0)/ch.length;
+  const capRows = rows.filter(s=>isNum(s.marketCap)), cw = capRows.reduce((a,s)=>a+s.changePercent*s.marketCap,0)/capRows.reduce((a,s)=>a+s.marketCap,0);
+  const top10 = capRows.slice().sort((a,b)=>b.marketCap-a.marketCap).slice(0,10), top10w = top10.reduce((a,s)=>a+s.marketCap,0)/capRows.reduce((a,s)=>a+s.marketCap,0)*100;
+  const sp = v => `<span class="${v>=0?'pos':'neg'}">${v>=0?'+':''}${v.toFixed(2)}%</span>`;
+  const narrow = cw - median;
+  const read = Math.abs(narrow) < 0.3 ? 'Broad: the typical stock moved like the index.'
+    : narrow > 0 ? `Narrow: the cap-weighted index did ${narrow.toFixed(2)} pts better than the typical stock, so the largest companies carried it.`
+    : `Narrow: the typical stock did ${(-narrow).toFixed(2)} pts better than the cap-weighted index, so the largest companies held it back.`;
+  const counts = MOVE_BUCKETS.map(([a,b])=> rows.filter(s=> s.changePercent > a && s.changePercent <= b || (a===-Infinity && s.changePercent<=b)).length);
+  const mx = Math.max(...counts, 1);
+  const hist = MOVE_BUCKETS.map(([a,b,lab],i)=>`<button class="hb" onclick="homeBucket(${i})" title="${counts[i]} stocks: ${lab}"><span class="hb-n">${counts[i]}</span><i class="${b<=0?'neg':'pos'}" style="height:${Math.max(2,counts[i]/mx*64)}px"></i><span class="hb-l">${lab}</span></button>`).join('');
+  const div = rows.filter(s=> isNum(s.perfW) && (s.volume||0) > 0 && ((s.changePercent >= 2 && s.perfW <= -5) || (s.changePercent <= -2 && s.perfW >= 5)))
+    .sort((a,b)=> Math.abs(b.changePercent - b.perfW) - Math.abs(a.changePercent - a.perfW)).slice(0,6);
+  el.innerHTML = `<div class="int-card"><div class="gl-title">Market internals</div>
+      <div class="int-kv"><span>Median stock</span>${sp(median)}<span>Average stock</span>${sp(mean)}<span>Cap-weighted</span>${sp(cw)}<span>Top 10 weight</span><b>${top10w.toFixed(0)}%</b></div>
+      <div class="dim-note">${read}</div></div>
+    <div class="int-card"><div class="gl-title">Today's moves <span class="dim-note">click a bar to screen it</span></div><div class="hist">${hist}</div></div>
+    <div class="int-card"><div class="gl-title">Day vs week <span class="dim-note">today's move contradicts the week</span></div>${div.length ? `<table class="gl-table"><tbody>${div.map(s=>`<tr onclick="openModal('${s.ticker}')"><td class="gl-ticker">${s.ticker}</td><td>today ${sp(s.changePercent)}</td><td>week ${sp(s.perfW)}</td></tr>`).join('')}</tbody></table>` : '<div class="dim-note">No sharp reversals today.</div>'}</div>`;
+}
+function homeBucket(i){
+  const [a, b, lab] = MOVE_BUCKETS[i];
+  resetFiltersSilent();
+  const rules = []; if(a !== -Infinity) rules.push(R('changePercent','>',a)); if(b !== Infinity) rules.push(R('changePercent','<=',b));
+  state.nl = {text: '', rules, labels: [`Day change ${lab}`]};
+  state.sortKey = 'changePercent'; state.sortDir = b <= 0 ? 'asc' : 'desc';
+  syncFilterUIFromState(); setView('screener'); renderAll(); encodeStateToHash();
+  const out = document.getElementById('nlOut'); if(out) renderNlOut([], '');
+}
+
 // ---------- PLAIN-ENGLISH SCREENER ----------
 // Deterministic phrase matching (no AI): each phrase maps to FinSTR rules and a label the user can check.
 const NL_SECTORS = [
@@ -2350,7 +2431,7 @@ function encodeStateToHash(){
   if(state.view!=='screener') p.set('view', state.view);
   if(state.watchlistOnly) p.set('wl','1');
   const xf = Object.entries(state.xf||{}).map(([k,v])=>k+':'+v).join(','); if(xf) p.set('xf', xf);
-  if(state.nl) p.set('nl', state.nl.text);
+  if(state.nl && state.nl.text) p.set('nl', state.nl.text);
   if(modalTicker) p.set('stock', modalTicker);
   const str=p.toString();
   history.replaceState(null,'', str? '#'+str: location.pathname+location.search);
@@ -3377,6 +3458,7 @@ async function loadHome(){
   // Load index charts in parallel
   await Promise.all(Object.entries(INDEX_SYMBOLS).map(([id,{sym,label}])=>loadIndexCard(id,sym,label)));
   renderBreadth();
+  try{ renderInternals(); renderHomeBrief(); }catch(e){ console.warn('home extras', e); }
   renderGainersLosers();
   // Load headline from news. Reuses the same Google-News-first fetchNews() path (and its
   // press-release spam filter) as the News page's "Market News" tab, rather than a raw
@@ -3935,6 +4017,8 @@ async function init(){
   updateClock(); setInterval(updateClock, 1000);
   renderAll();
   if(state.view==='heatmap') renderHeatmap(getFilteredData());
+  // a shared link that opens on another view (#view=home, signals, portfolio, news...) must run that view's loader too
+  else if(state.view && state.view!=='screener' && state.view!=='quote') setView(state.view);
 
   // Deep link: #...&stock=AAPL opens that stock's modal directly, so individual stock
   // links are shareable/bookmarkable instead of only ever pointing at the whole screener.
