@@ -1,29 +1,38 @@
-# FinSTR: S&P 500 Screener, Maps and Quote Pages
+# FinSTR: Free, Open-Source Stock Research for the S&P 500
 
-**Live site: [punch-k.github.io/FinSTR-app](https://punch-k.github.io/FinSTR-app/)**
+**Live site: [punch-k.github.io/FinSTR-app](https://punch-k.github.io/FinSTR-app/)** · Built by [Prapanch Kokkalemada](https://punch-k.github.io/Portfolio/)
 
 [![FinSTR market map](assets/img/finstr-og.jpg)](https://punch-k.github.io/FinSTR-app/)
 
-FinSTR is a Finviz-style stock research tool for the S&P 500. It screens all ~500 companies
-across valuation, financial, ownership, performance, technical and analyst views, maps the
-market by sector, and opens a full quote page for any stock. A Python pipeline rebuilds the
-data several times each US trading day and publishes it as a static site: no server, no
-paid data, no API keys.
+FinSTR is a Finviz-style research tool for all ~500 S&P 500 companies: a screener, market maps, a quote page for every
+stock, a paper-portfolio tracker and scheduled AI portfolio digests. It explains what it shows (why a stock moved,
+why a signal is strong) and publishes an honest record of how its signal performs. It runs entirely on free
+infrastructure: a Python data pipeline on GitHub Actions and a static site on GitHub Pages.
 
-Built by [Prapanch Kokkalemada](https://punch-k.github.io/Portfolio/).
+## At a glance
 
----
+| | |
+|---|---|
+| **What I built** | An end-to-end data product: automated data pipeline → scoring model → web app → AI automation (email digests, AI-assistant access) |
+| **Scale** | 503 companies, ~90 fields each, 2 years of daily prices, refreshed 4 times per US trading day; 503 generated stock pages |
+| **Analytics** | Six-factor signal (trend, momentum, value, quality, growth, low risk) with a published backtest **and** a live, out-of-sample record that cannot be fitted after the fact |
+| **AI and automation** | Scheduled digests by email, Telegram, Slack or phone push; an optional AI-written summary whose every number, ticker and claim is checked against computed facts before sending; an MCP server so AI assistants (Claude, Cursor) can use FinSTR |
+| **Product** | Built mobile-first, plain-English screener ("cheap profitable tech near its 52-week high"), screen alerts, optional Google sign-in with synced portfolios |
+| **Stack** | Python (pandas, yfinance) · GitHub Actions · GitHub Pages · JavaScript, D3, TradingView Lightweight Charts · Supabase (auth, Postgres with row-level security) · Resend |
+| **Cost to run** | $0: no servers and no paid data |
 
 ## What it does
 
 | Area | Features |
 |---|---|
-| **Screener** | 70+ fields per stock · 12 column views (Overview, Valuation, Financial, Ownership, Performance, Technical, Analysts, …) · filters by sector, industry, market cap, P/E, PEG, dividend, ROE, margin, moving average, beta · 16 signals (52-week highs/lows, unusual volume, RSI overbought/oversold, earnings this week, …) · presets, watchlist, CSV export, shareable links |
-| **Maps** | Market-cap treemap and bubble view, coloured by 1-day, 1-week, 1-month, 3-month, 6-month, YTD or 1-year performance |
-| **Quote page** | Finviz-order layout: candlestick chart with SMA 20/50/200 and volume · peers · 78-field snapshot table · 5-year and quarterly EPS, sales, net income and shares · earnings surprises · analyst consensus and rating changes · headlines · profile · insider trades · valuation sandbox. On phones: sticky header, swipeable tabs and grouped data cards. |
-| **Stock pages** | A fast, no-JavaScript page per company at `/stock/TICKER/` (key numbers, signal, factors, reasons) plus an [A-Z index by sector](https://punch-k.github.io/FinSTR-app/stock/) and `sitemap.xml`, rebuilt on every deploy by `pipeline/pages.py` |
-| **Markets** | Index cards, 26 futures, 12 currency pairs, 11 crypto assets |
-| **Analytics** | Candlestick charts, sector and industry groups, insider transactions, earnings and ex-dividend calendar, news by topic |
+| **Screener** | 90+ fields · 12 column views (Overview, Valuation, Financial, Ownership, Performance, Technical, Analysts, Signals, …) · 30+ filters · presets · plain-English search · watchlist · CSV export · shareable links · screen alerts |
+| **Signals** | FinSTR Signal (0-100 percentile) with factor bars and plain-English reasons for every stock · monthly backtest · live out-of-sample record |
+| **Quote page** | Candlestick chart with moving averages · peers · 78-field snapshot · 5-year and quarterly financials · earnings surprises · analyst ratings · headlines · insider trades · valuation sandbox · "why it moved" context |
+| **Portfolio** | Paper portfolio: P&L, return vs the S&P 500 since each purchase, performance chart, sector mix, beta, rule-based points to consider (with trim amounts), diversification ideas, changes since your last visit |
+| **Home** | Your followed stocks with one plain-English line each · market internals (median vs cap-weighted move, move histogram, day-vs-week reversals) · top movers · heat map |
+| **Maps and markets** | Market-cap treemap and bubble view by timeframe · index cards, futures, currencies, crypto · sector and industry groups · earnings calendar · news |
+| **Stock pages** | A fast, no-JavaScript page per company at `/stock/TICKER/` and an [A-Z index by sector](https://punch-k.github.io/FinSTR-app/stock/), rebuilt on every deploy |
+| **Automation** | Email / Telegram / Slack / phone-push digests and alerts · [MCP server](#mcp-server-claude-cursor-and-other-ai-assistants) · every dataset as public JSON documented in [`llms.txt`](https://punch-k.github.io/FinSTR-app/llms.txt) |
 
 ## Data and method
 
@@ -46,9 +55,17 @@ Built by [Prapanch Kokkalemada](https://punch-k.github.io/Portfolio/).
 ## How it works
 
 ```
-GitHub Actions (schedule / push)
-  └─ pipeline/fetch.py ──► data/*.json  (screener, markets, groups, news, meta, quote/<TICKER>.json)
-        └─ index.html + assets/ + data/ ──► GitHub Pages artifact ──► live site
+GitHub Actions, 4x per trading day
+  └─ pipeline/fetch.py      Yahoo Finance → prices, fundamentals, analyst data, news for 503 companies
+       ├─ signals.py        six-factor scores, composite signal, monthly backtest
+       ├─ context.py        "why it moved" context, pace-adjusted relative volume
+       ├─ track.py          live out-of-sample record (carried forward run to run)
+       └─ pages.py          503 stock pages, index, sitemap
+  └─ static site (index.html + data/*.json) ──► GitHub Pages
+
+pipeline/digest.py   (GitHub Actions, scheduled)  portfolio review → email / Telegram / Slack / push
+pipeline/mcp_server.py                            FinSTR tools for AI assistants
+Supabase (optional)                               Google / email sign-in, synced portfolios
 ```
 
 The data is generated on every deploy and published with the site, so it is never committed
@@ -132,12 +149,14 @@ ready-made prompt with your holdings and their data for any AI assistant.
 
 | Path | What it is |
 |---|---|
-| `index.html` | The site (screener, maps, quote panel, markets, analytics) |
-| `assets/` | Images (logo) |
+| `index.html` | The site: screener, maps, quote page, signals, portfolio, home, sign-in |
+| `assets/` | Icon and social preview image |
 | `pipeline/` | `fetch.py` data builder, `signals.py` signal engine and backtest, `digest.py` email digest, `universe.csv` (S&P 500 list), `requirements.txt` |
+| `pipeline/context.py`, `pipeline/track.py` | "Why it moved" context and volume pace; the live out-of-sample signal record |
 | `pipeline/pages.py` | Generates the per-stock pages, stock index and sitemap at deploy time |
 | `pipeline/mcp_server.py` | MCP server for AI assistants (stdio, standard library only) |
 | `docs/ROADMAP.md` | Product roadmap and comparison with other free tools |
+| `privacy.html`, `terms.html` | Privacy Policy and Terms of Use (needed for sign-in) |
 | `llms.txt` | Data documentation for AI agents and automation tools |
 | `.github/workflows/deploy.yml` | Scheduled build and GitHub Pages deploy |
 | `.github/workflows/digest.yml` | Self-hosted email digest (fork, add secrets, receive emails) |
@@ -177,4 +196,4 @@ python app.py                       # http://localhost:1817/myshare/home
 
 ## Tech
 
-Python (pandas, yfinance) · GitHub Actions · GitHub Pages · vanilla JavaScript · D3 (treemap) · TradingView Lightweight Charts
+Python (pandas, yfinance) · GitHub Actions · GitHub Pages · vanilla JavaScript · D3 (treemap) · TradingView Lightweight Charts · Supabase (Auth, Postgres, row-level security) · Resend · Ollama / any OpenAI-compatible model (optional) · MCP
