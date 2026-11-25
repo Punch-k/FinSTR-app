@@ -17,7 +17,7 @@ infrastructure: a Python data pipeline on GitHub Actions and a static site on Gi
 | **Scale** | 503 companies, ~90 fields each, 5 years of daily prices, refreshed hourly on US trading days (10:30 AM to 3:30 PM ET, plus 4:20 PM after the close); 503 generated stock pages |
 | **Analytics** | Six-factor signal (trend, momentum, value, quality, growth, low risk) with a published backtest **and** a live, out-of-sample record that cannot be fitted after the fact |
 | **AI and automation** | Scheduled digests by email, Telegram, Slack or phone push; an optional AI-written summary whose every number, ticker and claim is checked against computed facts before sending; an MCP server so AI assistants (Claude, Cursor) can use FinSTR |
-| **Product** | Built mobile-first, plain-English screener ("cheap profitable tech near its 52-week high"), screen alerts, optional Google sign-in with synced portfolios |
+| **Product** | Built mobile-first, predictive ticker search, sector pie that filters the screener, screen alerts, optional Google sign-in with synced portfolios |
 | **Stack** | Python (pandas, yfinance) · GitHub Actions · GitHub Pages · JavaScript, D3, TradingView Lightweight Charts · Supabase (auth, Postgres with row-level security) · Resend |
 | **Cost to run** | $0: no servers and no paid data |
 
@@ -25,7 +25,7 @@ infrastructure: a Python data pipeline on GitHub Actions and a static site on Gi
 
 | Area | Features |
 |---|---|
-| **Screener** | 90+ fields · 12 column views (Overview, Valuation, Financial, Ownership, Performance, Technical, Analysts, Signals, …) · 30+ filters · presets · plain-English search · watchlist · CSV export · shareable links · screen alerts |
+| **Screener** | 90+ fields · 12 column views (Overview, Valuation, Financial, Ownership, Performance, Technical, Analysts, Signals, …) · 30+ filters in one row · sector pie (click to filter) · predictive ticker search · watchlist · CSV export · shareable links · screen alerts |
 | **Signals** | FinSTR Signal (0-100 percentile) with factor bars and plain-English reasons for every stock · monthly backtest · live out-of-sample record |
 | **Quote page** | Candlestick chart with moving averages · peers · 78-field snapshot · 5-year and quarterly financials · earnings surprises · analyst ratings · headlines · insider trades · valuation sandbox · "why it moved" context |
 | **Portfolio** | Paper portfolio: P&L, return vs the S&P 500 since each purchase, performance chart, sector mix, beta, rule-based points to consider (with trim amounts), diversification ideas, changes since your last visit |

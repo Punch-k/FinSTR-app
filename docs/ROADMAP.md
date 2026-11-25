@@ -30,7 +30,7 @@ paid tiers or developer setup.
 | # | Item | Why | Status |
 |---|---|---|---|
 | 1 | **MCP server** (`pipeline/mcp_server.py`): market overview, search, stock, screen, signal record, portfolio review | Any AI assistant can use FinSTR; matches OpenBB/xang1234 for agents while staying zero-install | built |
-| 2 | **Plain-English screener**: "cheap profitable tech near its 52-week high" → FinSTR rules, shown as editable filters | Removes the learning curve of 100 filters; deterministic, no AI cost | built |
+| 2 | **Plain-English screener**: "cheap profitable tech near its 52-week high" → FinSTR rules, shown as editable filters | Removes the learning curve of 100 filters; deterministic, no AI cost | built, then removed from the UI on request (2026-11-25); parser kept for shared links |
 | 3 | **Home: followed-stock brief + market internals** (advancers/decliners, median vs cap-weighted move, move histogram that filters, day-vs-week divergence) | Daily reason to open the site; ideas from OracleX, computed from data already published | built |
 | 4 | **Design identity pass**: terminal-dark default, one colour system, monospaced numbers, new icon | Stand apart from stock Material-UI dashboards | planned, preview first |
 | 5 | **Automation recipes**: n8n / Zapier / GitHub Actions templates on top of the JSON, ntfy and webhooks | Turn data into workflows people already use | planned |

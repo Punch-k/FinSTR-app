@@ -148,6 +148,39 @@
     .controls-row select, .controls-row button{ flex:1 1 auto; min-height:40px; font-size:13px; }
   }
 
+  /* Screener top: sector pie (left) + controls (right); phones: pie first, controls after */
+  .scr-top{display:grid; grid-template-columns:minmax(0,1.35fr) minmax(320px,1fr); gap:10px; margin-bottom:8px; align-items:stretch;}
+  .scr-top > .panel-box, .scr-top > .controls-row{margin-bottom:0;}
+  .scr-ctrl{flex-direction:column; flex-wrap:nowrap; align-items:stretch; justify-content:center; gap:10px;}
+  .ctrl-line{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+  .ctrl-line > select, .ctrl-line > .search-wrap{flex:1 1 130px; min-width:0;}
+  .ctrl-line > button{flex:0 0 auto;}
+  @media (max-width:860px){ .scr-top{grid-template-columns:1fr;} }
+  .sp-pie{display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
+  .sp-svg{width:190px; height:190px; flex:0 0 190px;}
+  .sp-slice{cursor:pointer; stroke:var(--panel); stroke-width:1.5; transition:opacity .15s;}
+  .sp-svg:hover .sp-slice{opacity:.75;} .sp-svg .sp-slice:hover, .sp-slice.on{opacity:1; stroke:var(--text); stroke-width:2;}
+  .sp-c1{font-size:12px; fill:var(--dim);} .sp-c2{font-size:17px; font-weight:800;} .sp-c2.pos{fill:var(--pos);} .sp-c2.neg{fill:var(--neg);}
+  .sp-leg{flex:1 1 220px; min-width:0; display:grid; gap:2px; font-size:12px;}
+  .sp-li{display:grid; grid-template-columns:10px minmax(0,1fr) auto 58px; gap:8px; align-items:center; padding:3px 6px; border-radius:5px; cursor:pointer;}
+  .sp-li:hover, .sp-li.on{background:var(--panel2);}
+  .sp-li i{width:10px; height:10px; border-radius:2px;}
+  .sp-ln{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;} .sp-lw{color:var(--dim); font-variant-numeric:tabular-nums;}
+  .sp-lv{text-align:right; font-variant-numeric:tabular-nums; font-weight:600;}
+  @media (max-width:600px){ .sp-pie{justify-content:center;} .sp-svg{width:170px; height:170px; flex-basis:170px;} .sp-leg{flex-basis:100%;} }
+  /* Filters open as one line (scrolls sideways when it does not fit) */
+  #filtersPanel{align-items:flex-end; gap:14px; overflow-x:auto; padding:10px 12px; scrollbar-width:thin;}
+  #filtersPanel .filter-tabs{flex:0 0 auto; flex-wrap:nowrap; margin:0; padding:0; border:none; align-self:center;}
+  #filtersPanel .filter-group{flex:0 0 auto; display:flex; gap:10px; margin:0;}
+  #filtersPanel .filter-field{flex:0 0 auto; min-width:128px;}
+  #filtersPanel .filter-field select{max-width:190px;}
+  @media (max-width:600px){
+    #filtersPanel{flex-wrap:wrap; overflow-x:visible; gap:10px;}
+    #filtersPanel .filter-tabs{flex:1 1 100%; overflow-x:auto;}
+    #filtersPanel .filter-group{flex:1 1 100%; min-width:0; overflow-x:auto; padding-bottom:4px;}
+  }
+  #filtersPanel{scrollbar-color:var(--border) transparent;} #filtersPanel::-webkit-scrollbar{height:6px;} #filtersPanel::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+  #filtersPanel .filter-field label{white-space:nowrap;}
   /* Filters panel */
   .filters-panel{background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:8px;}
   .filter-tabs{display:flex; gap:4px; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px; flex-wrap:wrap;}
@@ -581,7 +614,6 @@
   .banner-warn{border-left:3px solid #e0a800 !important;background:rgba(224,168,0,.12) !important;}
   .banner-warn b{color:#b07d00;}
   :root:not([data-theme="light"]) .banner-warn b{color:#f0c14b;}
-  #presetFilter{max-width:100%;}
   .gv-tabs{overflow-x:auto;scrollbar-width:none;} .gv-tab{white-space:nowrap;}
   @media(max-width:700px){
     .news-subnav{flex-wrap:wrap;}
@@ -897,81 +929,68 @@
   <!-- ===================== SCREENER SECTION ===================== -->
   <div id="screenerSection">
 
-    <div class="controls-row">
-      <select id="presetFilter" onchange="applyPreset(this.value)">
-        <option value="none">My Presets</option>
-        <option value="value">Value Stocks (P/E &lt; 15)</option>
-        <option value="growth">High Growth (ROE &gt; 20%)</option>
-        <option value="dividend">Dividend Payers (Yield &gt; 2%)</option>
-        <option value="quality_value">Quality Value (Signal 60+, Fwd P/E &lt; 15, low debt)</option>
-        <option value="momentum_leaders">Momentum Leaders (above SMA200, +20% year, near 52W high)</option>
-        <option value="pullback_strong">Strong Signal on a Pullback (RSI &lt; 40)</option>
-        <option value="upgrades">Analysts Bullish (Buy+, 20%+ upside)</option>
-        <option value="watchlist">My Watchlist</option>
-      </select>
-      <select id="orderByFilter" onchange="onOrderByChange()">
-        <option value="ticker">Order by: Ticker</option>
-        <option value="name">Company</option>
-        <option value="sector">Sector</option>
-        <option value="marketCap" selected>Market Cap</option>
-        <option value="price">Price</option>
-        <option value="changePercent">Change %</option>
-        <option value="pe">P/E</option>
-        <option value="peg">PEG</option>
-        <option value="roe">ROE</option>
-        <option value="volume">Volume</option>
-      </select>
-      <select id="orderDirFilter" onchange="onOrderByChange()">
-        <option value="desc" selected>Desc</option>
-        <option value="asc">Asc</option>
-      </select>
-      <select id="signalFilter" onchange="onSignalChange()">
-        <option value="none">Signal: None (all stocks)</option>
-        <option value="top_gainers">Top Gainers</option>
-        <option value="top_losers">Top Losers</option>
-        <option value="new_high">New 52-Week High</option>
-        <option value="new_low">New 52-Week Low</option>
-        <option value="most_active">Most Active</option>
-        <option value="unusual_volume">Unusual Volume</option>
-        <option value="most_volatile">Most Volatile (1W)</option>
-        <option value="overbought">Overbought (RSI ≥ 70)</option>
-        <option value="oversold">Oversold (RSI ≤ 30)</option>
-        <option value="above_ma50">Above 50-Day SMA</option>
-        <option value="below_ma50">Below 50-Day SMA</option>
-        <option value="above_ma200">Above 200-Day SMA</option>
-        <option value="below_ma200">Below 200-Day SMA</option>
-        <option value="earnings_week">Earnings This Week</option>
-        <option value="upgrades_room">Largest Upside to Analyst Target</option>
-        <option value="sig_strong">FinSTR Signal: Strong</option>
-        <option value="sig_weak">FinSTR Signal: Very Weak</option>
-        <option value="sig_turn">Strong Signal, Oversold (RSI ≤ 40)</option>
-      </select>
-      <span class="ctrl-divider"></span>
-      <div class="search-wrap">
-        <input type="text" id="searchInput" placeholder="Tickers…" oninput="onSearchInput()" onfocus="onSearchInput()" onblur="setTimeout(hideAutocomplete,150)">
-        <div id="autocompleteBox" class="autocomplete-box"></div>
+    <div class="scr-top">
+      <div class="panel-box scr-pie" id="sectorPerfPanel">
+        <div class="panel-title">Sector Performance (filtered view)</div>
+        <div id="sectorPerfWrap"></div>
       </div>
-      <span class="ctrl-divider"></span>
-      <button class="filters-toggle" id="filtersToggleBtn" onclick="toggleFiltersPanel()">Filters <span id="filtersArrow">▾</span></button>
-      <button class="chip-toggle" id="watchlistToggle" onclick="toggleWatchlistOnly()">⭐ Watchlist Only</button>
-      <span class="ctrl-divider"></span>
-      <button class="reset-btn" onclick="exportCSV()">⬇️ CSV</button>
-      <button class="reset-btn" onclick="copyShareLink()">🔗 Share</button>
-      <button class="reset-btn" onclick="openSaveAlert()" title="Get told when a new stock enters this screen">🔔 Alert</button>
-      <button class="reset-btn" onclick="resetFilters()">Reset</button>
+      <div class="controls-row scr-ctrl">
+        <div class="ctrl-line">
+          <button class="filters-toggle" id="filtersToggleBtn" onclick="toggleFiltersPanel()">Filters <span id="filtersArrow">▾</span></button>
+          <select id="signalFilter" onchange="onSignalChange()">
+            <option value="none">Signal: None (all stocks)</option>
+            <option value="top_gainers">Top Gainers</option>
+            <option value="top_losers">Top Losers</option>
+            <option value="new_high">New 52-Week High</option>
+            <option value="new_low">New 52-Week Low</option>
+            <option value="most_active">Most Active</option>
+            <option value="unusual_volume">Unusual Volume</option>
+            <option value="most_volatile">Most Volatile (1W)</option>
+            <option value="overbought">Overbought (RSI ≥ 70)</option>
+            <option value="oversold">Oversold (RSI ≤ 30)</option>
+            <option value="above_ma50">Above 50-Day SMA</option>
+            <option value="below_ma50">Below 50-Day SMA</option>
+            <option value="above_ma200">Above 200-Day SMA</option>
+            <option value="below_ma200">Below 200-Day SMA</option>
+            <option value="earnings_week">Earnings This Week</option>
+            <option value="upgrades_room">Largest Upside to Analyst Target</option>
+            <option value="sig_strong">FinSTR Signal: Strong</option>
+            <option value="sig_weak">FinSTR Signal: Very Weak</option>
+            <option value="sig_turn">Strong Signal, Oversold (RSI ≤ 40)</option>
+          </select>
+          <button class="chip-toggle" id="watchlistToggle" onclick="toggleWatchlistOnly()">⭐ Watchlist Only</button>
+          <button class="reset-btn" onclick="resetFilters()">Reset</button>
+        </div>
+        <div class="ctrl-line">
+          <div class="search-wrap">
+            <input type="text" id="searchInput" placeholder="Tickers…" oninput="onSearchInput()" onfocus="onSearchInput()" onblur="setTimeout(hideAutocomplete,150)">
+            <div id="autocompleteBox" class="autocomplete-box"></div>
+          </div>
+          <select id="orderByFilter" onchange="onOrderByChange()">
+            <option value="ticker">Order by: Ticker</option>
+            <option value="name">Company</option>
+            <option value="sector">Sector</option>
+            <option value="marketCap" selected>Market Cap</option>
+            <option value="price">Price</option>
+            <option value="changePercent">Change %</option>
+            <option value="pe">P/E</option>
+            <option value="peg">PEG</option>
+            <option value="roe">ROE</option>
+            <option value="volume">Volume</option>
+          </select>
+          <select id="orderDirFilter" onchange="onOrderByChange()">
+            <option value="desc" selected>Desc</option>
+            <option value="asc">Asc</option>
+          </select>
+        </div>
+        <div class="ctrl-line">
+          <button class="reset-btn" onclick="exportCSV()">⬇️ CSV</button>
+          <button class="reset-btn" onclick="copyShareLink()">🔗 Share</button>
+          <button class="reset-btn" onclick="openSaveAlert()" title="Get told when a new stock enters this screen">🔔 Alert</button>
+        </div>
+      </div>
     </div>
 
-    <div class="nl-bar">
-      <input id="nlInput" placeholder="Describe a screen, e.g. cheap profitable tech near its 52-week high" onkeydown="if(event.key==='Enter')applyNl()" aria-label="Describe a screen in plain English">
-      <button class="live-btn" onclick="applyNl()">Screen</button>
-      <div id="nlOut" class="nl-out"></div>
-    </div>
-    <div id="alertSave" class="alert-save" style="display:none">
-      <b>Save this screen as an alert</b>
-      <input id="alertName" maxlength="60" placeholder="Name, e.g. Strong signal on a pullback" onkeydown="if(event.key==='Enter')saveAlert()">
-      <button class="live-btn" onclick="saveAlert()">Save</button><button class="q-ico" onclick="closeSaveAlert()">Cancel</button>
-      <span class="dim-note" id="alertSaveNote"></span>
-    </div>
     <div id="filtersPanel" class="filters-panel" style="display:none;">
       <div class="filter-tabs">
         <div class="ftab active" data-tab="descriptive" onclick="setFilterTab('descriptive')">Descriptive</div>
@@ -992,7 +1011,6 @@
             <option value="mid">Mid ($2B–$10B)</option><option value="small">Small (&lt;$2B)</option>
           </select>
         </div>
-        <div class="filter-field"><label>Country</label><select disabled><option>USA</option></select></div>
       </div>
       <div id="filterGroupFundamental" class="filter-group" style="display:none;">
         <div class="filter-field"><label>P/E</label>
@@ -1035,9 +1053,14 @@
       </div>
     </div>
 
-    <div class="panel-box" id="sectorPerfPanel">
-      <div class="panel-title">Sector Performance (filtered view)</div>
-      <div id="sectorPerfWrap"></div>
+    <div id="alertSave" class="alert-save" style="display:none">
+      <b>Save this screen as an alert</b>
+      <input id="alertName" maxlength="60" placeholder="Name, e.g. Strong signal on a pullback" onkeydown="if(event.key==='Enter')saveAlert()">
+      <button class="live-btn" onclick="saveAlert()">Save</button><button class="q-ico" onclick="closeSaveAlert()">Cancel</button>
+      <span class="dim-note" id="alertSaveNote"></span>
+    </div>
+
+
     </div>
 
     <div class="column-tabs">
@@ -1758,7 +1781,6 @@ function applyPreset(name){
   resetFiltersSilent();
   if(PRESETS[name]) Object.assign(state, JSON.parse(JSON.stringify(PRESETS[name])));
   updateFilterBadge();
-  document.getElementById('presetFilter').value = 'none';
   syncFilterUIFromState();
   renderAll();
   encodeStateToHash();
@@ -1806,15 +1828,15 @@ function toggleWatchlistOnly(){
 }
 function toggleFiltersPanel(){
   state.filtersOpen = !state.filtersOpen;
-  document.getElementById('filtersPanel').style.display = state.filtersOpen? 'block':'none';
+  document.getElementById('filtersPanel').style.display = state.filtersOpen? 'flex':'none';
   document.getElementById('filtersArrow').textContent = state.filtersOpen? '▴':'▾';
 }
 function setFilterTab(tab){
   state.filterTab = tab;
   document.querySelectorAll('.ftab').forEach(t=> t.classList.toggle('active', t.dataset.tab===tab));
-  document.getElementById('filterGroupDescriptive').style.display = (tab==='descriptive'||tab==='all') ? 'grid':'none';
-  document.getElementById('filterGroupFundamental').style.display = (tab==='fundamental'||tab==='all') ? 'grid':'none';
-  document.getElementById('filterGroupTechnical').style.display = (tab==='technical'||tab==='all') ? 'grid':'none';
+  document.getElementById('filterGroupDescriptive').style.display = (tab==='descriptive'||tab==='all') ? 'flex':'none';
+  document.getElementById('filterGroupFundamental').style.display = (tab==='fundamental'||tab==='all') ? 'flex':'none';
+  document.getElementById('filterGroupTechnical').style.display = (tab==='technical'||tab==='all') ? 'flex':'none';
 }
 function populateIndustryOptions(){
   const sectors = [...new Set(stockData.map(s=>s.sector))].sort();
@@ -3002,18 +3024,45 @@ function updateHighlight(rows){
 }
 
 // ---------- SECTOR PERFORMANCE ----------
+// Sector pie: slice = sector's share of market cap in the current screen, colour = average 1-day move
+// (same red-grey-green scale as the map). Click a slice or legend row to screen that sector; again to clear.
+function moveColor(v){
+  const t = Math.max(-1, Math.min(1, (v||0)/3)), grey = [65,69,84], to = t>=0 ? [48,204,90] : [246,53,56], k = Math.abs(t);
+  return `rgb(${grey.map((g,i)=> Math.round(g + (to[i]-g)*k)).join(',')})`;
+}
+function pickSector(sec){
+  state.sector = state.sector===sec ? 'All' : sec; state.page = 1;
+  syncFilterUIFromState(); updateFilterBadge(); renderAll(); encodeStateToHash();
+}
 function renderSectorPerf(data){
-  const bySector = {};
-  data.forEach(s=>{ (bySector[s.sector] ||= []).push(s.changePercent); });
-  const entries = Object.entries(bySector).map(([sector, arr])=>({sector, avg: arr.reduce((a,b)=>a+b,0)/arr.length})).sort((a,b)=> b.avg-a.avg);
-  const maxAbs = Math.max(1, ...entries.map(e=>Math.abs(e.avg)));
   const wrap = document.getElementById('sectorPerfWrap');
-  if(entries.length===0){ wrap.innerHTML = '<div class="empty-state">No data for current filters.</div>'; return; }
-  wrap.innerHTML = entries.map(e=>{
-    const pct = Math.min(100, Math.abs(e.avg)/maxAbs*100);
-    const cls = e.avg>=0?'pos-bar':'neg-bar';
-    return `<div class="sp-row"><div class="sp-label">${e.sector}</div><div class="sp-track"><div class="sp-fill ${cls}" style="width:${pct}%"></div></div><div class="sp-value ${e.avg>=0?'pos':'neg'}">${e.avg>=0?'+':''}${e.avg.toFixed(2)}%</div></div>`;
+  const by = {};
+  data.forEach(s=>{ const b = by[s.sector] || (by[s.sector] = {cap:0, sum:0, n:0}); b.cap += s.marketCap||0; if(isNum(s.changePercent)){ b.sum += s.changePercent; b.n++; } });
+  const entries = Object.entries(by).map(([sector,b])=>({sector, cap:b.cap, avg: b.n ? b.sum/b.n : 0, n:b.n})).filter(e=> e.cap>0).sort((a,b)=> b.cap-a.cap);
+  if(!entries.length){ wrap.innerHTML = '<div class="empty-state">No data for current filters.</div>'; return; }
+  const total = entries.reduce((a,e)=> a+e.cap, 0);
+  const R = 90, r = 52, C = 100;
+  const pt = (a, rad)=> [C + rad*Math.sin(a), C - rad*Math.cos(a)];
+  let a0 = 0;
+  const slices = entries.map(e=>{
+    const frac = e.cap/total, a1 = a0 + frac*2*Math.PI, big = frac > 0.5 ? 1 : 0;
+    const tip = escAttr(`${e.sector}: ${(frac*100).toFixed(1)}% of market value · average move ${e.avg>=0?'+':''}${e.avg.toFixed(2)}% · ${e.n} stocks`);
+    let d;
+    if(frac > 0.9999) d = `M${C} ${C-R}A${R} ${R} 0 1 1 ${C-0.01} ${C-R}Z M${C} ${C-r}A${r} ${r} 0 1 0 ${C+0.01} ${C-r}Z`;
+    else { const [x0,y0]=pt(a0,R),[x1,y1]=pt(a1,R),[x2,y2]=pt(a1,r),[x3,y3]=pt(a0,r);
+      d = `M${x0.toFixed(2)} ${y0.toFixed(2)}A${R} ${R} 0 ${big} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}L${x2.toFixed(2)} ${y2.toFixed(2)}A${r} ${r} 0 ${big} 0 ${x3.toFixed(2)} ${y3.toFixed(2)}Z`; }
+    a0 = a1;
+    return `<path d="${d}" fill="${moveColor(e.avg)}" class="sp-slice${state.sector===e.sector?' on':''}" data-tip="${tip}" onclick="pickSector('${e.sector.replace(/'/g,"\\'")}')"></path>`;
   }).join('');
+  const n = data.length, avgAll = data.reduce((a,s)=> a+(isNum(s.changePercent)?s.changePercent:0), 0) / Math.max(1, data.filter(s=>isNum(s.changePercent)).length);
+  wrap.innerHTML = `<div class="sp-pie">
+    <svg viewBox="0 0 200 200" class="sp-svg" role="img" aria-label="Sector share of market value, coloured by average move">${slices}
+      <text x="100" y="94" text-anchor="middle" class="sp-c1">${n} stock${n===1?'':'s'}</text>
+      <text x="100" y="116" text-anchor="middle" class="sp-c2 ${avgAll>=0?'pos':'neg'}">${avgAll>=0?'+':''}${avgAll.toFixed(2)}%</text></svg>
+    <div class="sp-leg">${entries.map(e=>`<div class="sp-li${state.sector===e.sector?' on':''}" onclick="pickSector('${e.sector.replace(/'/g,"\\'")}')">
+      <i style="background:${moveColor(e.avg)}"></i><span class="sp-ln">${e.sector}</span><span class="sp-lw">${(e.cap/total*100).toFixed(1)}%</span>
+      <span class="sp-lv ${e.avg>=0?'pos':'neg'}">${e.avg>=0?'+':''}${e.avg.toFixed(2)}%</span></div>`).join('')}</div>
+  </div>`;
 }
 
 // ---------- HEATMAP SIDEBAR ----------
@@ -3301,7 +3350,7 @@ const INFO_TIPS = {
   'Factor weights': 'How much each factor counts toward the overall FinSTR Signal.',
   'Strongest signals': 'S&P 500 stocks with the highest overall FinSTR Signal today: strongest on the six factors combined.',
   'Weakest signals': 'S&P 500 stocks with the lowest overall FinSTR Signal today.',
-  'Sector Performance': 'Average 1-day move of the stocks in your current screen, grouped by sector, to see which parts of the market lead or lag.',
+  'Sector Performance': 'Each slice is a sector\'s share of the market value in your current screen; its colour is the sector\'s average move today (green up, red down). Click a slice or a row to screen that sector; click again to clear.',
   'Market internals': "How broad today's move is: how many stocks rose versus fell, and whether the typical stock did better or worse than the giants that drive the index.",
   "Today's moves": 'How many stocks moved by how much today. Click a bar to list those stocks in the screener.',
   'Day vs week': 'Stocks moving against their week: a sharp drop after a strong week, or a bounce after a weak one.',
