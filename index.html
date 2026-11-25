@@ -157,16 +157,24 @@
   .ctrl-line > button{flex:0 0 auto;}
   @media (max-width:860px){ .scr-top{grid-template-columns:1fr;} }
   .sp-pie{display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
-  .sp-svg{width:180px; height:180px; flex:0 0 180px;}
+  .sp-svg{width:180px; height:180px; display:block;}
+  .sp-pie-col{flex:0 0 180px; display:flex; flex-direction:column; align-items:center; gap:4px;}
+  .sp-top{display:flex; align-items:center; justify-content:space-between; gap:8px 12px; flex-wrap:wrap; margin-bottom:10px;}
+  .sp-top .panel-title{margin-bottom:0;}
+  .sp-tf button{font-size:11.5px; padding:4px 11px;}
+  .sp-key{display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--dim); font-variant-numeric:tabular-nums; width:100%;}
+  .sp-key i{flex:1; height:8px; border-radius:4px;}
+  .sp-key-note{font-size:10.5px; color:var(--dim);}
   .sp-slice{cursor:pointer; stroke:var(--panel); stroke-width:1.5; transition:opacity .15s;}
   .sp-svg:hover .sp-slice{opacity:.75;} .sp-svg .sp-slice:hover, .sp-slice.on{opacity:1; stroke:var(--text); stroke-width:2;}
   .sp-c1{font-size:12px; fill:var(--dim);} .sp-c2{font-size:17px; font-weight:800;} .sp-c2.pos{fill:var(--pos);} .sp-c2.neg{fill:var(--neg);}
   .sp-leg{flex:1 1 220px; min-width:0; display:grid; gap:2px; font-size:12px;}
-  .sp-li{display:grid; grid-template-columns:10px minmax(0,1fr) 44px 58px 112px 112px; gap:8px; align-items:center; padding:3px 6px; border-radius:5px; cursor:pointer;}
+  .sp-li{display:grid; grid-template-columns:10px minmax(0,1fr) 44px 62px 128px 112px; gap:8px; align-items:center; padding:3px 6px; border-radius:5px; cursor:pointer;}
   .sp-head{cursor:default; font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:.3px; font-weight:600;} .sp-head:hover{background:none;}
-  .sp-head .r{text-align:right;} .sp-head .sp-lk{white-space:nowrap; font-variant-numeric:normal;}
+  .sp-head .r{text-align:right;} .sp-head .sp-lk{white-space:normal; overflow:visible; font-variant-numeric:normal; line-height:1.3;}
   .sp-lk{white-space:nowrap; font-variant-numeric:tabular-nums; overflow:hidden; text-overflow:ellipsis;}
   .sp-lk a{color:var(--accent); font-weight:700; text-decoration:none;} .sp-lk a:hover{text-decoration:underline;}
+  .sp-lk-b{border-left:1px solid var(--border); padding-left:14px; margin-left:6px;}   /* separates the analyst picks from the move */
   .sp-li:hover, .sp-li.on{background:var(--panel2);}
   .sp-li i{width:10px; height:10px; border-radius:2px;}
   .sp-ln{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;} .sp-lw{color:var(--dim); font-variant-numeric:tabular-nums;}
@@ -174,11 +182,11 @@
   /* narrower panels: the two picks go on a second line under each sector */
   @media (max-width:1180px){
     .sp-li{grid-template-columns:10px minmax(0,1fr) 44px 58px;}
-    .sp-li .sp-lk{grid-row:2; font-size:11.5px;} .sp-li .sp-lk-b{grid-column:2 / 3;} .sp-li .sp-lk-s{grid-column:3 / 5; text-align:right;}
+    .sp-li .sp-lk{grid-row:2; font-size:11.5px;} .sp-li .sp-lk-b{grid-column:2 / 3; border-left:none; padding-left:0; margin-left:0;} .sp-li .sp-lk-s{grid-column:3 / 5; text-align:right;}
     .sp-li:not(.sp-head){padding:5px 6px; border-bottom:1px solid var(--border); border-radius:0;}
     .sp-head .sp-lk{white-space:normal; overflow:visible;}
   }
-  @media (max-width:600px){ .sp-pie{justify-content:center;} .sp-svg{width:170px; height:170px; flex-basis:170px;} .sp-leg{flex-basis:100%;} }
+  @media (max-width:600px){ .sp-pie{justify-content:center;} .sp-pie-col{flex-basis:200px;} .sp-svg{width:170px; height:170px;} .sp-leg{flex-basis:100%;} }
   /* Filters open as one line (scrolls sideways when it does not fit) */
   #filtersPanel{align-items:flex-end; gap:14px; overflow-x:auto; padding:10px 12px; scrollbar-width:thin;}
   #filtersPanel .filter-tabs{flex:0 0 auto; flex-wrap:nowrap; margin:0; padding:0; border:none; align-self:center;}
@@ -934,7 +942,8 @@
 
     <div class="scr-top">
       <div class="panel-box scr-pie" id="sectorPerfPanel">
-        <div class="panel-title">Sector Performance (filtered view)</div>
+        <div class="sp-top"><div class="panel-title">Sector Performance (filtered view)</div>
+          <span class="q-seg sp-tf" id="spTf"><button data-tf="d" class="on" onclick="setSpTf('d')">Day</button><button data-tf="w" onclick="setSpTf('w')">Week</button><button data-tf="m" onclick="setSpTf('m')">Month</button><button data-tf="ytd" onclick="setSpTf('ytd')">YTD</button></span></div>
         <div id="sectorPerfWrap"></div>
       </div>
       <div class="controls-row scr-ctrl">
@@ -3018,10 +3027,20 @@ function updateHighlight(rows){
 }
 
 // ---------- SECTOR PERFORMANCE ----------
-// Sector pie: slice = sector's share of market cap in the current screen, colour = average 1-day move
-// (same red-grey-green scale as the map). Click a slice or legend row to screen that sector; again to clear.
-function moveColor(v){
-  const t = Math.max(-1, Math.min(1, (v||0)/3)), grey = [65,69,84], to = t>=0 ? [48,204,90] : [246,53,56], k = Math.abs(t);
+// Sector pie: slice = sector's share of market cap in the current screen, colour = average move over the chosen
+// period (Day / Week / Month / YTD). Click a slice or legend row to screen that sector; again to clear.
+// Period shown by the sector pie and list: field on each stock row + label.
+const SP_TF = { d:['changePercent','Today'], w:['perfW','Week'], m:['perfM','Month'], ytd:['perfYTD','YTD'] };
+let spTf = 'd';
+function setSpTf(tf){
+  spTf = SP_TF[tf] ? tf : 'd';
+  document.querySelectorAll('#spTf button').forEach(b=> b.classList.toggle('on', b.dataset.tf===spTf));
+  renderSectorPerf(getFilteredData());
+}
+// Colour scaled to the period's spread: the biggest sector move (either way) gets full green or red, so small
+// days still show differences. A floor stops near-flat days from turning noise into strong colour.
+function moveColor(v, scale=3){
+  const t = Math.max(-1, Math.min(1, (v||0)/scale)), grey = [65,69,84], to = t>=0 ? [48,204,90] : [246,53,56], k = Math.abs(t);
   return `rgb(${grey.map((g,i)=> Math.round(g + (to[i]-g)*k)).join(',')})`;
 }
 function pickSector(sec){
@@ -3041,45 +3060,53 @@ function sectorLiked(data){
   Object.values(out).forEach(o=>{ if(o.best === o.worst) o.worst = null; });
   return out;
 }
+const fmtPct = v=> isNum(v) ? `${v>=0?'+':''}${v.toFixed(2)}%` : '-';
 function likedCell(s, cls){
   if(!s) return `<span class="sp-lk ${cls}"><span class="dim-note">-</span></span>`;
-  const ch = isNum(s.changePercent) ? `${s.changePercent>=0?'+':''}${s.changePercent.toFixed(2)}%` : '-';
-  const tip = escAttr(`${s.ticker} ${s.name}: analyst consensus ${recLabel(s.recMean)} (${s.recMean.toFixed(2)} on a 1 Strong Buy to 5 Strong Sell scale, ${s.analysts} analysts) · today ${ch}`);
+  const [f, lab] = SP_TF[spTf], ch = fmtPct(s[f]);
+  const tip = escAttr(`${s.ticker} ${s.name}: analyst consensus ${recLabel(s.recMean)} (${s.recMean.toFixed(2)} on a 1 Strong Buy to 5 Strong Sell scale, ${s.analysts} analysts) · ${lab.toLowerCase()} ${ch}`);
   return `<span class="sp-lk ${cls}"><a href="#" data-tip="${tip}" onclick="event.stopPropagation();openModal('${s.ticker}');return false">${s.ticker}</a>`+
-    ` <span class="${(s.changePercent||0)>=0?'pos':'neg'}">(${ch})</span></span>`;
+    ` <span class="${(s[f]||0)>=0?'pos':'neg'}">(${ch})</span></span>`;
 }
 function renderSectorPerf(data){
   const wrap = document.getElementById('sectorPerfWrap');
+  const [f, lab] = SP_TF[spTf];
   const by = {};
-  data.forEach(s=>{ const b = by[s.sector] || (by[s.sector] = {cap:0, sum:0, n:0}); b.cap += s.marketCap||0; if(isNum(s.changePercent)){ b.sum += s.changePercent; b.n++; } });
+  data.forEach(s=>{ const b = by[s.sector] || (by[s.sector] = {cap:0, sum:0, n:0}); b.cap += s.marketCap||0; if(isNum(s[f])){ b.sum += s[f]; b.n++; } });
   const entries = Object.entries(by).map(([sector,b])=>({sector, cap:b.cap, avg: b.n ? b.sum/b.n : 0, n:b.n})).filter(e=> e.cap>0).sort((a,b)=> b.cap-a.cap);
   if(!entries.length){ wrap.innerHTML = '<div class="empty-state">No data for current filters.</div>'; return; }
   const total = entries.reduce((a,e)=> a+e.cap, 0);
+  const floor = {d:0.5, w:1, m:2, ytd:5}[spTf];
+  const scale = Math.max(floor, ...entries.map(e=> Math.abs(e.avg)));
+  const col = v=> moveColor(v, scale);
   const R = 90, r = 52, C = 100;
   const pt = (a, rad)=> [C + rad*Math.sin(a), C - rad*Math.cos(a)];
   let a0 = 0;
   const slices = entries.map(e=>{
     const frac = e.cap/total, a1 = a0 + frac*2*Math.PI, big = frac > 0.5 ? 1 : 0;
-    const tip = escAttr(`${e.sector}: ${(frac*100).toFixed(1)}% of market value · average move ${e.avg>=0?'+':''}${e.avg.toFixed(2)}% · ${e.n} stocks`);
+    const tip = escAttr(`${e.sector}: ${(frac*100).toFixed(1)}% of market value · average ${lab.toLowerCase()} move ${fmtPct(e.avg)} · ${e.n} stocks`);
     let d;
     if(frac > 0.9999) d = `M${C} ${C-R}A${R} ${R} 0 1 1 ${C-0.01} ${C-R}Z M${C} ${C-r}A${r} ${r} 0 1 0 ${C+0.01} ${C-r}Z`;
     else { const [x0,y0]=pt(a0,R),[x1,y1]=pt(a1,R),[x2,y2]=pt(a1,r),[x3,y3]=pt(a0,r);
       d = `M${x0.toFixed(2)} ${y0.toFixed(2)}A${R} ${R} 0 ${big} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}L${x2.toFixed(2)} ${y2.toFixed(2)}A${r} ${r} 0 ${big} 0 ${x3.toFixed(2)} ${y3.toFixed(2)}Z`; }
     a0 = a1;
-    return `<path d="${d}" fill="${moveColor(e.avg)}" class="sp-slice${state.sector===e.sector?' on':''}" data-tip="${tip}" onclick="pickSector('${e.sector.replace(/'/g,"\\'")}')"></path>`;
+    return `<path d="${d}" fill="${col(e.avg)}" class="sp-slice${state.sector===e.sector?' on':''}" data-tip="${tip}" onclick="pickSector('${e.sector.replace(/'/g,"\\'")}')"></path>`;
   }).join('');
   const liked = sectorLiked(data);
-  const n = data.length, avgAll = data.reduce((a,s)=> a+(isNum(s.changePercent)?s.changePercent:0), 0) / Math.max(1, data.filter(s=>isNum(s.changePercent)).length);
+  const vals = data.map(s=> s[f]).filter(isNum);
+  const n = data.length, avgAll = vals.reduce((a,v)=> a+v, 0) / Math.max(1, vals.length);
+  const key = `<div class="sp-key"><span>${fmtPct(-scale)}</span><i style="background:linear-gradient(90deg,${col(-scale)},${col(0)},${col(scale)})"></i><span>${fmtPct(scale)}</span></div>
+    <div class="sp-key-note">Colour = average ${lab.toLowerCase()} move</div>`;
   wrap.innerHTML = `<div class="sp-pie">
-    <svg viewBox="0 0 200 200" class="sp-svg" role="img" aria-label="Sector share of market value, coloured by average move">${slices}
-      <text x="100" y="94" text-anchor="middle" class="sp-c1">${n} stock${n===1?'':'s'}</text>
-      <text x="100" y="116" text-anchor="middle" class="sp-c2 ${avgAll>=0?'pos':'neg'}">${avgAll>=0?'+':''}${avgAll.toFixed(2)}%</text></svg>
-    <div class="sp-leg"><div class="sp-li sp-head"><i></i><span>Sector</span><span>Share</span><span class="r">Today</span>
-      <span class="sp-lk sp-lk-b">Buy · most liked${tipBtn('The stock in this sector that analysts rate best (lowest consensus score, 1 = Strong Buy), with its move today. Hover or tap the ticker for its rating; click it to open the stock.')}</span>
+    <div class="sp-pie-col"><svg viewBox="0 0 200 200" class="sp-svg" role="img" aria-label="Sector share of market value, coloured by average ${lab.toLowerCase()} move">${slices}
+      <text x="100" y="94" text-anchor="middle" class="sp-c1">${n} stock${n===1?'':'s'} · ${lab}</text>
+      <text x="100" y="116" text-anchor="middle" class="sp-c2 ${avgAll>=0?'pos':'neg'}">${fmtPct(avgAll)}</text></svg>${key}</div>
+    <div class="sp-leg"><div class="sp-li sp-head"><i></i><span>Sector</span><span>Share</span><span class="r">${lab}</span>
+      <span class="sp-lk sp-lk-b">Buy · most liked${tipBtn('The stock in this sector that analysts rate best (lowest consensus score, 1 = Strong Buy), with its move over the selected period. Hover or tap the ticker for its rating; click it to open the stock.')}</span>
       <span class="sp-lk sp-lk-s">Sell · least liked${tipBtn('The stock in this sector that analysts rate worst (highest consensus score). Few S&P 500 stocks carry an actual Sell rating, so this is often a weak Hold; hover or tap the ticker for its exact rating.')}</span></div>
       ${entries.map(e=>`<div class="sp-li${state.sector===e.sector?' on':''}" onclick="pickSector('${e.sector.replace(/'/g,"\\'")}')">
-      <i style="background:${moveColor(e.avg)}"></i><span class="sp-ln" title="${e.sector}">${e.sector}</span><span class="sp-lw">${(e.cap/total*100).toFixed(1)}%</span>
-      <span class="sp-lv ${e.avg>=0?'pos':'neg'}">${e.avg>=0?'+':''}${e.avg.toFixed(2)}%</span>
+      <i style="background:${col(e.avg)}"></i><span class="sp-ln" title="${e.sector}">${e.sector}</span><span class="sp-lw">${(e.cap/total*100).toFixed(1)}%</span>
+      <span class="sp-lv ${e.avg>=0?'pos':'neg'}">${fmtPct(e.avg)}</span>
       ${likedCell((liked[e.sector]||{}).best, 'sp-lk-b')}${likedCell((liked[e.sector]||{}).worst, 'sp-lk-s')}</div>`).join('')}</div>
   </div>`;
 }
@@ -3369,7 +3396,7 @@ const INFO_TIPS = {
   'Factor weights': 'How much each factor counts toward the overall FinSTR Signal.',
   'Strongest signals': 'S&P 500 stocks with the highest overall FinSTR Signal today: strongest on the six factors combined.',
   'Weakest signals': 'S&P 500 stocks with the lowest overall FinSTR Signal today.',
-  'Sector Performance': 'Each slice is a sector\'s share of the market value in your current screen; its colour is the sector\'s average move today (green up, red down). Click a slice or a row to screen that sector; click again to clear.',
+  'Sector Performance': 'Each slice is a sector\'s share of the market value in your current screen; its colour is the sector\'s average move over the period you pick (Day, Week, Month, YTD), scaled to that period\'s biggest sector move (see the key). Click a slice or a row to screen that sector; click again to clear.',
   'Market internals': "How broad today's move is: how many stocks rose versus fell, and whether the typical stock did better or worse than the giants that drive the index.",
   "Today's moves": 'How many stocks moved by how much today. Click a bar to list those stocks in the screener.',
   'Day vs week': 'Stocks moving against their week: a sharp drop after a strong week, or a bounce after a weak one.',
