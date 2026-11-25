@@ -302,14 +302,6 @@
   .idx-chg{font-size:12px;font-weight:600;margin-bottom:8px;}
   .idx-spark{width:100%;height:50px;display:block;}
   .idx-chart-div{width:100%;height:80px;position:relative;margin-top:4px;}
-  .breadth-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:10px;}
-  .breadth-stat{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 14px;}
-  .bs-label{font-size:10px;color:var(--dim);text-transform:uppercase;font-weight:600;margin-bottom:3px;}
-  .bs-vals{display:flex;justify-content:space-between;align-items:baseline;}
-  .bs-val{font-size:15px;font-weight:700;}
-  .bs-pct{font-size:10.5px;color:var(--dim);}
-  .bs-bar{height:4px;border-radius:2px;margin-top:5px;background:var(--panel2);overflow:hidden;}
-  .bs-bar-fill{height:100%;border-radius:2px;}
   .brief{margin:0 0 10px;}
   .brief-head{font-size:13px;margin:0 0 6px;}
   .brief-empty{background:var(--panel);border:1px dashed var(--border);border-radius:8px;padding:10px 12px;font-size:13px;}
@@ -1060,9 +1052,6 @@
       <span class="dim-note" id="alertSaveNote"></span>
     </div>
 
-
-    </div>
-
     <div class="column-tabs">
       <div class="ctab active" data-view="overview" onclick="setColumnView('overview')">Overview</div>
       <div class="ctab" data-view="valuation" onclick="setColumnView('valuation')">Valuation</div>
@@ -1112,12 +1101,6 @@
         <div class="idx-price">—</div><div class="idx-chg">—</div>
         <div class="idx-chart-div" id="idxSP-chart"></div>
       </div>
-    </div>
-    <div class="breadth-row" id="breadthRow">
-      <div class="breadth-stat"><div class="bs-label">Advancing</div><div class="bs-vals"><span class="bs-val pos" id="brAdv">—</span><span class="bs-pct" id="brAdvPct"></span></div><div class="bs-bar"><div class="bs-bar-fill" id="brAdvBar" style="background:var(--pos)"></div></div></div>
-      <div class="breadth-stat"><div class="bs-label">Declining</div><div class="bs-vals"><span class="bs-val neg" id="brDec">—</span><span class="bs-pct" id="brDecPct"></span></div><div class="bs-bar"><div class="bs-bar-fill" id="brDecBar" style="background:var(--neg)"></div></div></div>
-      <div class="breadth-stat"><div class="bs-label">Above 50D MA</div><div class="bs-vals"><span class="bs-val" id="brAbove">—</span><span class="bs-pct" id="brAbovePct"></span></div><div class="bs-bar"><div class="bs-bar-fill" id="brAboveBar" style="background:var(--accent)"></div></div></div>
-      <div class="breadth-stat"><div class="bs-label">Below 50D MA</div><div class="bs-vals"><span class="bs-val" id="brBelow">—</span><span class="bs-pct" id="brBelowPct"></span></div><div class="bs-bar"><div class="bs-bar-fill" id="brBelowBar" style="background:var(--dim)"></div></div></div>
     </div>
     <div class="internals" id="homeInternals"></div>
     <div class="home-bottom">
@@ -3794,23 +3777,7 @@ async function loadIndexCard(id, sym, label){
   _idxCharts[id] = chart;
 }
 
-function renderBreadth(){
-  const total = stockData.length;
-  const adv = stockData.filter(s=>s.changePercent>0).length;
-  const dec = stockData.filter(s=>s.changePercent<0).length;
-  const above = stockData.filter(s=>isNum(s.vsSma50) && s.vsSma50>=0).length;
-  const below = stockData.filter(s=>isNum(s.vsSma50) && s.vsSma50<0).length;
-  const set=(id,val,pct,barId,pct2)=>{
-    document.getElementById(id).textContent=val;
-    document.getElementById(id+'Pct').textContent=`(${pct.toFixed(1)}%)`;
-    const bar=document.getElementById(barId);
-    if(bar) bar.style.width=pct2+'%';
-  };
-  set('brAdv',adv,(adv/total*100),'brAdvBar',(adv/total*100));
-  set('brDec',dec,(dec/total*100),'brDecBar',(dec/total*100));
-  set('brAbove',above,(above/total*100),'brAboveBar',(above/total*100));
-  set('brBelow',below,(below/total*100),'brBelowBar',(below/total*100));
-}
+function renderBreadth(){}   // breadth row removed from Home (2026-11-25); market internals cover breadth
 
 function getSignal(s){
   if(isNum(s.fromHigh52) && s.fromHigh52 >= -1) return 'New 52W High';
