@@ -94,7 +94,7 @@ ul{{margin:8px 0 0;padding-left:18px}}
 .brand-word{{display:flex;align-items:center;gap:7px;text-decoration:none}} .brand-word b{{color:var(--a)}}
 .bw-ico{{width:24px;height:24px;border-radius:6px;display:block;flex-shrink:0;}}
 .bw-tag{{font-weight:700;font-size:14px;letter-spacing:0;margin-left:4px;white-space:nowrap;}}
-.bw-tag b{{font-weight:700;}} .bw-tag .t-red{{color:#e5484d;}} .bw-tag .t-green{{color:#1f8a4c;}} .bw-os{{color:var(--dim, var(--d));font-weight:600;}}
+.bw-tag b{{color:var(--accent, var(--a));font-weight:700;}} .bw-os{{color:var(--dim, var(--d));font-weight:600;}}
 @media (max-width:980px){{ .bw-tag{{display:none;}} }}
 .site-footer{{border-top:1px solid var(--border, var(--b));margin:28px 0 10px;padding:16px 4px 8px;text-align:center;font-size:12px;color:var(--dim, var(--d));}}
 .sf-links{{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;margin-bottom:8px;}}
@@ -104,7 +104,7 @@ ul{{margin:8px 0 0;padding-left:18px}}
 .why{{border-left:3px solid var(--a);font-size:13.5px}}
 @media (max-width:640px){{.g{{grid-template-columns:1fr 1fr}} .f{{grid-template-columns:1fr 1fr}}}}
 </style></head><body><main>
-<header><a class="brand brand-word" href="../../" aria-label="FinSTR home"><img class="bw-ico" src="../../assets/img/finstr-icon-180.png" alt="" width="24" height="24"><span>Fin<b>STR</b></span><span class="bw-tag">· <b><span class="t-red">Stock Trade</span> <span class="t-green">Recommendation</span></b> <span class="bw-os">(Open Source)</span></span></a><a href="../">All S&amp;P 500 stocks →</a></header>
+<header><a class="brand brand-word" href="../../" aria-label="FinSTR home"><img class="bw-ico" src="../../assets/img/finstr-icon-180.png" alt="" width="24" height="24"><span>Fin<b>STR</b></span><span class="bw-tag">· <b>Stock Trade Recommendation</b> <span class="bw-os">(Open Source)</span></span></a><a href="../">All S&amp;P 500 stocks →</a></header>
 <h1>{e(t)} <small>{e(name)}</small></h1>
 <div class="px">{fmt(s.get('price'))} <span style="font-size:15px;color:{'var(--p)' if (s.get('changePercent') or 0) >= 0 else 'var(--n)'}">{pct(s.get('changePercent'))}</span></div>
 <div class="meta">{e(s.get('sector', ''))} · {e(s.get('industry', ''))} · {e(s.get('exchange') or '')} · data as of {e(as_of[:16].replace('T', ' '))} UTC</div>
@@ -155,7 +155,7 @@ h1{{font-size:22px;margin:14px 0 2px}} h2{{font-size:15px;margin:18px 0 6px;bord
 .brand-word{{display:flex;align-items:center;gap:7px;text-decoration:none}} .brand-word b{{color:var(--a)}}
 .bw-ico{{width:24px;height:24px;border-radius:6px;display:block;flex-shrink:0;}}
 .bw-tag{{font-weight:700;font-size:14px;letter-spacing:0;margin-left:4px;white-space:nowrap;}}
-.bw-tag b{{font-weight:700;}} .bw-tag .t-red{{color:#e5484d;}} .bw-tag .t-green{{color:#1f8a4c;}} .bw-os{{color:var(--dim, var(--d));font-weight:600;}}
+.bw-tag b{{color:var(--accent, var(--a));font-weight:700;}} .bw-os{{color:var(--dim, var(--d));font-weight:600;}}
 @media (max-width:980px){{ .bw-tag{{display:none;}} }}
 .site-footer{{border-top:1px solid var(--border, var(--b));margin:28px 0 10px;padding:16px 4px 8px;text-align:center;font-size:12px;color:var(--dim, var(--d));}}
 .sf-links{{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;margin-bottom:8px;}}
@@ -163,7 +163,7 @@ h1{{font-size:22px;margin:14px 0 2px}} h2{{font-size:15px;margin:18px 0 6px;bord
 .sf-links > span{{opacity:.5;}}
 .sf-note{{font-size:11.5px;line-height:1.5;opacity:.85;max-width:900px;margin:0 auto;}}
 </style></head><body><main>
-<header><a class="brand brand-word" href="../" aria-label="FinSTR home"><img class="bw-ico" src="../assets/img/finstr-icon-180.png" alt="" width="24" height="24"><span>Fin<b>STR</b></span><span class="bw-tag">· <b><span class="t-red">Stock Trade</span> <span class="t-green">Recommendation</span></b> <span class="bw-os">(Open Source)</span></span></a><a href="../#view=screener">Screener →</a></header>
+<header><a class="brand brand-word" href="../" aria-label="FinSTR home"><img class="bw-ico" src="../assets/img/finstr-icon-180.png" alt="" width="24" height="24"><span>Fin<b>STR</b></span><span class="bw-tag">· <b>Stock Trade Recommendation</b> <span class="bw-os">(Open Source)</span></span></a><a href="../#view=screener">Screener →</a></header>
 <h1>All S&amp;P 500 Stocks</h1><div class="meta">{len(rows)} companies · columns: ticker, name, today's change, FinSTR Signal (0-100) · data as of {e(as_of[:16].replace('T', ' '))} UTC</div>
 {"".join(secs)}
 <footer class="site-footer">

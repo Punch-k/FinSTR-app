@@ -589,13 +589,19 @@
   .brand-word{font-family:'Segoe UI',Inter,system-ui,sans-serif;font-size:19px;font-weight:800;letter-spacing:-.3px;color:var(--text);display:flex;align-items:center;gap:7px;text-decoration:none;}
   .bw-ico{width:24px;height:24px;border-radius:6px;display:block;flex-shrink:0;}
   .bw-tag{font-weight:700;font-size:14px;letter-spacing:0;margin-left:4px;white-space:nowrap;}
-  .bw-tag b{font-weight:700;} .bw-tag .t-red{color:#e5484d;} .bw-tag .t-green{color:#1f8a4c;} .bw-os{color:var(--dim, var(--d));font-weight:600;}
+  .bw-tag b{color:var(--accent, var(--a));font-weight:700;} .bw-os{color:var(--dim, var(--d));font-weight:600;}
   @media (max-width:980px){ .bw-tag{display:none;} }
   .site-footer{border-top:1px solid var(--border, var(--b));margin:28px 0 10px;padding:16px 4px 8px;text-align:center;font-size:12px;color:var(--dim, var(--d));}
   .sf-links{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;margin-bottom:8px;}
   .sf-links a{color:var(--dim, var(--d));text-decoration:none;white-space:nowrap;} .sf-links a:hover{color:var(--accent, var(--a));text-decoration:underline;}
   .sf-links > span{opacity:.5;}
   body.has-compare{padding-bottom:90px;}   /* room for the fixed Compare bar only while it shows */
+  /* background: flowing dot grid (canvas) behind the panels */
+  #bgfx{position:fixed; inset:0; z-index:-1; pointer-events:none; overflow:hidden;}
+  #bgfx canvas{display:block;}
+  /* panels slightly see-through so the grid shows softly behind the data */
+  body.has-bgfx{--panel:rgba(19,23,34,.80);}
+  :root[data-theme="light"] body.has-bgfx{--panel:rgba(250,241,232,.82);}
   .sf-note{font-size:11.5px;line-height:1.5;opacity:.85;max-width:900px;margin:0 auto;}
   .brand-word b{color:var(--accent);font-weight:800;}
   .banner a{color:var(--accent);text-decoration:none;}
@@ -897,7 +903,7 @@
 
   <div class="topnav">
     <div class="topnav-bar">
-      <a class="brand brand-word" href="#" onclick="setView('screener');return false" aria-label="FinSTR home"><img class="bw-ico" src="assets/img/finstr-icon-180.png" alt="" width="24" height="24"><span>Fin<b>STR</b></span><span class="bw-tag">· <b><span class="t-red">Stock Trade</span> <span class="t-green">Recommendation</span></b> <span class="bw-os">(Open Source)</span></span></a>
+      <a class="brand brand-word" href="#" onclick="setView('screener');return false" aria-label="FinSTR home"><img class="bw-ico" src="assets/img/finstr-icon-180.png" alt="" width="24" height="24"><span>Fin<b>STR</b></span><span class="bw-tag">· <b>Stock Trade Recommendation</b> <span class="bw-os">(Open Source)</span></span></a>
       <span class="top-links"><a href="#" onclick="openAbout();return false">Methodology</a><span>·</span><a href="stock/">All stocks</a></span>
       <input id="globalSearchInput" class="global-search" type="text" placeholder="Search ticker or company…" maxlength="40" aria-label="Search ticker or company">
       <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()">☰</button>
@@ -4487,6 +4493,49 @@ function onHistoryNav(){
     }
   } finally { navFromHistory = false; }
 }
+// ---------- BACKGROUND: FLOWING DOT GRID THAT REACTS TO THE POINTER ----------
+// A dot grid drifts slowly behind the panels with a soft brightness wave; dots near the mouse (or finger)
+// light up, grow and ease away from it, then settle. Pauses while the tab is hidden; for people who ask their
+// device to reduce motion the grid stays still and only responds to the pointer.
+(function initBgFx(){
+  const el = document.createElement('div'); el.id = 'bgfx'; el.setAttribute('aria-hidden','true');
+  document.body.prepend(el); document.body.classList.add('has-bgfx');
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const cv = document.createElement('canvas'); el.appendChild(cv);
+  const ctx = cv.getContext('2d');
+  let W = 0, H = 0;
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  const size = ()=>{ W = innerWidth; H = innerHeight; cv.width = W*dpr; cv.height = H*dpr; cv.style.width = W+'px'; cv.style.height = H+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); };
+  size(); addEventListener('resize', size);
+  const GAP = 24, R = 150;
+  let mx = -9999, my = -9999, glow = 0, target = 0, lastMove = 0, ox = 0, oy = 0, t0 = performance.now();
+  const move = (x, y)=>{ mx = x; my = y; target = 1; lastMove = performance.now(); };
+  addEventListener('pointermove', e=> move(e.clientX, e.clientY), {passive:true});
+  addEventListener('touchmove', e=>{ const t = e.touches[0]; if(t) move(t.clientX, t.clientY); }, {passive:true});
+  document.addEventListener('mouseleave', ()=>{ target = 0; });
+  const draw = now=>{
+    if(now - lastMove > 1500) target = 0;                      // fade the spotlight after 1.5 s without movement
+    glow += (target - glow) * 0.12;
+    if(!still){ ox = (ox + 0.18) % GAP; oy = (oy + 0.12) % GAP; }   // slow diagonal flow
+    const light = document.documentElement.dataset.theme === 'light';
+    const c = light ? '51,102,255' : '79,140,255', base = light ? 0.14 : 0.17;
+    const wave = still ? 0 : (now - t0) / 2600;
+    ctx.clearRect(0,0,W,H);
+    for(let y = -GAP + oy; y < H + GAP; y += GAP){
+      for(let x = -GAP + ox; x < W + GAP; x += GAP){
+        const dx = x - mx, dy = y - my, d = Math.sqrt(dx*dx + dy*dy);
+        const k = d < R ? (1 - d/R) * glow : 0;                 // 0..1 closeness to the pointer
+        const w = still ? 0 : 0.07 * (0.5 + 0.5*Math.sin((x + y) / 140 - wave));   // soft brightness wave
+        const push = k * 6, ux = d ? dx/d : 0, uy = d ? dy/d : 0;
+        ctx.fillStyle = `rgba(${c},${base + w + k*0.7})`;
+        ctx.beginPath(); ctx.arc(x + ux*push, y + uy*push, 1 + k*1.8, 0, 6.283); ctx.fill();
+      }
+    }
+  };
+  let last = 0;
+  const loop = now=>{ if(!document.hidden && now - last > 33){ last = now; draw(now); } requestAnimationFrame(loop); };   // ~30 fps
+  requestAnimationFrame(loop);
+})();
 window.addEventListener('popstate', onHistoryNav);
 if(location.hash === '#about') setTimeout(()=>{ try{ openAbout(); }catch(e){} }, 600);
 window.addEventListener('hashchange', onHistoryNav);
