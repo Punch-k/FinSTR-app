@@ -30,8 +30,8 @@ paid tiers or developer setup.
 | # | Item | Why | Status |
 |---|---|---|---|
 | 1 | **MCP server** (`pipeline/mcp_server.py`): market overview, search, stock, screen, signal record, portfolio review | Any AI assistant can use FinSTR; matches OpenBB/xang1234 for agents while staying zero-install | built |
-| 2 | **Plain-English screener**: "cheap profitable tech near its 52-week high" → FinSTR rules, shown as editable filters | Removes the learning curve of 100 filters; deterministic, no AI cost | next |
-| 3 | **Home: followed-stock brief + market internals** (advancers/decliners, median vs cap-weighted move, move histogram that filters, day-vs-week divergence) | Daily reason to open the site; ideas from OracleX, computed from data already published | planned |
+| 2 | **Plain-English screener**: "cheap profitable tech near its 52-week high" → FinSTR rules, shown as editable filters | Removes the learning curve of 100 filters; deterministic, no AI cost | built |
+| 3 | **Home: followed-stock brief + market internals** (advancers/decliners, median vs cap-weighted move, move histogram that filters, day-vs-week divergence) | Daily reason to open the site; ideas from OracleX, computed from data already published | built |
 | 4 | **Design identity pass**: terminal-dark default, one colour system, monospaced numbers, new icon | Stand apart from stock Material-UI dashboards | planned, preview first |
 | 5 | **Automation recipes**: n8n / Zapier / GitHub Actions templates on top of the JSON, ntfy and webhooks | Turn data into workflows people already use | planned |
 | 6 | **Second market pilot** (Canada or India: official listing + yfinance suffixes) | Test global reach before committing to it | planned |
@@ -40,8 +40,9 @@ paid tiers or developer setup.
 
 | Item | Needs |
 |---|---|
-| Sign in with Google (+ email link), synced portfolios and screens | Supabase project + Google OAuth client |
-| Hosted digests without forking | Supabase + Resend (email) |
+| Sign in with Google (+ email link), synced portfolios and screens | built (Supabase + Google OAuth) |
+| Dependable 3-a-day refresh (GitHub cron runs hours late) | Supabase pg_cron + a GitHub token, see SCHEDULER.md |
+| Hosted digests without forking | Supabase + Resend (email) + a verified sending domain |
 | Search indexing of the 503 stock pages | Google Search Console |
 | Launch (Show HN, Reddit, demo GIF) | Owner posts |
 

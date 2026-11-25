@@ -7,15 +7,20 @@
 name: Build and deploy FinSTR
 
 on:
+  # Data refreshes 3 times per US trading day: ~10:30, ~13:00 and ~16:20 New York time.
+  # GitHub often starts scheduled jobs hours late, so the workflow is triggered hourly
+  # (and by an outside timer, see docs/SCHEDULER.md); the "gate" job below rebuilds only
+  # when the live snapshot is older than the latest refresh slot, so extra triggers cost ~20s.
   schedule:
-    # US trading days (UTC): late morning, midday, afternoon, and after the 4pm ET close
-    - cron: "20 15 * * 1-5"
-    - cron: "20 17 * * 1-5"
-    - cron: "20 19 * * 1-5"
-    - cron: "40 21 * * 1-5"
+    - cron: "7 * * * *"
   push:
     branches: [main]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Rebuild even if the live data is already current"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -27,7 +32,23 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      due: ${{ steps.check.outputs.due }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        name: Is a refresh due?
+        env:
+          FINSTR_SITE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+          FINSTR_FORCE: ${{ github.event_name == 'push' || inputs.force == true }}
+        run: python3 pipeline/freshness.py
+
   build:
+    needs: gate
+    if: needs.gate.outputs.due == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:

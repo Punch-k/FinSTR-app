@@ -1,5 +1,9 @@
 # FinSTR — Knowledge Base for Next Session
 
+> **Historical (August 2026).** This file describes an earlier Flask/MyShare version of FinSTR. The current app is a
+> static site built by `pipeline/` and `.github/workflows/deploy.yml`; see README.md, docs/ROADMAP.md and
+> docs/SCHEDULER.md for how it works now.
+
 Read this before starting work. It captures what's true about this repo as of 2026-08-20
 (sessions from 2026-07-23 and 2026-08-20), what was built, and what's still open — so the
 next session doesn't have to re-derive it. **Read Session 3 (bottom of this file) first**

@@ -1,5 +1,9 @@
 # FinSTR — Code Quality Report
 
+> **Historical (August 2026).** This file describes an earlier Flask/MyShare version of FinSTR. The current app is a
+> static site built by `pipeline/` and `.github/workflows/deploy.yml`; see README.md, docs/ROADMAP.md and
+> docs/SCHEDULER.md for how it works now.
+
 **Repo:** `Punch-k/FinSTR-app` (live at https://punch-k.github.io/FinSTR-app/)
 **Reviewed at commit:** `ab3fbb6`
 **Scope:** `app.py` (2,177 lines), `index.html` (3,180 lines), `scripts/`, `templates/`, `static/`, data pipeline, GitHub Actions workflow.

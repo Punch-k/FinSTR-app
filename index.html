@@ -420,8 +420,9 @@
     .heatmap-layout{flex-direction:column;}
     .heatmap-sidebar{
       width:100%; display:flex; flex-wrap:nowrap; overflow-x:auto; gap:6px; padding:10px;
-      -webkit-overflow-scrolling:touch;
+      -webkit-overflow-scrolling:touch; scrollbar-width:none;
     }
+    .heatmap-sidebar::-webkit-scrollbar, .gv-tabs::-webkit-scrollbar{ display:none; }
     .heatmap-sidebar .hs-title, .heatmap-sidebar .hs-divider{ display:none; }
     .hs-item{ flex-shrink:0; padding:8px 14px; background:var(--panel2); border-radius:16px; border:1px solid var(--border); white-space:nowrap; }
     .hs-item.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
@@ -543,7 +544,17 @@
   .banner a{color:var(--accent);text-decoration:none;}
   .q-why a, .pf-cons a, #pfScreens a, .pf-since a{color:var(--accent);text-decoration:none;} .q-why a:hover, .pf-cons a:hover, #pfScreens a:hover{text-decoration:underline;}
   .banner a:hover{text-decoration:underline;}
-  .banner-warn{border-left:3px solid #e0a800 !important;}
+  .banner-warn{border-left:3px solid #e0a800 !important;background:rgba(224,168,0,.12) !important;}
+  .banner-warn b{color:#b07d00;}
+  :root:not([data-theme="light"]) .banner-warn b{color:#f0c14b;}
+  #presetFilter{max-width:100%;}
+  @media(max-width:600px){ .banner .bn-more{display:none;} }
+  .gv-tabs{overflow-x:auto;scrollbar-width:none;} .gv-tab{white-space:nowrap;}
+  @media(max-width:700px){
+    .news-subnav{flex-wrap:wrap;}
+    .news-tab{padding:8px 10px;}
+    #newsSearchInput{margin-left:0 !important;flex:1;min-width:0;width:auto;}
+  }
   .banner-error{border-left:3px solid var(--neg) !important;}
   .na{color:var(--dim);opacity:.7;}
   .dim-note{color:var(--dim);font-size:.86em;font-weight:400;}
@@ -2640,7 +2651,10 @@ function toggleNavDropdown(id, event){
 }
 document.addEventListener('click', ()=> document.querySelectorAll('.nav-dropdown.open').forEach(d=> d.classList.remove('open')));
 
+let navFromHistory = false;
 function setView(view){
+  // a new view gets its own history entry, so the phone/browser Back button returns to the last view
+  if(!navFromHistory && state.view && state.view !== view && document.readyState === 'complete') history.pushState(null, '', location.href);
   state.view = view;
   ALL_SECTIONS.forEach(s=>{
     const el = document.getElementById(s+'Section');
@@ -4092,6 +4106,28 @@ function syncFilterUIFromState(){
   syncHeatmapSidebarHighlighting();
 }
 // Loads the published snapshot. Every number on the site comes from these files.
+// ---------- DATA FRESHNESS ----------
+// NYSE full-day closures; the snapshot is only "behind" on a day the market actually trades.
+const NYSE_HOLIDAYS = new Set(['2026-01-01','2026-01-19','2026-02-16','2026-04-03','2026-05-25','2026-06-19','2026-07-03',
+  '2026-09-07','2026-11-26','2026-12-25','2027-01-01','2027-01-18','2027-02-15','2027-03-26','2027-05-31','2027-06-18',
+  '2027-07-05','2027-09-06','2027-11-25','2027-12-24']);
+function etParts(d){
+  const o = {};
+  new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit',hour12:false,weekday:'short'}).formatToParts(d).forEach(x=> o[x.type]=x.value);
+  return {date:`${o.year}-${o.month}-${o.day}`, min:(+o.hour%24)*60 + +o.minute, wd:o.weekday};
+}
+// label: "Nov 24 close" for an after-close snapshot, else "Nov 25, 11:42 AM ET".
+// behind: the market has traded today past the first refresh (10:30 ET + run time) but the snapshot predates today.
+function dataFreshness(asOf, now){
+  const a = etParts(asOf), n = etParts(now);
+  const day = asOf.toLocaleDateString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric'});
+  const label = a.min >= 16*60 ? `the ${day} close` : asOf.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' ET';
+  const tradingToday = !['Sat','Sun'].includes(n.wd) && !NYSE_HOLIDAYS.has(n.date);
+  const behind = tradingToday && n.min >= 11*60 && a.date < n.date;
+  return {label, behind};
+}
+
 async function loadSnapshot(){
   const banner = document.getElementById('dataBanner');
   try{
@@ -4111,13 +4147,14 @@ async function loadSnapshot(){
   }
   const asOf = dataMeta ? new Date(dataMeta.generatedAt*1000) : null;
   const asOfText = asOf ? asOf.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})+' ET' : 'unknown';
-  const ageH = asOf ? (Date.now()-asOf.getTime())/36e5 : 0;
-  const stale = ageH > 30;
-  banner.className = 'banner' + (stale ? ' banner-warn' : '');
-  banner.innerHTML = `<b>${stale ? 'Snapshot (delayed)' : 'Market snapshot'}</b> · Data as of ${asOfText} · `+
-    `${stockData.length} S&amp;P 500 companies · Source: Yahoo Finance · Refreshed on US trading days, not real time · `+
+  const fr = asOf ? dataFreshness(asOf, new Date()) : {behind:false};
+  banner.className = 'banner' + (fr.behind ? ' banner-warn' : '');
+  banner.innerHTML = (fr.behind
+      ? `<b>Prices are from ${fr.label}, not today.</b> Today's update is running late, so live sites will show different numbers. `
+      : `<b>Market snapshot</b> · Prices as of ${fr.label || asOfText} · `)+
+    `<span class="bn-more">${stockData.length} S&amp;P 500 companies · Source: Yahoo Finance · </span>Updates about 10:30 AM, 1 PM and 4:20 PM ET on trading days, not real time · `+
     `<a href="#" onclick="openAbout();return false">Methodology</a> · <a href="stock/">All stocks</a>`;
-  const lu = document.getElementById('lastUpdated'); if(lu) lu.textContent = asOf ? 'Data: '+asOfText : '';
+  const lu = document.getElementById('lastUpdated'); if(lu) lu.textContent = asOf ? 'Prices: '+fr.label.replace(/^the /,'') : '';
 }
 
 async function init(){
@@ -4160,6 +4197,21 @@ async function init(){
     if(stockData.some(s=>s.ticker===ticker)) openModal(ticker);
   }
 }
+// Back/forward buttons and edited or clicked #view= links switch views without a reload
+function onHistoryNav(){
+  const p = new URLSearchParams(location.hash.replace(/^#/,''));
+  const view = p.get('view') || 'screener', stock = (p.get('stock')||'').toUpperCase();
+  navFromHistory = true;
+  try{
+    if(view === 'quote' && stock){ if(stock !== modalTicker) openModal(stock); }
+    else{
+      if(modalTicker) modalTicker = null, document.title = 'FinSTR — Stock Screener & Maps';
+      if(view !== state.view) setView(view);
+    }
+  } finally { navFromHistory = false; }
+}
+window.addEventListener('popstate', onHistoryNav);
+window.addEventListener('hashchange', onHistoryNav);
 init();
 </script>
 </body>

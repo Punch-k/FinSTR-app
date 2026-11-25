@@ -14,7 +14,7 @@ infrastructure: a Python data pipeline on GitHub Actions and a static site on Gi
 | | |
 |---|---|
 | **What I built** | An end-to-end data product: automated data pipeline → scoring model → web app → AI automation (email digests, AI-assistant access) |
-| **Scale** | 503 companies, ~90 fields each, 2 years of daily prices, refreshed 4 times per US trading day; 503 generated stock pages |
+| **Scale** | 503 companies, ~90 fields each, 2 years of daily prices, refreshed 3 times per US trading day (~10:30 AM, 1 PM, 4:20 PM ET); 503 generated stock pages |
 | **Analytics** | Six-factor signal (trend, momentum, value, quality, growth, low risk) with a published backtest **and** a live, out-of-sample record that cannot be fitted after the fact |
 | **AI and automation** | Scheduled digests by email, Telegram, Slack or phone push; an optional AI-written summary whose every number, ticker and claim is checked against computed facts before sending; an MCP server so AI assistants (Claude, Cursor) can use FinSTR |
 | **Product** | Built mobile-first, plain-English screener ("cheap profitable tech near its 52-week high"), screen alerts, optional Google sign-in with synced portfolios |
@@ -40,7 +40,7 @@ infrastructure: a Python data pipeline on GitHub Actions and a static site on Gi
 - **Computed consistently for every stock** from daily prices: performance (week to year, YTD), SMA 20/50/200 and distance from each, RSI (14, Wilder), volatility (std. dev. of daily returns), ATR (14), 52-week high/low, relative volume.
 - **No invented numbers.** A field Yahoo does not report shows as "-", never as zero. There is no synthetic fallback data.
 - **Keep-last-good.** If a ticker fails on a run, its previous values are carried over and flagged, so one bad run never blanks the site.
-- **Freshness.** The site shows the snapshot time on every page. It refreshes several times per trading day; it is not a live feed.
+- **Freshness.** The site shows the snapshot time on every page. It refreshes about 10:30 AM, 1 PM and 4:20 PM ET on trading days (see [docs/SCHEDULER.md](docs/SCHEDULER.md)), and says so plainly when a refresh is late; it is not a live feed.
 - **FinSTR Signal.** Six factor scores (trend, momentum, value, quality, growth, low risk), each a percentile vs the S&P 500; value and quality are ranked within sector. The price-based factors are backtested monthly (top vs bottom fifth vs the index) and published on the Signals page, including when they did not work.
 - **Live record.** Separately from the backtest, the top and bottom fifth by signal are saved every trading day and
   measured afterwards ([`data/track.json`](https://punch-k.github.io/FinSTR-app/data/track.json), Signals page), so the
@@ -158,7 +158,7 @@ ready-made prompt with your holdings and their data for any AI assistant.
 | `docs/ROADMAP.md` | Product roadmap and comparison with other free tools |
 | `privacy.html`, `terms.html` | Privacy Policy and Terms of Use (needed for sign-in) |
 | `llms.txt` | Data documentation for AI agents and automation tools |
-| `.github/workflows/deploy.yml` | Scheduled build and GitHub Pages deploy |
+| `.github/workflows/deploy.yml` | Build and GitHub Pages deploy; a freshness gate (`pipeline/freshness.py`) rebuilds only when a refresh slot has passed |
 | `.github/workflows/digest.yml` | Self-hosted email digest (fork, add secrets, receive emails) |
 | `server/` | Optional local Flask app: MyShare portfolio/lot tracker (adapted from Vlad Litvak's MyShare) and the experimental Quant Desk. Not part of the live site. |
 | `docs/` | Project notes and the earlier code-quality report |

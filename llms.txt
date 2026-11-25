@@ -5,7 +5,7 @@
 > so AI agents and automation tools (n8n, Zapier, scripts, LLM tools) can read it directly. No API key.
 
 Base URL: https://punch-k.github.io/FinSTR-app
-Refresh: several times per US trading day. Every file is a snapshot; check data/meta.json "generatedAt" (Unix time).
+Refresh: about 10:30, 13:00 and 16:20 New York time on US trading days. Every file is a snapshot; check data/meta.json "generatedAt" (Unix time).
 Source: Yahoo Finance via yfinance and Yahoo Finance RSS. Educational use; not investment advice.
 
 ## Data endpoints
