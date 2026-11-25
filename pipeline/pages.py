@@ -74,8 +74,8 @@ def page(s, as_of):
 <link rel="icon" href="../../assets/img/finstr-icon-32.png"><link rel="apple-touch-icon" href="../../assets/img/finstr-icon-180.png">
 <script type="application/ld+json">{json.dumps(ld)}</script>
 <style>
-:root{{--bg:#0b0e14;--panel:#131722;--b:#232838;--t:#e6e6e6;--d:#8b94a3;--a:#4f8cff;--p:#26a65b;--n:#ef5350}}
-@media (prefers-color-scheme: light){{:root{{--bg:#f6f7f9;--panel:#fff;--b:#e3e6ec;--t:#1c2331;--d:#6b7280}}}}
+:root{{--bg:#0b0e14;--panel:#131722;--b:#232838;--t:#ffffff;--d:rgba(255,255,255,.62);--a:#4f8cff;--p:#26a65b;--n:#ef5350}}
+@media (prefers-color-scheme: light){{:root{{--bg:#f6f7f9;--panel:#fff;--b:#e3e6ec;--t:#000000;--d:rgba(0,0,0,.6)}}}}
 body{{margin:0;background:var(--bg);color:var(--t);font:14px/1.5 'Segoe UI',system-ui,sans-serif}}
 main{{max-width:880px;margin:0 auto;padding:16px}}
 a{{color:var(--a);text-decoration:none}} header{{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}}
@@ -141,8 +141,8 @@ def index_page(rows, as_of):
 <link rel="canonical" href="{SITE}/stock/"><link rel="icon" href="../assets/img/finstr-icon-32.png"><link rel="apple-touch-icon" href="../assets/img/finstr-icon-180.png">
 <meta property="og:title" content="All S&amp;P 500 Stocks | FinSTR"><meta property="og:image" content="{SITE}/assets/img/finstr-og.jpg"><meta name="twitter:card" content="summary_large_image">
 <style>
-:root{{--bg:#0b0e14;--panel:#131722;--b:#232838;--t:#e6e6e6;--d:#8b94a3;--a:#4f8cff}}
-@media (prefers-color-scheme: light){{:root{{--bg:#f6f7f9;--panel:#fff;--b:#e3e6ec;--t:#1c2331;--d:#6b7280}}}}
+:root{{--bg:#0b0e14;--panel:#131722;--b:#232838;--t:#ffffff;--d:rgba(255,255,255,.62);--a:#4f8cff}}
+@media (prefers-color-scheme: light){{:root{{--bg:#f6f7f9;--panel:#fff;--b:#e3e6ec;--t:#000000;--d:rgba(0,0,0,.6)}}}}
 body{{margin:0;background:var(--bg);color:var(--t);font:14px/1.45 'Segoe UI',system-ui,sans-serif}}
 main{{max-width:1100px;margin:0 auto;padding:16px}} a{{color:var(--a);text-decoration:none}}
 header{{display:flex;justify-content:space-between;align-items:center}} .brand{{font-weight:800;font-size:18px;color:var(--t)}} .brand b{{color:var(--a)}}

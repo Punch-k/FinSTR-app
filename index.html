@@ -23,13 +23,13 @@
 <style>
   :root{
     --bg:#0b0e14; --panel:#131722; --panel2:#171c28; --border:#232838;
-    --text:#e6e6e6; --dim:#8b94a3; --pos:#26a65b; --neg:#ef5350; --accent:#4f8cff;
+    --text:#ffffff; --dim:rgba(255,255,255,.62); --pos:#26a65b; --neg:#ef5350; --accent:#4f8cff;
   }
   :root[data-theme="light"]{
     /* Pale warm skin-tone palette instead of stark white — pure #fff panels on a bright
        display read as glare/blinding, especially over large areas like the top nav. */
     --bg:#f2e4d8; --panel:#faf1e8; --panel2:#eeddcc; --border:#ddc7ae;
-    --text:#1c2331; --dim:#6b7280; --pos:#1e8e3e; --neg:#d32f2f; --accent:#3366ff;
+    --text:#000000; --dim:rgba(0,0,0,.6); --pos:#1e8e3e; --neg:#d32f2f; --accent:#3366ff;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{
@@ -601,6 +601,8 @@
   #bgfx canvas{display:block;}
   /* panels slightly see-through so the grid shows softly behind the data */
   body.has-bgfx{--panel:rgba(19,23,34,.80);}
+  body.has-bgfx .topnav{background:rgba(19,23,34,.58); -webkit-backdrop-filter:blur(12px) saturate(1.2); backdrop-filter:blur(12px) saturate(1.2);}
+  :root[data-theme="light"] body.has-bgfx .topnav{background:rgba(250,241,232,.6);}
   :root[data-theme="light"] body.has-bgfx{--panel:rgba(250,241,232,.82);}
   .sf-note{font-size:11.5px;line-height:1.5;opacity:.85;max-width:900px;margin:0 auto;}
   .brand-word b{color:var(--accent);font-weight:800;}
@@ -3504,7 +3506,7 @@ function drawInsiderPriceChart(s, q){
   const isDark = document.documentElement.dataset.theme !== 'light';
   insChart = LightweightCharts.createChart(holder, {
     width: holder.clientWidth || 600, height: holder.clientHeight || 260,
-    layout:{ background:{color:'transparent'}, textColor: isDark?'#8b94a3':'#6b7280', fontSize:11 },
+    layout:{ background:{color:'transparent'}, textColor: isDark?'rgba(255,255,255,.7)':'rgba(0,0,0,.7)', fontSize:11 },
     grid:{ vertLines:{visible:false}, horzLines:{color: isDark?'#1a1f2b':'#eef1f6'} },
     rightPriceScale:{ borderVisible:false, scaleMargins:{top:0.06, bottom:0.38} },
     timeScale:{ borderVisible:false, ...LOCKED_EDGES },
@@ -3598,7 +3600,7 @@ function drawQuoteChart(s, q){
   const isDark = document.documentElement.dataset.theme !== 'light';
   qpChart = LightweightCharts.createChart(holder, {
     width: holder.clientWidth || 800, height: holder.clientHeight || 360,
-    layout:{ background:{color:'transparent'}, textColor: isDark?'#8b94a3':'#6b7280', fontSize:11 },
+    layout:{ background:{color:'transparent'}, textColor: isDark?'rgba(255,255,255,.7)':'rgba(0,0,0,.7)', fontSize:11 },
     grid:{ vertLines:{color: isDark?'#1a1f2b':'#eef1f6'}, horzLines:{color: isDark?'#1a1f2b':'#eef1f6'} },
     rightPriceScale:{ borderVisible:false, scaleMargins:{top:0.06, bottom:0.24} }, timeScale:{ borderVisible:false, ...LOCKED_EDGES },
     crosshair:{ mode: LightweightCharts.CrosshairMode.Normal },
@@ -3818,7 +3820,7 @@ async function loadIndexCard(id, sym, label){
   const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
   const chart = LightweightCharts.createChart(chartDiv, {
     width: chartDiv.offsetWidth || 260, height: 80,
-    layout: { background:{type:'Solid',color:'transparent'}, textColor: isDark?'#555':'#888' },
+    layout: { background:{type:'Solid',color:'transparent'}, textColor: isDark?'rgba(255,255,255,.55)':'rgba(0,0,0,.55)' },
     grid: { vertLines:{visible:false}, horzLines:{visible:false} },
     rightPriceScale:{visible:false}, leftPriceScale:{visible:false}, timeScale:{visible:false, borderVisible:false},
     handleScale:false, handleScroll:false, crosshair:{ vertLine:{visible:false}, horzLine:{visible:false} },
@@ -4070,7 +4072,7 @@ async function loadChart(){
   const isDark = document.documentElement.dataset.theme !== 'light';
   lwChartInst = LightweightCharts.createChart(wrap, {
     width: wrap.clientWidth, height: 420,
-    layout:{ background:{color: isDark?'#131722':'#ffffff'}, textColor: isDark?'#8b94a3':'#6b7280' },
+    layout:{ background:{color: isDark?'#131722':'#ffffff'}, textColor: isDark?'rgba(255,255,255,.7)':'rgba(0,0,0,.7)' },
     grid:{ vertLines:{color: isDark?'#232838':'#dde2ec'}, horzLines:{color: isDark?'#232838':'#dde2ec'} },
     crosshair:{mode: LightweightCharts.CrosshairMode.Normal},
     rightPriceScale:{borderColor: isDark?'#232838':'#dde2ec'},
@@ -4518,16 +4520,16 @@ function onHistoryNav(){
     glow += (target - glow) * 0.12;
     if(!still){ ox = (ox + 0.18) % GAP; oy = (oy + 0.12) % GAP; }   // slow diagonal flow
     const light = document.documentElement.dataset.theme === 'light';
-    const c = light ? '51,102,255' : '79,140,255', base = light ? 0.14 : 0.17;
+    const c = light ? '51,102,255' : '79,140,255', base = light ? 0.09 : 0.11;
     const wave = still ? 0 : (now - t0) / 2600;
     ctx.clearRect(0,0,W,H);
     for(let y = -GAP + oy; y < H + GAP; y += GAP){
       for(let x = -GAP + ox; x < W + GAP; x += GAP){
         const dx = x - mx, dy = y - my, d = Math.sqrt(dx*dx + dy*dy);
         const k = d < R ? (1 - d/R) * glow : 0;                 // 0..1 closeness to the pointer
-        const w = still ? 0 : 0.07 * (0.5 + 0.5*Math.sin((x + y) / 140 - wave));   // soft brightness wave
+        const w = still ? 0 : 0.045 * (0.5 + 0.5*Math.sin((x + y) / 140 - wave));   // soft brightness wave
         const push = k * 6, ux = d ? dx/d : 0, uy = d ? dy/d : 0;
-        ctx.fillStyle = `rgba(${c},${base + w + k*0.7})`;
+        ctx.fillStyle = `rgba(${c},${base + w + k*0.5})`;
         ctx.beginPath(); ctx.arc(x + ux*push, y + uy*push, 1 + k*1.8, 0, 6.283); ctx.fill();
       }
     }
