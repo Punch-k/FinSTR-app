@@ -123,6 +123,14 @@
     border-radius:6px; margin-top:4px; z-index:60; max-height:220px; overflow-y:auto; display:none;
   }
   .ac-item{padding:8px 10px; cursor:pointer; font-size:12.5px;}
+  .sg-box{position:fixed; z-index:2500; display:none; background:var(--panel); border:1px solid var(--border); border-radius:8px;
+    box-shadow:0 10px 28px rgba(0,0,0,.35); padding:4px; max-height:min(340px,60vh); overflow-y:auto;}
+  .sg-item{display:flex; align-items:baseline; gap:10px; padding:9px 10px; border-radius:6px; cursor:pointer; font-size:12.5px; color:var(--text);}
+  .sg-item b{color:var(--accent); min-width:52px;}
+  .sg-item .sg-name{flex:1; min-width:0; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .sg-item .sg-px{white-space:nowrap; font-variant-numeric:tabular-nums; font-size:12px;}
+  .sg-item.on, .sg-item:hover{background:var(--panel2);}
+  @media (pointer:coarse){ .sg-item{padding:12px 10px;} }
   .ac-item:hover{background:var(--panel);}
   .ac-item b{color:var(--accent);}
   .reset-btn, .chip-toggle, .filters-toggle{
@@ -848,8 +856,7 @@
     <div class="topnav-bar">
       <a class="brand brand-word" href="#" onclick="setView('screener');return false" aria-label="FinSTR home"><span class="bw-dot"></span><span>Fin<b>STR</b></span></a>
       <span class="top-links"><a href="#" onclick="openAbout();return false">Methodology</a><span>·</span><a href="stock/">All stocks</a></span>
-      <input id="globalSearchInput" class="global-search" type="text" placeholder="Search ticker or company…" maxlength="40"
-        onkeydown="if(event.key==='Enter')globalTickerJump()">
+      <input id="globalSearchInput" class="global-search" type="text" placeholder="Search ticker or company…" maxlength="40" aria-label="Search ticker or company">
       <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()">☰</button>
     </div>
     <div class="topnav-body" id="topnavBody">
@@ -1115,8 +1122,7 @@
       <span class="news-tab" onclick="switchNewsTab('pulse',this)">Market Pulse</span>
       <span class="news-tab" onclick="switchNewsTab('stocks',this)">Stocks News</span>
       <span class="news-tab" onclick="switchNewsTab('etf',this)">ETF News</span>
-      <input id="newsSearchInput" type="text" placeholder="Search news or ticker…" maxlength="40"
-        onkeydown="if(event.key==='Enter')searchNews()" style="margin-left:auto">
+      <input id="newsSearchInput" type="text" placeholder="Search news or ticker…" maxlength="40" style="margin-left:auto" aria-label="Search news">
       <button onclick="searchNews()">Search</button>
     </div>
     <div class="news-cols">
@@ -1135,7 +1141,7 @@
   <!-- ===================== CHARTS SECTION ===================== -->
   <div id="chartsSection" style="display:none;">
     <div class="charts-top">
-      <input id="chartTickerInput" type="text" placeholder="AAPL" value="AAPL" maxlength="8" onkeydown="if(event.key==='Enter')loadChart()">
+      <input id="chartTickerInput" type="text" placeholder="Ticker or company" value="AAPL" maxlength="40" aria-label="Chart ticker">
       <select id="chartPeriodSel" onchange="loadChart()">
         <option value="1wk">1 Week</option>
         <option value="1mo" selected>1 Month</option>
@@ -1225,7 +1231,7 @@
       </div>
     </div>
     <form class="pf-add" id="pfAdd" onsubmit="pfSave(event)">
-      <input id="pfTicker" list="pfTickers" placeholder="Ticker (e.g. AAPL)" autocomplete="off" required oninput="pfPrefill()">
+      <input id="pfTicker" placeholder="Ticker or company" autocomplete="off" required oninput="pfPrefill()">
       <datalist id="pfTickers"></datalist>
       <input id="pfShares" type="number" step="any" min="0" placeholder="Shares" required>
       <input id="pfDate" type="date" onchange="pfPrefill()" title="Purchase date (optional)">
@@ -1937,7 +1943,10 @@ async function pfPrefill(){
 }
 function pfSave(e){
   e.preventDefault();
-  const t = document.getElementById('pfTicker').value.trim().toUpperCase();
+  const raw = document.getElementById('pfTicker').value.trim();
+  // a company name ("apple") resolves to its ticker, same as the suggestion list
+  const t = stockData.some(x=>x.ticker===raw.toUpperCase()) ? raw.toUpperCase() : ((suggestTickers(raw,1)[0]||{}).ticker || raw.toUpperCase());
+  document.getElementById('pfTicker').value = t;
   if(!stockData.some(x=>x.ticker===t)){ showToast(`${t} isn't in the S&P 500 data set.`); return; }
   const h = { id: pfEditId || (Date.now().toString(36)+Math.random().toString(36).slice(2,6)), ticker:t,
     shares: +document.getElementById('pfShares').value, cost: +document.getElementById('pfCost').value,
@@ -2641,9 +2650,7 @@ function onSearchInput(){
   state.search = document.getElementById('searchInput').value;
   const box = document.getElementById('autocompleteBox');
   if(!q){ box.style.display='none'; state.page=1; renderAll(); return; }
-  const matches = stockData.filter(s=> s.ticker.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)).slice(0,6);
-  box.innerHTML = matches.length? matches.map(s=>`<div class="ac-item" onmousedown="selectAutocomplete('${s.ticker}')"><b>${s.ticker}</b> — ${s.name}</div>`).join('') : '';
-  box.style.display = matches.length? 'block':'none';
+  box.style.display = 'none';   // suggestions come from attachTickerSuggest
   state.page=1; renderAll(); encodeStateToHash();
 }
 function selectAutocomplete(ticker){
@@ -2651,6 +2658,86 @@ function selectAutocomplete(ticker){
   hideAutocomplete(); state.page=1; renderAll(); encodeStateToHash();
 }
 function hideAutocomplete(){ document.getElementById('autocompleteBox').style.display='none'; }
+
+// ---------- PREDICTIVE TICKER SEARCH ----------
+// One suggestion list for every box where a stock is looked up (top search, screener, news, charts,
+// portfolio). Ranks exact ticker > ticker prefix > company-name word prefix > anywhere in the name, bigger
+// companies first; knows common names (google, facebook...). Arrow keys + Enter, Esc, or tap.
+const TICKER_ALIASES = {google:'GOOGL', alphabet:'GOOGL', facebook:'META', fb:'META', instagram:'META', berkshire:'BRK-B',
+  brk:'BRK-B', 'brkb':'BRK-B', jpmorgan:'JPM', 'jp morgan':'JPM', chase:'JPM', walmart:'WMT', coke:'KO', 'coca cola':'KO',
+  pepsi:'PEP', disney:'DIS', mcdonalds:'MCD', exxon:'XOM', chevron:'CVX', 'home depot':'HD', 'bank of america':'BAC',
+  boa:'BAC', 'goldman':'GS', 'morgan stanley':'MS', 'wells fargo':'WFC', netflix:'NFLX', nvidia:'NVDA', amazon:'AMZN',
+  apple:'AAPL', microsoft:'MSFT', tesla:'TSLA', 'johnson & johnson':'JNJ', 'j&j':'JNJ', 'procter':'PG', 'p&g':'PG', visa:'V',
+  mastercard:'MA', paypal:'PYPL', intel:'INTC', amd:'AMD', broadcom:'AVGO', oracle:'ORCL', salesforce:'CRM', ibm:'IBM',
+  boeing:'BA', 'at&t':'T', verizon:'VZ', starbucks:'SBUX', nike:'NKE', costco:'COST', target:'TGT', uber:'UBER'};
+const normQ = t => String(t||'').toLowerCase().replace(/[.\-\/]/g,' ').replace(/\s+/g,' ').trim();
+function suggestTickers(raw, n=7){
+  const q = normQ(raw); if(!q) return [];
+  const qt = q.replace(/ /g,'');
+  const alias = TICKER_ALIASES[q] || TICKER_ALIASES[qt];
+  const scored = [];
+  for(const s of stockData){
+    const t = s.ticker.toLowerCase().replace(/[.\-]/g,''), name = normQ(s.name);
+    let sc = 0;
+    if(alias && s.ticker===alias) sc = 1000;
+    else if(t===qt) sc = 900;
+    else if(t.startsWith(qt)) sc = 700 - (t.length - qt.length)*10;
+    else if(name.startsWith(q)) sc = 690;   // "ap" -> Apple ranks with ticker prefixes; size breaks ties
+    else if(name.split(' ').some(w=> w.startsWith(q))) sc = 500;
+    else if(name.includes(q)) sc = 300;
+    else if(qt.length>=2 && t.includes(qt)) sc = 200;
+    if(sc) scored.push([sc + Math.min(120, Math.log10((s.marketCap||0)+1)*25), s]);
+  }
+  return scored.sort((a,b)=> b[0]-a[0]).slice(0,n).map(x=> x[1]);
+}
+function attachTickerSuggest(input, onPick, opts={}){
+  if(!input || input._suggest) return;
+  input._suggest = true;
+  input.setAttribute('autocomplete','off'); input.setAttribute('role','combobox'); input.setAttribute('aria-autocomplete','list');
+  const box = document.createElement('div'); box.className = 'sg-box'; box.setAttribute('role','listbox');
+  document.body.appendChild(box);
+  let items = [], idx = -1, moved = false;
+  const place = ()=>{ const r = input.getBoundingClientRect(); const w = Math.max(r.width, Math.min(320, innerWidth - 16));
+    box.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + 'px'; box.style.top = (r.bottom + 4) + 'px'; box.style.width = w + 'px'; };
+  const close = ()=>{ box.style.display = 'none'; items = []; idx = -1; input.setAttribute('aria-expanded','false'); };
+  const mark = ()=> [...box.children].forEach((el,i)=> el.classList.toggle('on', i===idx));
+  const render = ()=>{
+    items = suggestTickers(input.value); idx = opts.freeText ? -1 : (items.length ? 0 : -1); moved = false;
+    if(!items.length){ close(); return; }
+    box.innerHTML = items.map((s,i)=> `<div class="sg-item" role="option" data-i="${i}"><b>${s.ticker}</b><span class="sg-name">${s.name}</span>`+
+      `<span class="sg-px">${isNum(s.price)?s.price.toFixed(2):''} <span class="${(s.changePercent||0)>=0?'pos':'neg'}">${isNum(s.changePercent)?(s.changePercent>0?'+':'')+s.changePercent.toFixed(2)+'%':''}</span></span></div>`).join('');
+    mark(); place(); box.style.display = 'block'; input.setAttribute('aria-expanded','true');
+  };
+  const pick = i=>{ const s = items[i]; if(!s) return; close(); onPick(s.ticker, input); };
+  input.addEventListener('input', render);
+  input.addEventListener('focus', ()=>{ if(input.value.trim()) render(); });
+  input.addEventListener('blur', ()=> setTimeout(close, 150));
+  input.addEventListener('keydown', e=>{
+    const open = box.style.display === 'block' && items.length;
+    if(e.key==='ArrowDown' && open){ e.preventDefault(); idx = (idx+1) % items.length; moved = true; mark(); }
+    else if(e.key==='ArrowUp' && open){ e.preventDefault(); idx = (idx-1+items.length) % items.length; moved = true; mark(); }
+    else if(e.key==='Escape'){ close(); }
+    else if(e.key==='Enter'){
+      if(open && idx>=0 && (!opts.freeText || moved)){ e.preventDefault(); pick(idx); }
+      else if(opts.onEnter){ e.preventDefault(); close(); opts.onEnter(input.value, input); }
+      else if(open){ e.preventDefault(); }
+    }
+  });
+  box.addEventListener('mousedown', e=>{ const el = e.target.closest('.sg-item'); if(el){ e.preventDefault(); pick(+el.dataset.i); } });
+  addEventListener('resize', ()=>{ if(box.style.display==='block') place(); });
+  addEventListener('scroll', ()=>{ if(box.style.display==='block') place(); }, {passive:true, capture:true});
+}
+function noMatchToast(raw){ showToast(`No S&P 500 company matches "${raw}".`); }
+(function initSuggest(){
+  attachTickerSuggest(document.getElementById('globalSearchInput'), t=>{ document.getElementById('globalSearchInput').value=''; openModal(t); },
+    {onEnter: raw=>{ if(raw.trim()) noMatchToast(raw.trim()); }});
+  attachTickerSuggest(document.getElementById('searchInput'), t=> selectAutocomplete(t), {freeText:true});
+  attachTickerSuggest(document.getElementById('newsSearchInput'), t=>{ document.getElementById('newsSearchInput').value = t; searchNews(); },
+    {freeText:true, onEnter: ()=> searchNews()});
+  attachTickerSuggest(document.getElementById('chartTickerInput'), t=>{ document.getElementById('chartTickerInput').value = t; loadChart(); },
+    {onEnter: ()=> loadChart()});
+  attachTickerSuggest(document.getElementById('pfTicker'), t=>{ const el = document.getElementById('pfTicker'); el.value = t; pfPrefill(); document.getElementById('pfShares').focus(); });
+})();
 
 // ---------- VIEW SWITCH ----------
 const ALL_SECTIONS = ['home','screener','heatmap','news','charts','groups','futures','forex','crypto','insider','calendar','quote','signals','portfolio'];
@@ -3850,7 +3937,9 @@ let lwChartInst = null;
 let lwCandleSeries = null;
 let lwVolSeries = null;
 async function loadChart(){
-  const ticker = (document.getElementById('chartTickerInput').value||'AAPL').toUpperCase().trim();
+  const rawT = (document.getElementById('chartTickerInput').value||'AAPL').trim();
+  const ticker = stockData.some(s=>s.ticker===rawT.toUpperCase()) ? rawT.toUpperCase() : ((suggestTickers(rawT,1)[0]||{}).ticker || rawT.toUpperCase());
+  document.getElementById('chartTickerInput').value = ticker;
   const period = document.getElementById('chartPeriodSel').value;
   const interval = document.getElementById('chartIntervalSel').value;
   const wrap = document.getElementById('lwChart');
