@@ -35,7 +35,7 @@
   body{
     background:var(--bg); color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    padding:14px 14px 90px; font-size:14px;
+    padding:14px 14px 14px; font-size:14px;
   }
   .wrap{max-width:1400px; margin:0 auto;}
   button:focus-visible, select:focus-visible, input:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
@@ -589,12 +589,13 @@
   .brand-word{font-family:'Segoe UI',Inter,system-ui,sans-serif;font-size:19px;font-weight:800;letter-spacing:-.3px;color:var(--text);display:flex;align-items:center;gap:7px;text-decoration:none;}
   .bw-ico{width:24px;height:24px;border-radius:6px;display:block;flex-shrink:0;}
   .bw-tag{font-weight:700;font-size:14px;letter-spacing:0;margin-left:4px;white-space:nowrap;}
-  .bw-tag b{color:var(--accent, var(--a));font-weight:700;} .bw-os{color:var(--dim, var(--d));font-weight:600;}
+  .bw-tag b{font-weight:700;} .bw-tag .t-red{color:#e5484d;} .bw-tag .t-green{color:#1f8a4c;} .bw-os{color:var(--dim, var(--d));font-weight:600;}
   @media (max-width:980px){ .bw-tag{display:none;} }
   .site-footer{border-top:1px solid var(--border, var(--b));margin:28px 0 10px;padding:16px 4px 8px;text-align:center;font-size:12px;color:var(--dim, var(--d));}
   .sf-links{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;margin-bottom:8px;}
   .sf-links a{color:var(--dim, var(--d));text-decoration:none;white-space:nowrap;} .sf-links a:hover{color:var(--accent, var(--a));text-decoration:underline;}
   .sf-links > span{opacity:.5;}
+  body.has-compare{padding-bottom:90px;}   /* room for the fixed Compare bar only while it shows */
   .sf-note{font-size:11.5px;line-height:1.5;opacity:.85;max-width:900px;margin:0 auto;}
   .brand-word b{color:var(--accent);font-weight:800;}
   .banner a{color:var(--accent);text-decoration:none;}
@@ -896,7 +897,7 @@
 
   <div class="topnav">
     <div class="topnav-bar">
-      <a class="brand brand-word" href="#" onclick="setView('screener');return false" aria-label="FinSTR home"><img class="bw-ico" src="assets/img/finstr-icon-180.png" alt="" width="24" height="24"><span>Fin<b>STR</b></span><span class="bw-tag">· <b>Stock Trade Recommendation</b> <span class="bw-os">(Open Source)</span></span></a>
+      <a class="brand brand-word" href="#" onclick="setView('screener');return false" aria-label="FinSTR home"><img class="bw-ico" src="assets/img/finstr-icon-180.png" alt="" width="24" height="24"><span>Fin<b>STR</b></span><span class="bw-tag">· <b><span class="t-red">Stock Trade</span> <span class="t-green">Recommendation</span></b> <span class="bw-os">(Open Source)</span></span></a>
       <span class="top-links"><a href="#" onclick="openAbout();return false">Methodology</a><span>·</span><a href="stock/">All stocks</a></span>
       <input id="globalSearchInput" class="global-search" type="text" placeholder="Search ticker or company…" maxlength="40" aria-label="Search ticker or company">
       <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()">☰</button>
@@ -1417,7 +1418,7 @@
   </div>
 
   <footer class="site-footer">
-    <nav class="sf-links"><a href="#" onclick="openAbout();return false">About &amp; Methodology</a><span>·</span><a href="#view=screener">Screener</a><span>·</span><a href="#view=heatmap">Maps</a><span>·</span><a href="#view=signals">Signals</a><span>·</span><a href="stock/">All Stocks A–Z</a><span>·</span><a href="llms.txt">Data &amp; API</a><span>·</span><a href="https://github.com/Punch-k/FinSTR-app#mcp-server-claude-cursor-and-other-ai-assistants">AI Assistants (MCP)</a><span>·</span><a href="https://github.com/Punch-k/FinSTR-app">Source Code</a><span>·</span><a href="https://github.com/Punch-k/FinSTR-app/issues">Report an Issue</a><span>·</span><a href="privacy.html">Privacy</a><span>·</span><a href="terms.html">Terms</a></nav>
+    <nav class="sf-links"><a href="#" onclick="openAbout();return false">About &amp; Methodology</a><span>·</span><a href="llms.txt">Data &amp; API</a><span>·</span><a href="https://github.com/Punch-k/FinSTR-app#mcp-server-claude-cursor-and-other-ai-assistants">AI Assistants (MCP)</a><span>·</span><a href="https://github.com/Punch-k/FinSTR-app">Source Code</a><span>·</span><a href="https://github.com/Punch-k/FinSTR-app/issues">Report an Issue</a><span>·</span><a href="privacy.html">Privacy</a><span>·</span><a href="terms.html">Terms</a></nav>
     <div class="sf-note">© 2026 FinSTR · Open source · Market data from Yahoo Finance, refreshed hourly on US trading days, not real-time · Signals and ideas are educational, not investment advice.</div>
   </footer>
 
@@ -1877,6 +1878,7 @@ function toggleCompare(ticker, evt){
 }
 function updateCompareBar(){
   const bar = document.getElementById('compareBar');
+  document.body.classList.toggle('has-compare', compareSet.size>0);
   if(compareSet.size===0){ bar.style.display='none'; return; }
   bar.style.display='flex';
   document.getElementById('compareCount').textContent = `${compareSet.size} selected`;
