@@ -44,6 +44,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import signals  # noqa: E402  (pipeline/signals.py)
 import context  # noqa: E402  (pipeline/context.py: session pace, why-it-moved)
 import track  # noqa: E402  (pipeline/track.py: live signal record)
+import events_calendar  # noqa: E402  (pipeline/events_calendar.py: earnings + economic calendar)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
@@ -296,6 +297,7 @@ def info_row(sym):
         "employees": i.get("fullTimeEmployees"),
         "earnings": iso_date(i.get("earningsTimestampStart") or i.get("earningsTimestamp")),
         "exDiv": iso_date(i.get("exDividendDate")),
+        "lastDiv": num(i.get("lastDividendValue"), 4) or None,   # most recent dividend per share (calendar "Amount")
         "country": i.get("country"), "exchange": i.get("fullExchangeName") or i.get("exchange"),
         "_profile": {
             "summary": i.get("longBusinessSummary"), "website": i.get("website"),
@@ -705,6 +707,12 @@ def main():
 
     with open(os.path.join(DATA, "screener.json"), "w", encoding="utf-8") as f:
         json.dump(rows, f, separators=(",", ":"))
+
+    # earnings + US economic-event calendar (keeps the last published copy if Yahoo fails)
+    try:
+        events_calendar.run(DATA, PREVIOUS_URL or None)
+    except Exception as e:  # noqa: BLE001
+        print(f"[warn] calendar: {e}", file=sys.stderr)
 
     # futures / forex / crypto / index cards
     def tiles(mapping):

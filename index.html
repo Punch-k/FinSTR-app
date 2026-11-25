@@ -195,6 +195,45 @@
   .scr-filters .filter-field{min-width:0;} .scr-filters .filter-field select{width:100%; max-width:none;}
   @media (max-width:860px){ .scr-filters .filters-body{max-height:none; overflow:visible;} }
   .sp-signal{margin:0 0 10px;} .sp-signal select{width:100%; max-width:340px;}
+  /* ===== CALENDAR (Finviz-style layout) ===== */
+  .cal-tabs{display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:14px; overflow-x:auto; scrollbar-width:none;}
+  .cal-tabs button{background:none; border:none; border-bottom:2px solid transparent; color:var(--dim); padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; margin-bottom:-1px;}
+  .cal-tabs button.on{color:var(--accent); border-bottom-color:var(--accent);}
+  .cal-head{display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 12px; margin-bottom:12px;}
+  .cal-head h2{font-size:20px; margin:0;} .cal-tools{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap;}
+  .cal-tools .q-seg button{font-size:12px; padding:5px 11px;}
+  .cal-weeks{display:flex; flex-wrap:wrap; margin-bottom:10px;} .cal-weeks:empty{display:none;}
+  .cal-weeks button{background:var(--panel); border:1px solid var(--border); color:var(--text); font-size:12px; padding:5px 10px; cursor:pointer; margin-right:-1px;}
+  .cal-weeks button:first-child{border-radius:5px 0 0 5px;} .cal-weeks button:last-child{border-radius:0 5px 5px 0;}
+  .cal-weeks button.on{background:var(--panel2); color:var(--accent); border-color:var(--accent); position:relative; z-index:1;}
+  .cal-days{display:grid; grid-template-columns:repeat(5,minmax(130px,1fr)); gap:8px; margin-bottom:12px; overflow-x:auto; scrollbar-width:thin; scrollbar-color:var(--border) transparent;}
+  .cal-days::-webkit-scrollbar, .cal-pv-days::-webkit-scrollbar{height:5px;} .cal-days::-webkit-scrollbar-thumb, .cal-pv-days::-webkit-scrollbar-thumb{background:var(--border); border-radius:3px;} .cal-days:empty{display:none;}
+  .cal-day{display:flex; flex-direction:column; align-items:flex-start; gap:2px; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:8px 10px; cursor:pointer; color:var(--text); text-align:left;}
+  .cal-day span{font-size:11.5px; color:var(--dim);} .cal-day b{font-size:13px;}
+  .cal-day.on{border-color:var(--accent); background:var(--panel2);}
+  .cal-table{width:100%; font-size:12.5px;} .cal-table th{cursor:pointer; white-space:nowrap;} .cal-table .r{text-align:right;}
+  .cal-table td{white-space:nowrap;} .cal-co{max-width:280px; overflow:hidden; text-overflow:ellipsis;}
+  .cal-tk{color:var(--accent); font-weight:700; text-decoration:none;} .cal-tk-x{color:var(--text);}
+  .cal-empty{padding:18px 4px;} .cal-src{margin:12px 0 4px; font-size:11.5px; line-height:1.5;}
+  .cal-econ-day{margin-bottom:12px;} .cal-econ-day table{table-layout:fixed; min-width:640px;}
+  .cal-econ-day th:nth-child(1){width:96px;} .cal-econ-day th:nth-child(3){width:70px;} .cal-econ-day th:nth-child(4){width:70px;}
+  .cal-econ-day th:nth-child(5), .cal-econ-day th:nth-child(6), .cal-econ-day th:nth-child(7){width:96px;}
+  .cal-econ-day td:nth-child(2){overflow:hidden; text-overflow:ellipsis;} .cal-hi td:nth-child(2){font-weight:600;}
+  .cal-imp{display:inline-flex; gap:2px;} .cal-imp i{width:5px; height:10px; border-radius:1px; background:var(--panel2); border:1px solid var(--border);}
+  .cal-imp i.on{background:#e0a800; border-color:#e0a800;}
+  .cal-pv-week{background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:10px; margin-bottom:12px;}
+  .cal-pv-wk{text-align:center; font-size:11.5px; color:var(--dim); margin-bottom:8px;}
+  .cal-pv-days{display:grid; grid-template-columns:repeat(5,minmax(150px,1fr)); gap:8px; overflow-x:auto;}
+  .cal-pv-day{background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:8px; min-width:0;}
+  .cal-pv-day.today{border-color:var(--accent);}
+  .cal-pv-dh{font-size:12px; font-weight:600; margin-bottom:8px;}
+  .cal-tiles{display:grid; grid-template-columns:repeat(auto-fill,minmax(54px,1fr)); gap:5px;}
+  .cal-tile{display:flex; align-items:center; justify-content:center; height:34px; border-radius:5px; background:var(--panel); border:1px solid var(--border); font-size:10.5px; cursor:default; overflow:hidden;}
+  .cal-tile.sp{cursor:pointer;} .cal-tile.sp b{color:var(--accent);} .cal-tile.sp:hover{border-color:var(--accent);}
+  .cal-more{margin-top:6px; background:var(--panel); border:1px solid var(--border); color:var(--accent); border-radius:5px; font-size:11.5px; padding:4px 8px; cursor:pointer;}
+  .cal-pv-list{display:grid; gap:3px; font-size:12px;} .cal-pv-list div{display:flex; gap:6px; min-width:0;}
+  .cal-pv-list span{color:var(--dim); overflow:hidden; white-space:nowrap; text-overflow:ellipsis;}
+  @media (max-width:720px){ .cal-days, .cal-pv-days{grid-template-columns:repeat(5,minmax(150px,1fr));} .cal-tools{margin-left:0;} }
   /* Filters panel */
   .filters-panel{background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:8px;}
   .filter-tabs{display:flex; gap:4px; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px; flex-wrap:wrap;}
@@ -932,9 +971,9 @@
             <span class="nav-link" data-nav="charts" onclick="setView('charts')">Charts</span>
             <span class="nav-link" data-nav="groups" onclick="setView('groups')">Groups</span>
             <span class="nav-link" data-nav="insider" onclick="setView('insider')">Insider</span>
-            <span class="nav-link" data-nav="calendar" onclick="setView('calendar')">Calendar</span>
           </div>
         </div>
+        <span class="nav-link" data-nav="calendar" onclick="setView('calendar')">Calendar</span>
       </div>
       <div class="topnav-right">
         <span id="liveClock" class="live-clock"></span>
@@ -1303,15 +1342,14 @@
 
   <!-- ===================== CALENDAR SECTION ===================== -->
   <div id="calendarSection" style="display:none;">
-    <div class="news-loading" style="padding:12px 0;text-align:left;font-size:12px;">
-      Upcoming earnings and ex-dividend dates for S&amp;P 500 companies, from Yahoo Finance.
+    <div class="cal-tabs" id="calTabs">
+      <button data-ct="preview" onclick="calSetTab('preview')">Earnings Preview</button><button data-ct="earnings" onclick="calSetTab('earnings')">Earnings</button><button data-ct="dividends" onclick="calSetTab('dividends')">Dividends</button><button data-ct="economic" onclick="calSetTab('economic')">Economic</button>
     </div>
-    <div style="overflow-x:auto;">
-      <table class="gl-table" id="calendarTable" style="width:100%;min-width:520px;">
-        <thead><tr><th>Ticker</th><th>Company</th><th>Earnings Date</th><th>Ex-Dividend Date</th></tr></thead>
-        <tbody id="calendarBody"><tr><td colspan="4" class="news-loading">Loading calendar…</td></tr></tbody>
-      </table>
-    </div>
+    <div class="cal-head"><h2 id="calTitle">Earnings Season Preview</h2><span class="dim-note" id="calSub"></span><span class="cal-tools" id="calTools"></span></div>
+    <div class="cal-weeks" id="calWeeks"></div>
+    <div class="cal-days" id="calDays"></div>
+    <div id="calBody"></div>
+    <div class="dim-note cal-src" id="calSrc"></div>
   </div>
 
   <!-- ===================== HEATMAP SECTION ===================== -->
@@ -2759,7 +2797,7 @@ const ALL_SECTIONS = ['home','screener','heatmap','news','charts','groups','futu
 // links down to a handful, per user request to "club the analytics into dropdowns."
 const NAV_DROPDOWN_GROUPS = {
   navDropdownMarkets: ['futures','forex','crypto'],
-  navDropdownAnalytics: ['charts','groups','insider','calendar'],
+  navDropdownAnalytics: ['charts','groups','insider'],
 };
 function toggleNavDropdown(id, event){
   event.stopPropagation();
@@ -4182,26 +4220,111 @@ function renderInsider(){
 // ---------- EARNINGS CALENDAR ----------
 // Scoped to FinSTR's own 126-ticker universe (yfinance's real Ticker.calendar per stock),
 // not a full market economic calendar — that needs a paid/keyed data source we don't have.
-function renderCalendar(){
-  const body = document.getElementById('calendarBody');
-  // "Upcoming" means upcoming — the underlying data snapshot is only refreshed every 6h,
-  // so without this filter, earnings dates that already passed since the last refresh
-  // would sit at the top of a list titled "Upcoming earnings dates."
-  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-  const rows = stockData
-    .filter(s=> s.earningsDate && new Date(s.earningsDate) >= todayStart)
-    .sort((a,b)=> new Date(a.earningsDate)-new Date(b.earningsDate));
-  if(!rows.length){
-    body.innerHTML = '<tr><td colspan="4" class="news-loading">No upcoming earnings dates in this snapshot.</td></tr>';
+// ---------- CALENDAR (Earnings Preview / Earnings / Dividends / Economic, Finviz-style layout) ----------
+// Earnings + economic events: data/calendar.json (pipeline/events_calendar.py, Yahoo Finance calendars).
+// Dividends: ex-dividend dates of S&P 500 companies from the screener snapshot.
+const calState = { tab:'preview', week:0, day:null, sort:'cap', view:'tiles', ekey:'time', edir:1, expand:{} };
+let calData = null, calLoading = null;
+function calLoad(){
+  if(calData) return Promise.resolve(calData);
+  if(!calLoading) calLoading = fetch(`data/calendar.json?v=${(dataMeta && dataMeta.generatedAt) || ''}`).then(r=> r.ok ? r.json() : null).catch(()=>null).then(d=> calData = d);
+  return calLoading;
+}
+const calISO = d=> `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+function calToday(){ const p = etParts(new Date()); return new Date(p.date+'T12:00:00'); }
+function calMonday(offset){ const t = calToday(); const m = new Date(t); m.setDate(t.getDate() - ((t.getDay()+6)%7) + offset*7); return m; }
+function calWeekDays(offset){ const m = calMonday(offset); return [0,1,2,3,4].map(i=>{ const d = new Date(m); d.setDate(m.getDate()+i); return d; }); }
+const calFmt = (d, o)=> d.toLocaleDateString('en-US', o);
+function calWeekLabel(o){
+  if(o===-1) return 'Last Week'; if(o===0) return 'This Week'; if(o===1) return 'Next Week';
+  const ds = calWeekDays(o), a = ds[0], b = ds[4];
+  return a.getMonth()===b.getMonth() ? `${calFmt(a,{month:'short'})} ${a.getDate()}–${b.getDate()}` : `${calFmt(a,{month:'short',day:'numeric'})}–${calFmt(b,{month:'short',day:'numeric'})}`;
+}
+function calMoney(v){ if(!isNum(v)) return '-'; const a = Math.abs(v); return '$'+(a>=1e12?(a/1e12).toFixed(2)+'T':a>=1e9?(a/1e9).toFixed(2)+'B':a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?(a/1e3).toFixed(1)+'K':a.toFixed(0)); }
+const calNum = (v, d=2)=> isNum(v) ? (v<0?'-':'')+'$'+Math.abs(v).toFixed(d) : '-';
+const calPct = v=> isNum(v) ? `<span class="${v>0?'pos':v<0?'neg':''}">${v>0?'+':''}${v.toFixed(2)}%</span>` : '<span class="na">-</span>';
+function calTicker(t){
+  return stockData.some(s=>s.ticker===t) ? `<a href="#" class="cal-tk" onclick="openModal('${t}');return false">${t}</a>` : `<span class="cal-tk cal-tk-x">${t}</span>`;
+}
+const calTime = hm=>{ if(!hm) return ''; const [h,m] = hm.split(':').map(Number); return `${(h%12)||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`; };
+function calSetTab(t){ calState.tab = t; calState.day = null; renderCalendar(); }
+function calSetWeek(o){ calState.week = o; calState.day = null; renderCalendar(); }
+function calSetDay(iso){ calState.day = iso; renderCalendar(); }
+function calSetOpt(k, v){ calState[k] = v; renderCalendar(); }
+function calSortBy(k){ if(calState.ekey===k) calState.edir *= -1; else { calState.ekey = k; calState.edir = 1; } renderCalendar(); }
+function calMore(iso){ calState.expand[iso] = true; renderCalendar(); }
+
+async function renderCalendar(){
+  const st = calState, body = document.getElementById('calBody');
+  document.querySelectorAll('#calTabs [data-ct]').forEach(b=> b.classList.toggle('on', b.dataset.ct===st.tab));
+  const titles = {preview:'Earnings Season Preview', earnings:'Earnings Calendar', dividends:'Dividends Calendar', economic:'Economic Calendar'};
+  document.getElementById('calTitle').textContent = titles[st.tab];
+  const weeksEl = document.getElementById('calWeeks'), daysEl = document.getElementById('calDays'), tools = document.getElementById('calTools'), sub = document.getElementById('calSub');
+  sub.textContent = ''; tools.innerHTML = '';
+  if(st.tab !== 'dividends' && !calData){ body.innerHTML = '<div class="news-loading">Loading calendar…</div>'; await calLoad(); if(calState !== st) return; }
+  const data = calData || {earnings:[], economic:[]};
+  const todayIso = calISO(calToday());
+
+  if(st.tab === 'preview'){
+    weeksEl.innerHTML = ''; daysEl.innerHTML = '';
+    tools.innerHTML = `<span class="q-seg"><button class="${st.sort==='az'?'on':''}" onclick="calSetOpt('sort','az')">Alphabetically</button><button class="${st.sort==='cap'?'on':''}" onclick="calSetOpt('sort','cap')">By Market Cap</button></span>
+      <span class="q-seg"><button class="${st.view==='tiles'?'on':''}" onclick="calSetOpt('view','tiles')">Tiles</button><button class="${st.view==='list'?'on':''}" onclick="calSetOpt('view','list')">List</button></span>`;
+    const weeks = [0,1,2,3].map(o=> calWeekDays(o));
+    const first = weeks[0][0], last = weeks[3][4];
+    const inRange = data.earnings.filter(e=> e.d >= calISO(first) && e.d <= calISO(last));
+    sub.textContent = `${calFmt(first,{month:'short',day:'numeric'})}–${calFmt(last,{month:'short',day:'numeric'})} · ${inRange.length} companies`;
+    const sorter = st.sort==='az' ? (a,b)=> a.t.localeCompare(b.t) : (a,b)=> (b.mcap||0)-(a.mcap||0);
+    body.innerHTML = weeks.map(ds=> `<div class="cal-pv-week"><div class="cal-pv-wk">Week of ${calFmt(ds[0],{month:'long',day:'numeric'})}</div><div class="cal-pv-days">${ds.map(d=>{
+      const iso = calISO(d), list = data.earnings.filter(e=> e.d===iso).sort(sorter);
+      const cap = st.expand[iso] ? list.length : (st.view==='tiles' ? 24 : 16), shown = list.slice(0, cap);
+      const items = st.view==='tiles'
+        ? `<div class="cal-tiles">${shown.map(e=> `<span class="cal-tile${stockData.some(s=>s.ticker===e.t)?' sp':''}" data-tip="${escAttr(`${e.t} ${e.name} · ${e.time==='BMO'?'before the open':e.time==='AMC'?'after the close':'time not set'}${isNum(e.mcap)?' · '+calMoney(e.mcap):''}`)}" onclick="${stockData.some(s=>s.ticker===e.t)?`openModal('${e.t}')`:''}"><b>${e.t}</b></span>`).join('')}</div>`
+        : `<div class="cal-pv-list">${shown.map(e=> `<div>${calTicker(e.t)}<span>${escapeHtml(e.name)}</span></div>`).join('')}</div>`;
+      const more = list.length > cap ? `<button class="cal-more" onclick="calMore('${iso}')">+${list.length-cap} more</button>` : '';
+      return `<div class="cal-pv-day${iso===todayIso?' today':''}"><div class="cal-pv-dh">${calFmt(d,{weekday:'long',month:'short',day:'numeric'})}</div>${list.length ? items + more : '<div class="dim-note">No reports</div>'}</div>`;
+    }).join('')}</div></div>`).join('');
+    document.getElementById('calSrc').textContent = 'Source: Yahoo Finance earnings calendar (exchange-listed US stocks). Tiles in bold blue are S&P 500 companies: tap to open them.';
     return;
   }
-  const fmt = d=> d ? new Date(d).toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'}) : '—';
-  body.innerHTML = rows.map(s=> `<tr>
-    <td><a href="#" onclick="event.preventDefault();openModal('${s.ticker}')" style="color:var(--accent)">${s.ticker}</a></td>
-    <td>${s.name}</td>
-    <td>${fmt(s.earningsDate)}</td>
-    <td>${fmt(s.exDividendDate)}</td>
-  </tr>`).join('');
+
+  // week buttons + day cards (Earnings / Dividends / Economic)
+  weeksEl.innerHTML = [-1,0,1,2,3,4].map(o=> `<button class="${st.week===o?'on':''}" onclick="calSetWeek(${o})">${calWeekLabel(o)}</button>`).join('');
+  const days = calWeekDays(st.week), isos = days.map(calISO);
+  if(st.tab !== 'economic'){
+    if(!st.day || !isos.includes(st.day)) st.day = isos.includes(todayIso) ? todayIso : isos[0];
+    daysEl.innerHTML = days.map((d,i)=> `<button class="cal-day${isos[i]===st.day?' on':''}" onclick="calSetDay('${isos[i]}')"><span>${calFmt(d,{weekday:'long'})}</span><b>${calFmt(d,{month:'short',day:'numeric',year:'numeric'})}</b></button>`).join('');
+    const on = daysEl.querySelector('.cal-day.on'); if(on && daysEl.scrollWidth > daysEl.clientWidth) daysEl.scrollLeft = on.offsetLeft - 8;   // phones: show the selected day
+  } else daysEl.innerHTML = '';
+
+  if(st.tab === 'earnings'){
+    const rows = data.earnings.filter(e=> e.d===st.day).map(e=>{ const s = stockData.find(x=>x.ticker===e.t); return {...e, chg: s ? s.changePercent : null}; });
+    const k = st.ekey, dir = st.edir, order = {BMO:0, AMC:1, '':2};
+    rows.sort((a,b)=>{ const va = k==='time' ? order[a.time] : a[k], vb = k==='time' ? order[b.time] : b[k];
+      if(typeof va === 'string' || typeof vb === 'string') return String(va||'').localeCompare(String(vb||''))*dir || a.t.localeCompare(b.t);
+      return ((va ?? -Infinity) > (vb ?? -Infinity) ? 1 : (va ?? -Infinity) < (vb ?? -Infinity) ? -1 : a.t.localeCompare(b.t)) * dir; });
+    const th = (key, label, cls='')=> `<th class="${cls}" onclick="calSortBy('${key}')">${label}${st.ekey===key ? (st.edir>0?' ↑':' ↓') : ''}</th>`;
+    body.innerHTML = rows.length ? `<div class="q-table-wrap"><table class="q-table cal-table"><thead><tr>${th('t','Ticker')}${th('name','Company')}${th('time','Time')}${th('mcap','Market Cap','r')}${th('epsEst','EPS Est','r')}${th('epsAct','EPS Act','r')}${th('sur','EPS Sur','r')}${th('chg','1-Day Change','r')}</tr></thead><tbody>${
+      rows.map(e=> `<tr><td>${calTicker(e.t)}</td><td class="cal-co">${escapeHtml(e.name)}</td><td>${e.time || '<span class="na">-</span>'}</td><td class="r">${calMoney(e.mcap)}</td><td class="r">${calNum(e.epsEst)}</td><td class="r">${calNum(e.epsAct)}</td><td class="r">${calPct(e.sur)}</td><td class="r">${calPct(e.chg)}</td></tr>`).join('')}</tbody></table></div>`
+      : '<div class="dim-note cal-empty">No earnings reports on this day.</div>';
+    document.getElementById('calSrc').textContent = 'Source: Yahoo Finance earnings calendar. BMO = before the market opens, AMC = after the close. 1-Day Change shows for S&P 500 companies. Revenue estimates are not available from the free source.';
+  } else if(st.tab === 'dividends'){
+    const rows = stockData.filter(s=> s.exDividendDate && s.exDividendDate.slice(0,10)===st.day).sort((a,b)=> a.ticker.localeCompare(b.ticker));
+    body.innerHTML = rows.length ? `<div class="q-table-wrap"><table class="q-table cal-table"><thead><tr><th>Ticker</th><th>Company</th><th>Ex-Date</th><th class="r">Amount</th><th class="r">Dividend Est. Yield</th></tr></thead><tbody>${
+      rows.map(s=> `<tr><td>${calTicker(s.ticker)}</td><td class="cal-co">${escapeHtml(s.name)}</td><td>${calFmt(new Date(s.exDividendDate.slice(0,10)+'T12:00:00'),{month:'short',day:'numeric',year:'numeric'})}</td><td class="r">${calNum(s.lastDiv, 2)}</td><td class="r">${isNum(s.dividendYield)?s.dividendYield.toFixed(2)+'%':'-'}</td></tr>`).join('')}</tbody></table></div>`
+      : '<div class="dim-note cal-empty">No S&amp;P 500 ex-dividend dates on this day.</div>';
+    document.getElementById('calSrc').textContent = 'S&P 500 companies only, from each company\'s next ex-dividend date in the FinSTR snapshot (Yahoo Finance). Amount is the most recent dividend per share.';
+  } else {
+    const bars = n=> `<span class="cal-imp" title="${['','Low','Medium','High'][n]} impact">${[1,2,3].map(i=>`<i class="${i<=n?'on':''}"></i>`).join('')}</span>`;
+    const cmp = (a,e)=> isNum(a)&&isNum(e) ? (a>e?'pos':a<e?'neg':'') : '';
+    const fmtV = v=> isNum(v) ? (Math.abs(v)>=1000 ? v.toLocaleString() : String(+v.toFixed(3))) : '<span class="na">-</span>';
+    body.innerHTML = isos.map((iso,i)=>{
+      const ev = data.economic.filter(x=> x.d===iso);
+      return `<div class="q-table-wrap cal-econ-day"><table class="q-table cal-table"><thead><tr><th class="cal-econ-dh">${calFmt(days[i],{weekday:'short',month:'short',day:'numeric'})}</th><th>Release</th><th>Impact</th><th>For</th><th class="r">Actual</th><th class="r">Expected</th><th class="r">Prior</th></tr></thead><tbody>${
+        ev.length ? ev.map(x=> `<tr class="${x.impact===3?'cal-hi':''}"><td>${calTime(x.time)}</td><td>${escapeHtml(x.event)}</td><td>${bars(x.impact)}</td><td>${escapeHtml(x.for||'-')}</td><td class="r ${cmp(x.actual,x.expected)}">${fmtV(x.actual)}</td><td class="r">${fmtV(x.expected)}</td><td class="r">${fmtV(x.prior)}</td></tr>`).join('')
+        : '<tr><td colspan="7" class="dim-note">No US releases scheduled.</td></tr>'}</tbody></table></div>`;
+    }).join('');
+    document.getElementById('calSrc').textContent = 'Source: Yahoo Finance economic calendar, US releases, times in New York time. Impact is FinSTR\'s rule: High for releases that usually move markets (CPI, jobs, GDP, PCE, Fed decisions, retail sales, ISM, PPI), Medium for other major data. Actual is green above and red below the expected value.';
+  }
 }
 
 

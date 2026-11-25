@@ -30,7 +30,7 @@ infrastructure: a Python data pipeline on GitHub Actions and a static site on Gi
 | **Quote page** | Candlestick chart with moving averages · peers · 78-field snapshot · 5-year and quarterly financials · earnings surprises · analyst ratings · headlines · insider trades · valuation sandbox · "why it moved" context |
 | **Portfolio** | Paper portfolio: P&L, return vs the S&P 500 since each purchase, performance chart, sector mix, beta, rule-based points to consider (with trim amounts), diversification ideas, changes since your last visit |
 | **Home** | Your followed stocks with one plain-English line each · market internals (median vs cap-weighted move, move histogram, day-vs-week reversals) · top movers · heat map |
-| **Maps and markets** | Market-cap treemap and bubble view by timeframe · index cards, futures, currencies, crypto · sector and industry groups · earnings calendar · news |
+| **Maps and markets** | Market-cap treemap and bubble view by timeframe · index cards, futures, currencies, crypto · sector and industry groups · calendar (earnings preview, earnings, dividends, US economic releases) · news |
 | **Stock pages** | A fast, no-JavaScript page per company at `/stock/TICKER/` and an [A-Z index by sector](https://punch-k.github.io/FinSTR-app/stock/), rebuilt on every deploy |
 | **Automation** | Email / Telegram / Slack / phone-push digests and alerts · [MCP server](#mcp-server-claude-cursor-and-other-ai-assistants) · every dataset as public JSON documented in [`llms.txt`](https://punch-k.github.io/FinSTR-app/llms.txt) |
 
