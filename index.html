@@ -573,15 +573,11 @@
   .ins-vol{margin-top:14px;padding:12px;border:1px solid var(--border);border-radius:8px;} .ins-vol:empty{display:none;}
   .ins-vol-head{display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px;margin-bottom:10px;}
   .ins-sum{font-size:12.5px;color:var(--dim);} .ins-sum b{color:var(--text);} .ins-sum b.pos{color:var(--pos);} .ins-sum b.neg{color:var(--neg);}
-  .ins-bars{display:flex;gap:4px;height:170px;}
-  .ins-col{flex:1;min-width:0;display:flex;flex-direction:column;cursor:default;outline:none;}
-  .ins-up,.ins-dn{flex:1;display:flex;justify-content:center;} .ins-up{align-items:flex-end;border-bottom:1px solid var(--border);} .ins-dn{align-items:flex-start;}
-  .ins-up i,.ins-dn i{display:block;width:72%;max-width:34px;} .ins-up i{background:#26a65b;border-radius:3px 3px 0 0;} .ins-dn i{background:#ef5350;border-radius:0 0 3px 3px;}
-  .ins-col:hover i,.ins-col:focus i{filter:brightness(1.25);}
-  .ins-col > span{font-size:10px;color:var(--dim);text-align:center;padding-top:3px;white-space:nowrap;overflow:hidden;}
+  .ins-chart{height:260px;width:100%;}
+  .ins-readout{font-size:12px;color:var(--dim);min-height:18px;margin-bottom:4px;font-variant-numeric:tabular-nums;} .ins-readout b{color:var(--text);}
   .ins-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;color:var(--dim);margin-top:8px;}
   .ins-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px;}
-  @media (max-width:600px){ .ins-bars{height:140px;gap:2px;} .ins-col > span{font-size:9px;} }
+  @media (max-width:600px){ .ins-chart{height:220px;} }
   .banner-warn{border-left:3px solid #e0a800 !important;background:rgba(224,168,0,.12) !important;}
   .banner-warn b{color:#b07d00;}
   :root:not([data-theme="light"]) .banner-warn b{color:#f0c14b;}
@@ -3297,7 +3293,7 @@ const INFO_TIPS = {
   'News': 'Latest headlines that mention the company, from Yahoo Finance. Check here first when a stock moves sharply.',
   'Profile': 'What the company does, where it is based and how many people it employs.',
   'Insider Trading': "Shares bought or sold by the company's officers, directors and large owners, reported to the SEC on Form 4 within two business days. Insiders sell for many reasons (taxes, diversifying); open-market buys are rarer and usually read as confidence.",
-  'Insider trading volume': 'Dollar value of open-market insider buys (green, up) and sales (red, down) per month over the last 12 months. Share awards, gifts and option exercises are left out.',
+  'Insider trading vs price': 'The share price over the last 12 months with open-market insider buys (green, above the line) and sales (red, below) each week, so you can see whether insiders sold near highs or bought on dips. Share awards, gifts and option exercises are left out.',
   'Points to consider': 'Plain-language notes on your paper portfolio: concentration, big moves, earnings coming up. Facts to check, not advice.',
   'Allocation by sector': "How your money is split across sectors. A heavy weight in one sector means one industry's bad news hits you harder.",
   'Email updates': 'Get your portfolio review sent to you on a schedule by email, Telegram, Slack or phone push.',
@@ -3371,6 +3367,7 @@ function renderInsidersFor(s, q){
   link.href = `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${encodeURIComponent(s.ticker)}&type=4&owner=include&count=40`;
   const vol = document.getElementById('qInsiderVol');
   vol.innerHTML = ins && ins.monthly ? insiderVolume(ins.monthly, s) : '';
+  if(ins && ins.monthly) drawInsiderPriceChart(s, q);
   if(!rows.length){ el.innerHTML = '<tr><td class="dim-note">No insider transactions reported in the last 12 months.</td></tr>'; return; }
   const th = (t, tip, cls='')=> `<th class="${cls}">${t}${tip?tipBtn(tip):''}</th>`;
   el.innerHTML = '<thead><tr>'+th('Insider')+th('Relationship')+th('Date')+
@@ -3384,22 +3381,76 @@ function renderInsidersFor(s, q){
         `<td class="r">${isNum(r.cost)?r.cost.toFixed(2):'-'}</td><td class="r">${(r.shares||0).toLocaleString()}</td>`+
         `<td class="r">${isNum(r.value)&&r.value>0?Math.round(r.value).toLocaleString():'-'}</td><td class="r">${isNum(r.ownedNow)?r.ownedNow.toLocaleString():'-'}</td></tr>`; }).join('')+'</tbody>';
 }
-// Finviz-style monthly insider volume: open-market buys up (green), sales down (red), by dollar value.
+// Insider trading vs price: the last 12 months of daily closes as a line, with open-market insider buys
+// (green, above zero) and sales (red, below zero) as weekly bars underneath on the same time axis.
 function insiderVolume(mo, s){
-  const byVal = mo.some(m=> m.buyValue || m.sellValue);
-  const up = m=> byVal ? m.buyValue : m.buyShares, dn = m=> byVal ? m.sellValue : m.sellShares;
-  const max = Math.max(1, ...mo.map(m=> Math.max(up(m), dn(m))));
   const tot = mo.reduce((a,m)=>({b:a.b+m.buys, s:a.s+m.sells, bv:a.bv+m.buyValue, sv:a.sv+m.sellValue, ss:a.ss+m.sellShares}), {b:0,s:0,bv:0,sv:0,ss:0});
-  const mon = (k, o)=> new Date(k+'-15T12:00:00').toLocaleDateString('en-US', o);
   const net = tot.bv - tot.sv;
   const sum = (tot.b+tot.s)
     ? `<span class="ins-sum"><b>${tot.s}</b> sale${tot.s===1?'':'s'} (${fMoney(tot.sv)}, ${tot.ss.toLocaleString()} sh) · <b>${tot.b}</b> buy${tot.b===1?'':'s'} (${fMoney(tot.bv)}) · net <b class="${net>=0?'pos':'neg'}">${net<0?'-':'+'}${fMoney(Math.abs(net))}</b>${isNum(s.insiderOwn)?` · insiders own <b>${s.insiderOwn.toFixed(2)}%</b>`:''}</span>`
     : '<span class="ins-sum">No open-market insider buys or sales in the last 12 months.</span>';
-  return `<div class="ins-vol-head"><span class="q-mini-title">Insider trading volume · last 12 months</span>${sum}</div>
-    <div class="ins-bars">${mo.map(m=>{
-      const tip = `${mon(m.m,{month:'long',year:'numeric'})}: ${m.buys} buy${m.buys===1?'':'s'} (${fMoney(m.buyValue)}, ${m.buyShares.toLocaleString()} sh) · ${m.sells} sale${m.sells===1?'':'s'} (${fMoney(m.sellValue)}, ${m.sellShares.toLocaleString()} sh)`;
-      return `<div class="ins-col" data-tip="${escAttr(tip)}" tabindex="0"><div class="ins-up"><i style="height:${(up(m)/max*100).toFixed(1)}%"></i></div><div class="ins-dn"><i style="height:${(dn(m)/max*100).toFixed(1)}%"></i></div><span>${mon(m.m,{month:'short'})}</span></div>`; }).join('')}</div>
-    <div class="ins-legend"><span><i style="background:#26a65b"></i>Buys</span><span><i style="background:#ef5350"></i>Sales</span><span>${byVal?'Bar height = dollar value':'Bar height = shares'} · hover or tap a month for details</span></div>`;
+  return `<div class="ins-vol-head"><span class="q-mini-title">Insider trading vs price · last 12 months</span>${sum}</div>
+    <div class="ins-readout" id="insReadout"></div>
+    <div class="ins-chart" id="insChart"></div>
+    <div class="ins-legend"><span><i style="background:var(--accent);height:2px;vertical-align:3px"></i>Share price</span><span><i style="background:#26a65b"></i>Insider buys</span><span><i style="background:#ef5350"></i>Insider sales</span><span>Bars = dollar value per week · hover or drag across the chart</span></div>`;
+}
+let insChart = null;
+function drawInsiderPriceChart(s, q){
+  const holder = document.getElementById('insChart');
+  if(insChart){ try{ insChart.remove(); }catch(e){} insChart = null; }
+  if(!holder || !q || !q.history) return;
+  const H = q.history, cutoff = new Date(Date.now() - 365*864e5).toISOString().slice(0,10);
+  const days = H.d.map((d,i)=>({time:d, value:H.c[i]})).filter(x=> x.time >= cutoff && x.value > 0);
+  if(days.length < 5){ holder.innerHTML = '<div class="dim-note">Price history unavailable.</div>'; return; }
+  const monday = d=>{ const x = new Date(d+'T12:00:00'); x.setDate(x.getDate() - ((x.getDay()+6)%7)); return x.toISOString().slice(0,10); };
+  const lastOfWeek = {}, weekDays = {};
+  days.forEach(x=>{ const m = monday(x.time); lastOfWeek[m] = x.time; (weekDays[m] = weekDays[m] || []).push(x.time); });
+  const closeOn = Object.fromEntries(days.map(x=> [x.time, x.value]));
+  const wk = {};
+  ((q.insiders && q.insiders.daily) || []).forEach(t=>{
+    const k = lastOfWeek[monday(t.d)]; if(!k) return;
+    const a = wk[k] || (wk[k] = {buys:0, sells:0, buyValue:0, sellValue:0, buyShares:0, sellShares:0});
+    for(const f of ['buys','sells','buyValue','sellValue','buyShares','sellShares']) a[f] += t[f] || 0;
+    // a sale with no reported value still shows, valued at that week's close
+    if(!t.sellValue && t.sellShares) a.sellValue += t.sellShares * closeOn[k];
+    if(!t.buyValue && t.buyShares) a.buyValue += t.buyShares * closeOn[k];
+  });
+  const isDark = document.documentElement.dataset.theme !== 'light';
+  insChart = LightweightCharts.createChart(holder, {
+    width: holder.clientWidth || 600, height: holder.clientHeight || 260,
+    layout:{ background:{color:'transparent'}, textColor: isDark?'#8b94a3':'#6b7280', fontSize:11 },
+    grid:{ vertLines:{visible:false}, horzLines:{color: isDark?'#1a1f2b':'#eef1f6'} },
+    rightPriceScale:{ borderVisible:false, scaleMargins:{top:0.06, bottom:0.38} },
+    timeScale:{ borderVisible:false, ...LOCKED_EDGES },
+    crosshair:{ mode: LightweightCharts.CrosshairMode.Magnet },
+    handleScroll:{ vertTouchDrag:false },
+  });
+  const money = { type:'custom', formatter: v=> fMoney(Math.abs(v)) };
+  const buys = insChart.addHistogramSeries({ priceScaleId:'ins', priceFormat:money, color:'#26a65b', lastValueVisible:false, priceLineVisible:false });
+  const sells = insChart.addHistogramSeries({ priceScaleId:'ins', priceFormat:money, color:'#ef5350', lastValueVisible:false, priceLineVisible:false });
+  insChart.priceScale('ins').applyOptions({ scaleMargins:{top:0.68, bottom:0.02}, visible:false });
+  const price = insChart.addLineSeries({ color: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4f8cff',
+    lineWidth:2, priceLineVisible:false, lastValueVisible:true, crosshairMarkerRadius:3 });
+  price.setData(days);
+  const keys = Object.keys(wk).sort();
+  // each week's total is drawn across all of that week's trading days, so a bar reads as a week-wide block
+  const spread = (f, sign)=> keys.filter(k=> wk[k][f]).flatMap(k=> weekDays[monday(k)].map(d=> ({time:d, value: sign*wk[k][f]})));
+  buys.setData(spread('buyValue', 1));
+  sells.setData(spread('sellValue', -1));
+  insChart.timeScale().fitContent();
+  const readout = document.getElementById('insReadout');
+  const say = t=>{
+    if(!t || !closeOn[t]){ readout.innerHTML = '&nbsp;'; return; }
+    const a = wk[lastOfWeek[monday(t)]];
+    const wkTxt = a ? [a.sells ? `<span class="neg">${a.sells} sale${a.sells===1?'':'s'} ${fMoney(a.sellValue)}</span>` : '',
+                       a.buys ? `<span class="pos">${a.buys} buy${a.buys===1?'':'s'} ${fMoney(a.buyValue)}</span>` : ''].filter(Boolean).join(' · ')
+                    : 'no insider buys or sales';
+    readout.innerHTML = `<b>${fDate(t)} '${t.slice(2,4)}</b> close <b>$${closeOn[t].toFixed(2)}</b> · that week: ${wkTxt}`;
+  };
+  const latest = keys.length ? keys[keys.length-1] : days[days.length-1].time;
+  say(latest);
+  insChart.subscribeCrosshairMove(p=> say(p && p.time ? p.time : latest));
+  if(!holder._ro){ holder._ro = new ResizeObserver(()=>{ if(insChart) insChart.applyOptions({width: holder.clientWidth}); }); holder._ro.observe(holder); }
 }
 
 let qpChart = null, qpReq = 0;

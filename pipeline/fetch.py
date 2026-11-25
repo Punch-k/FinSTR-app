@@ -423,6 +423,20 @@ def insider_monthly(rows, months=12):
     return [dict(b, buyValue=round(b["buyValue"]), sellValue=round(b["sellValue"])) for b in out.values()]
 
 
+def insider_daily(rows):
+    """Open-market buys and sales per trade date (oldest first), for the price + insider chart."""
+    out = {}
+    for r in rows:
+        kind = insider_kind(r["transaction"])
+        if not kind or not r["date"]:
+            continue
+        b = out.setdefault(r["date"], {"d": r["date"], "buyShares": 0, "buyValue": 0.0, "buys": 0, "sellShares": 0, "sellValue": 0.0, "sells": 0})
+        b[kind + "Shares"] += abs(r["shares"] or 0)
+        b[kind + "Value"] += abs(r["value"] or 0)
+        b[kind + "s"] += 1
+    return [dict(b, buyValue=round(b["buyValue"]), sellValue=round(b["sellValue"])) for _, b in sorted(out.items())]
+
+
 # ───────────────────────── deep data (financials, estimates, rating changes) ─────────────────────────
 # Slow-moving and costly in requests, so it is refreshed about once a day per ticker on a rotation
 # (at most DEEP_PER_RUN tickers per run) and otherwise reused from the previous publish.
@@ -653,7 +667,7 @@ def main():
         h = h.dropna(subset=["Close"])
         quote = {
             "ticker": row["ticker"], "profile": profile, "news": nw, "deep": deep,
-            "insiders": {"recent": ins[:20], "monthly": insider_monthly(ins)},
+            "insiders": {"recent": ins[:20], "monthly": insider_monthly(ins), "daily": insider_daily(ins)},
             "history": {
                 "d": [d.strftime("%Y-%m-%d") for d in h.index],
                 "o": [round(float(x), 2) for x in h["Open"]], "h": [round(float(x), 2) for x in h["High"]],
