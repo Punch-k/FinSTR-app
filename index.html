@@ -481,9 +481,6 @@
   .modal-rec.buy{background:rgba(38,166,91,0.12); border-color:var(--pos);}
   .modal-rec.hold{background:rgba(255,193,7,0.12); border-color:#ffc107;}
   .modal-rec.sell{background:rgba(239,83,80,0.12); border-color:var(--neg);}
-  #modalRec{font-size:18px; font-weight:700; margin-bottom:2px;}
-  #modalScore{font-size:12.5px; color:var(--dim); margin-bottom:8px;}
-  #modalNote{font-size:12.5px; color:var(--dim); line-height:1.5;}
   .assumptions-row{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;}
   .assumption-box{background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:12px;}
   .assumption-box label{font-size:11.5px; color:var(--dim); display:block; margin-bottom:6px;}
@@ -544,6 +541,35 @@
   .banner a{color:var(--accent);text-decoration:none;}
   .q-why a, .pf-cons a, #pfScreens a, .pf-since a{color:var(--accent);text-decoration:none;} .q-why a:hover, .pf-cons a:hover, #pfScreens a:hover{text-decoration:underline;}
   .banner a:hover{text-decoration:underline;}
+  /* info "i" tips: hover on desktop, tap on phones */
+  .info-i{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:6px;padding:0;
+    border-radius:50%;border:1px solid var(--dim);background:transparent;color:var(--dim);font:italic 700 10px/1 Georgia,serif;
+    cursor:help;vertical-align:middle;text-transform:none;letter-spacing:0;flex-shrink:0;}
+  .info-i:hover,.info-i:focus-visible{border-color:var(--accent);color:var(--accent);outline:none;}
+  @media (pointer:coarse){ .info-i{width:20px;height:20px;font-size:12px;} }
+  #tipBox{position:fixed;z-index:3000;max-width:min(300px,calc(100vw - 16px));padding:9px 11px;border-radius:7px;
+    background:var(--panel);color:var(--text);border:1px solid var(--border);box-shadow:0 6px 24px rgba(0,0,0,.35);
+    font-size:12.5px;line-height:1.45;font-weight:400;text-transform:none;letter-spacing:0;display:none;pointer-events:none;}
+  /* rating distribution */
+  .q-dist-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;width:180px;margin:5px 0 3px;background:var(--panel2);}
+  .q-dist-bar i{display:block;height:100%;} .q-dist-bar .db{background:#26a65b;} .q-dist-bar .dh{background:#9aa3b2;} .q-dist-bar .ds{background:#ef5350;}
+  .q-consensus .q-dist b{font-size:14px;}
+  /* insider trading */
+  .ins-head-link{margin-left:auto;font-size:12px;color:var(--accent);text-decoration:none;} .ins-head-link:hover{text-decoration:underline;}
+  .ins-tag{display:inline-block;font-size:10.5px;padding:1px 7px;border-radius:9px;background:var(--panel2);color:var(--dim);margin-right:4px;white-space:nowrap;}
+  .ins-tag.t-sale{background:rgba(239,83,80,.15);color:#ef5350;} .ins-tag.t-buy{background:rgba(38,166,91,.15);color:#26a65b;}
+  .ins-vol{margin-top:14px;padding:12px;border:1px solid var(--border);border-radius:8px;} .ins-vol:empty{display:none;}
+  .ins-vol-head{display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px;margin-bottom:10px;}
+  .ins-sum{font-size:12.5px;color:var(--dim);} .ins-sum b{color:var(--text);} .ins-sum b.pos{color:var(--pos);} .ins-sum b.neg{color:var(--neg);}
+  .ins-bars{display:flex;gap:4px;height:170px;}
+  .ins-col{flex:1;min-width:0;display:flex;flex-direction:column;cursor:default;outline:none;}
+  .ins-up,.ins-dn{flex:1;display:flex;justify-content:center;} .ins-up{align-items:flex-end;border-bottom:1px solid var(--border);} .ins-dn{align-items:flex-start;}
+  .ins-up i,.ins-dn i{display:block;width:72%;max-width:34px;} .ins-up i{background:#26a65b;border-radius:3px 3px 0 0;} .ins-dn i{background:#ef5350;border-radius:0 0 3px 3px;}
+  .ins-col:hover i,.ins-col:focus i{filter:brightness(1.25);}
+  .ins-col > span{font-size:10px;color:var(--dim);text-align:center;padding-top:3px;white-space:nowrap;overflow:hidden;}
+  .ins-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;color:var(--dim);margin-top:8px;}
+  .ins-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px;}
+  @media (max-width:600px){ .ins-bars{height:140px;gap:2px;} .ins-col > span{font-size:9px;} }
   .banner-warn{border-left:3px solid #e0a800 !important;background:rgba(224,168,0,.12) !important;}
   .banner-warn b{color:#b07d00;}
   :root:not([data-theme="light"]) .banner-warn b{color:#f0c14b;}
@@ -646,7 +672,7 @@
   .q-ico{background:transparent;border:1px solid var(--border);color:var(--text);font-size:11.5px;padding:3px 8px;border-radius:5px;cursor:pointer;}
   .q-block{margin:0 0 14px;}
   .q-block-head{display:flex;align-items:center;justify-content:space-between;margin:6px 0;}
-  .q-block-head h3,.q-val summary h3{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);margin:0;}
+  .q-block-head h3{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);margin:0;}
   .q-chart-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--dim);margin:4px 0;}
   .q-seg{display:inline-flex;border:1px solid var(--border);border-radius:5px;overflow:hidden;}
   .q-seg button{background:transparent;border:none;color:var(--dim);font-size:11px;padding:3px 9px;cursor:pointer;}
@@ -695,10 +721,6 @@
   .q-clamp{display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical;overflow:hidden;}
   .q-more{font-size:12px;display:inline-block;margin-bottom:6px;}
   .q-profile a{color:var(--accent);}
-  .q-val{border:1px solid var(--border);border-radius:6px;padding:8px 12px;}
-  .q-val summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;}
-  .q-val summary::-webkit-details-marker{display:none;}
-  .q-val summary::before{content:'▸';color:var(--dim);} .q-val[open] summary::before{content:'▾';}
   @media (max-width: 760px){
     .q-head{position:sticky;top:var(--navh,0px);z-index:30;background:var(--bg);padding:6px 0 4px;}
     .q-tk{font-size:21px;} .q-name{font-size:13px;} .q-price{font-size:21px;}
@@ -1339,7 +1361,7 @@
     <div class="q-subbar">
       <nav class="q-tabs" id="qTabs">
         <a href="#" data-t="qOverview" class="on">Overview</a><a href="#" data-t="qFinancials">Financials</a><a href="#" data-t="qAnalysts">Analysts</a>
-        <a href="#" data-t="qNews">News</a><a href="#" data-t="qInsiders">Insiders</a><a href="#" data-t="qValuation">Valuation</a>
+        <a href="#" data-t="qNews">News</a><a href="#" data-t="qInsiders">Insiders</a>
       </nav>
       <div class="q-meta"><span id="modalSector"></span>
         <button class="q-ico q-star" id="modalStarBtn" onclick="toggleWatchFromModal()">☆ Watch</button>
@@ -1386,19 +1408,9 @@
     <div class="q-block" id="qInsiders">
       <div class="q-block-head"><h3>Insider Trading</h3></div>
       <div class="q-table-wrap"><table class="q-table" id="qInsiderTable"></table></div>
+      <div class="ins-vol" id="qInsiderVol"></div>
     </div>
 
-    <details class="q-block q-val" id="qValuation">
-      <summary><h3>Valuation Sandbox</h3><span class="sim-tag">your assumptions · illustrative, not a recommendation</span></summary>
-      <div class="modal-rec" id="modalRecCard"><div id="modalRec"></div><div id="modalScore"></div><div id="modalNote"></div></div>
-      <div class="assumptions-row">
-        <div class="assumption-box"><label>EPS growth, next 5 yrs: <span id="growthDisplay"></span>%</label><input type="range" id="growthInput" min="-10" max="30" step="0.5" value="8" oninput="recalcModal()"></div>
-        <div class="assumption-box"><label>Discount rate: <span id="discountDisplay"></span>%</label><input type="range" id="discountInput" min="6" max="14" step="0.5" value="9" oninput="recalcModal()"></div>
-      </div>
-      <div class="modal-metrics-grid" id="modalMetricsGrid"></div>
-      <div class="modal-investment-row"><label>Hypothetical amount invested ($):</label><input type="number" id="modalInvestment" value="10000" step="1000" min="0" onchange="recalcModal()"></div>
-      <table class="modal-proj-table"><thead><tr><th>Year</th><th>Price at your growth rate</th><th>Value incl. dividends</th><th>Gain / Loss</th></tr></thead><tbody id="modalProjBody"></tbody></table>
-    </details>
   </div>
 
 </div>
@@ -1455,7 +1467,7 @@
     <ul>
       <li><b>Screener</b>: filter and sort all S&amp;P 500 companies across valuation, financial, ownership, performance, technical and analyst views; export CSV; share any view by link.</li>
       <li><b>Maps</b>: market-cap treemap coloured by 1-day to 1-year performance.</li>
-      <li><b>Quote panel</b>: click any stock for a price chart with 50/200-day averages, a 70-field snapshot, company profile, headlines and a valuation sandbox.</li>
+      <li><b>Quote panel</b>: click any stock for a price chart with 50/200-day averages, a 70-field snapshot, company profile, headlines, analyst ratings and insider trading.</li>
       <li><b>Markets</b>: index, futures, forex and crypto snapshots; sector and industry groups; insider trades; earnings calendar.</li>
     </ul>
     <h3>Data</h3>
@@ -1464,7 +1476,7 @@
     <ul>
       <li>Performance, moving averages, RSI (14, Wilder), volatility (std. dev. of daily returns), ATR and 52-week levels are computed from daily closes, the same way for every stock.</li>
       <li>Valuation, margins, ownership, short interest and analyst targets are Yahoo Finance's reported figures. A missing value shows as "-", never as zero.</li>
-      <li>The FinSTR Signal ranks every stock 0-100 against the S&amp;P 500 on six factors (trend, momentum, value, quality, growth, low risk). Its price-based factors are backtested monthly and the results, good or bad, are on the Signals page. The valuation sandbox uses your own growth and discount assumptions. Neither is investment advice.</li>
+      <li>The FinSTR Signal ranks every stock 0-100 against the S&amp;P 500 on six factors (trend, momentum, value, quality, growth, low risk). Its price-based factors are backtested monthly and the results, good or bad, are on the Signals page. It is not investment advice.</li>
       <li>Relative volume is pace-adjusted during the session: today's volume so far is compared with the share of a normal day's volume that has usually traded by that time.</li>
       <li>"Why it moved" notes (moves of 3% or more) check three things: an earnings report in the last trading day, how the stock's industry moved, and the latest headline that names the company. They describe; they do not claim a cause.</li>
       <li>The Live record on the Signals page saves the strongest and weakest fifth every trading day and measures them afterwards, so it is out-of-sample by construction.</li>
@@ -1507,7 +1519,8 @@ async function getNewsData(){
   return _newsData;
 }
 function getQuote(t){
-  if(!_quoteCache[t]) _quoteCache[t] = fetch(`data/quote/${encodeURIComponent(t)}.json`).then(r=> r.ok ? r.json() : null).catch(()=>null);
+  // ?v=<snapshot time>: a new refresh never reuses a browser-cached copy of the previous one
+  if(!_quoteCache[t]) _quoteCache[t] = fetch(`data/quote/${encodeURIComponent(t)}.json?v=${(dataMeta && dataMeta.generatedAt) || ''}`).then(r=> r.ok ? r.json() : null).catch(()=>null);
   return _quoteCache[t];
 }
 function sparkSvg(vals, w=200, h=60, color){
@@ -3105,13 +3118,6 @@ function openModal(ticker){
   renderSnapshot(s);
   renderPeers(s);
   renderInsidersFor(s);
-  let g = 8;
-  if(s.eps>0 && s.fwdEps>0) g = (s.fwdEps/s.eps - 1)*100;
-  else if(s.pe>0 && s.peg>0) g = s.pe/s.peg;
-  document.getElementById('growthInput').value = Math.max(2, Math.min(20, g)).toFixed(1);
-  document.getElementById('discountInput').value = 9;
-  document.getElementById('modalInvestment').value = 10000;
-  recalcModal();
   loadModalNews(s);
   loadQuotePanel(s);
   encodeStateToHash();
@@ -3190,13 +3196,120 @@ function comparePeers(t){
   if(compareSet.size<2){ showToast('No S&P 500 peers in this industry.'); return; }
   openCompare();
 }
-function renderInsidersFor(s){
-  const rows = s.insiderTransactions || [];
+
+// ---------- INFO TIPS ----------
+// Short "what it is, why it helps" notes beside section and table titles. Matched by title text, so titles
+// that JS renders later get them too.
+const INFO_TIPS = {
+  'Financials': 'Sales, profit and earnings per share over recent years or quarters, from company filings. Rising bars mean a growing business; quarterly bars show a slowdown sooner.',
+  'Earnings surprises': 'Reported earnings per share against what analysts expected. Regular beats suggest cautious guidance; a miss often moves the stock sharply.',
+  'Analyst Ratings': 'What the Wall Street analysts who cover the company recommend and where they think the price is heading. A gauge of professional sentiment, not a forecast: targets often follow the price.',
+  'News': 'Latest headlines that mention the company, from Yahoo Finance. Check here first when a stock moves sharply.',
+  'Profile': 'What the company does, where it is based and how many people it employs.',
+  'Insider Trading': "Shares bought or sold by the company's officers, directors and large owners, reported to the SEC on Form 4 within two business days. Insiders sell for many reasons (taxes, diversifying); open-market buys are rarer and usually read as confidence.",
+  'Insider trading volume': 'Dollar value of open-market insider buys (green, up) and sales (red, down) per month over the last 12 months. Share awards, gifts and option exercises are left out.',
+  'Points to consider': 'Plain-language notes on your paper portfolio: concentration, big moves, earnings coming up. Facts to check, not advice.',
+  'Allocation by sector': "How your money is split across sectors. A heavy weight in one sector means one industry's bad news hits you harder.",
+  'Email updates': 'Get your portfolio review sent to you on a schedule by email, Telegram, Slack or phone push.',
+  'Factor scorecard': 'For each of the six factors: did the stocks scoring highest on it beat those scoring lowest in the monthly backtest?',
+  'Factor weights': 'How much each factor counts toward the overall FinSTR Signal.',
+  'Strongest signals': 'S&P 500 stocks with the highest overall FinSTR Signal today: strongest on the six factors combined.',
+  'Weakest signals': 'S&P 500 stocks with the lowest overall FinSTR Signal today.',
+  'Sector Performance': 'Average 1-day move of the stocks in your current screen, grouped by sector, to see which parts of the market lead or lag.',
+  'Market internals': "How broad today's move is: how many stocks rose versus fell, and whether the typical stock did better or worse than the giants that drive the index.",
+  "Today's moves": 'How many stocks moved by how much today. Click a bar to list those stocks in the screener.',
+  'Day vs week': 'Stocks moving against their week: a sharp drop after a strong week, or a bounce after a weak one.',
+};
+const escAttr = t => String(t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+function tipBtn(text){ return `<button type="button" class="info-i" data-tip="${escAttr(text)}" aria-label="What is this? ${escAttr(text)}">i</button>`; }
+function addInfoTips(root=document){
+  root.querySelectorAll('h3, .gl-title, .panel-title, .q-mini-title').forEach(el=>{
+    if(el.dataset.tipped || el.querySelector('.info-i')) return;
+    const txt = el.textContent.trim().toLowerCase();
+    const key = Object.keys(INFO_TIPS).find(k=> txt.startsWith(k.toLowerCase()));
+    if(!key) return;
+    el.dataset.tipped = '1';
+    el.insertAdjacentHTML('beforeend', tipBtn(INFO_TIPS[key]));
+  });
+}
+(function initTips(){
+  const box = document.createElement('div'); box.id = 'tipBox'; box.setAttribute('role','tooltip'); document.body.appendChild(box);
+  let cur = null;
+  const show = el=>{
+    cur = el; box.textContent = el.dataset.tip; box.style.display = 'block';
+    const r = el.getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight;
+    box.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width/2 - w/2)) + 'px';
+    box.style.top = (r.bottom + 8 + h > innerHeight ? Math.max(8, r.top - h - 8) : r.bottom + 8) + 'px';
+  };
+  const hide = ()=>{ cur = null; box.style.display = 'none'; };
+  document.addEventListener('mouseover', e=>{ const t = e.target.closest('[data-tip]'); if(t){ if(t!==cur) show(t); } else if(cur) hide(); });
+  // tap or click: show (an info button must not also trigger the card or row it sits in)
+  document.addEventListener('click', e=>{ const t = e.target.closest('[data-tip]'); if(t){ if(t.classList.contains('info-i')){ e.preventDefault(); e.stopPropagation(); } show(t); } else hide(); }, true);
+  document.addEventListener('focusin', e=>{ const t = e.target.closest('[data-tip]'); if(t) show(t); });
+  document.addEventListener('focusout', hide);
+  addEventListener('scroll', hide, {passive:true, capture:true});
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') hide(); });
+  let pend = false;
+  new MutationObserver(()=>{ if(pend) return; pend = true; requestAnimationFrame(()=>{ pend = false; addInfoTips(); }); })
+    .observe(document.body, {childList:true, subtree:true});
+  addInfoTips();
+})();
+
+// ---------- ANALYST RATING DISTRIBUTION ----------
+function ratingDist(q){
+  const t = q && q.deep && q.deep.recTrend;
+  if(!t) return '';
+  const b = (t.strongBuy||0)+(t.buy||0), h = t.hold||0, se = (t.sell||0)+(t.strongSell||0), n = b+h+se;
+  if(!n) return '';
+  const w = x=> (x/n*100).toFixed(1)+'%';
+  return `<div class="q-dist"><span class="dim-note">Rating Distribution${tipBtn("How many analysts rate the stock Buy, Hold or Sell this month (Strong Buy counted as Buy, Strong Sell as Sell), from Yahoo Finance's monthly count.")}</span>
+    <span class="q-dist-bar"><i class="db" style="width:${w(b)}"></i><i class="dh" style="width:${w(h)}"></i><i class="ds" style="width:${w(se)}"></i></span>
+    <b><span class="pos">${b} Buy</span> · ${h} Hold · <span class="neg">${se} Sell</span></b></div>`;
+}
+
+// ---------- INSIDER TRADING ----------
+const INS_LABELS = [['purchase','Buy'],['sale','Sale'],['stock gift','Gift'],['stock award','Award'],['conversion of exercise','Option Exercise'],['exercise','Option Exercise']];
+function insLabel(r){ if(r.label) return r.label; const t=(r.transaction||'').trim().toLowerCase(); const m=INS_LABELS.find(([k])=>t.startsWith(k)); return m ? m[1] : t ? 'Other' : 'Not specified'; }
+function fMoney(v){ if(!isNum(v)) return '-'; const a=Math.abs(v); return '$'+(a>=1e9?(a/1e9).toFixed(2)+'B':a>=1e6?(a/1e6).toFixed(1)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':a.toFixed(0)); }
+function renderInsidersFor(s, q){
+  const ins = q && q.insiders;
+  const rows = (ins && ins.recent) || s.insiderTransactions || [];
   const el = document.getElementById('qInsiderTable');
-  if(!rows.length){ el.innerHTML = '<tr><td class="dim-note">No recent insider transactions reported.</td></tr>'; return; }
-  el.innerHTML = '<thead><tr><th>Insider</th><th>Relationship</th><th>Date</th><th>Transaction</th><th class="r">Shares</th><th class="r">Value ($)</th></tr></thead><tbody>'+
-    rows.map(r=>{ const sale=/sale|sell/i.test(r.transaction), buy=/purchase|buy/i.test(r.transaction);
-      return `<tr class="${sale?'ins-sale':buy?'ins-buy':''}"><td>${r.insider}</td><td>${r.position||'-'}</td><td>${fDate(r.date)}</td><td>${r.transaction||'-'}</td><td class="r">${(r.shares||0).toLocaleString()}</td><td class="r">${isNum(r.value)?Math.round(r.value).toLocaleString():'-'}</td></tr>`; }).join('')+'</tbody>';
+  const head = document.querySelector('#qInsiders .q-block-head');
+  let link = head.querySelector('.ins-head-link');
+  if(!link){ head.insertAdjacentHTML('beforeend', '<a class="ins-head-link" target="_blank" rel="noopener">All Form 4 filings on SEC ↗</a>'); link = head.querySelector('.ins-head-link'); }
+  link.href = `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${encodeURIComponent(s.ticker)}&type=4&owner=include&count=40`;
+  const vol = document.getElementById('qInsiderVol');
+  vol.innerHTML = ins && ins.monthly ? insiderVolume(ins.monthly, s) : '';
+  if(!rows.length){ el.innerHTML = '<tr><td class="dim-note">No insider transactions reported in the last 12 months.</td></tr>'; return; }
+  const th = (t, tip, cls='')=> `<th class="${cls}">${t}${tip?tipBtn(tip):''}</th>`;
+  el.innerHTML = '<thead><tr>'+th('Insider')+th('Relationship')+th('Date')+
+    th('Transaction','Sale or Buy = traded on the open market. Award = shares granted as pay. Gift = shares given away. Option Exercise = options turned into shares. "Not specified" = Yahoo gives no detail (often shares withheld for tax).')+
+    th('Cost','Average price per share of the trade.','r')+th('#Shares','','r')+th('Value ($)','','r')+
+    th('Owns Now',"Shares the insider holds directly today, from the company's latest insider roster (blank when not listed).",'r')+'</tr></thead><tbody>'+
+    rows.map(r=>{ const lb = insLabel(r), cls = lb==='Sale'?'ins-sale':lb==='Buy'?'ins-buy':'';
+      const own = r.ownership==='Indirect' ? '<span class="ins-tag" data-tip="Held indirectly, e.g. through a trust, family member or fund.">Indirect</span>' : '';
+      return `<tr class="${cls}"><td>${r.insider}</td><td>${r.position||'-'}</td><td>${fDate(r.date)} '${(r.date||'').slice(2,4)}</td>`+
+        `<td><span class="ins-tag ${lb==='Sale'?'t-sale':lb==='Buy'?'t-buy':''}">${lb}</span>${own}</td>`+
+        `<td class="r">${isNum(r.cost)?r.cost.toFixed(2):'-'}</td><td class="r">${(r.shares||0).toLocaleString()}</td>`+
+        `<td class="r">${isNum(r.value)&&r.value>0?Math.round(r.value).toLocaleString():'-'}</td><td class="r">${isNum(r.ownedNow)?r.ownedNow.toLocaleString():'-'}</td></tr>`; }).join('')+'</tbody>';
+}
+// Finviz-style monthly insider volume: open-market buys up (green), sales down (red), by dollar value.
+function insiderVolume(mo, s){
+  const byVal = mo.some(m=> m.buyValue || m.sellValue);
+  const up = m=> byVal ? m.buyValue : m.buyShares, dn = m=> byVal ? m.sellValue : m.sellShares;
+  const max = Math.max(1, ...mo.map(m=> Math.max(up(m), dn(m))));
+  const tot = mo.reduce((a,m)=>({b:a.b+m.buys, s:a.s+m.sells, bv:a.bv+m.buyValue, sv:a.sv+m.sellValue, ss:a.ss+m.sellShares}), {b:0,s:0,bv:0,sv:0,ss:0});
+  const mon = (k, o)=> new Date(k+'-15T12:00:00').toLocaleDateString('en-US', o);
+  const net = tot.bv - tot.sv;
+  const sum = (tot.b+tot.s)
+    ? `<span class="ins-sum"><b>${tot.s}</b> sale${tot.s===1?'':'s'} (${fMoney(tot.sv)}, ${tot.ss.toLocaleString()} sh) · <b>${tot.b}</b> buy${tot.b===1?'':'s'} (${fMoney(tot.bv)}) · net <b class="${net>=0?'pos':'neg'}">${net<0?'-':'+'}${fMoney(Math.abs(net))}</b>${isNum(s.insiderOwn)?` · insiders own <b>${s.insiderOwn.toFixed(2)}%</b>`:''}</span>`
+    : '<span class="ins-sum">No open-market insider buys or sales in the last 12 months.</span>';
+  return `<div class="ins-vol-head"><span class="q-mini-title">Insider trading volume · last 12 months</span>${sum}</div>
+    <div class="ins-bars">${mo.map(m=>{
+      const tip = `${mon(m.m,{month:'long',year:'numeric'})}: ${m.buys} buy${m.buys===1?'':'s'} (${fMoney(m.buyValue)}, ${m.buyShares.toLocaleString()} sh) · ${m.sells} sale${m.sells===1?'':'s'} (${fMoney(m.sellValue)}, ${m.sellShares.toLocaleString()} sh)`;
+      return `<div class="ins-col" data-tip="${escAttr(tip)}" tabindex="0"><div class="ins-up"><i style="height:${(up(m)/max*100).toFixed(1)}%"></i></div><div class="ins-dn"><i style="height:${(dn(m)/max*100).toFixed(1)}%"></i></div><span>${mon(m.m,{month:'short'})}</span></div>`; }).join('')}</div>
+    <div class="ins-legend"><span><i style="background:#26a65b"></i>Buys</span><span><i style="background:#ef5350"></i>Sales</span><span>${byVal?'Bar height = dollar value':'Bar height = shares'} · hover or tap a month for details</span></div>`;
 }
 
 let qpChart = null, qpReq = 0;
@@ -3232,6 +3345,7 @@ async function loadQuotePanel(s){
   renderProfile(q, prof);
   renderFinancials(q);
   renderAnalysts(s, q);
+  renderInsidersFor(s, q);
   if(!q || !q.history){ holder.innerHTML = '<div class="news-loading">Price history unavailable.</div>'; return; }
   drawQuoteChart(s, q);
   const seg = (id, key, attr) => document.querySelectorAll(`#${id} button`).forEach(b=> b.onclick = ()=>{
@@ -3314,11 +3428,12 @@ function renderAnalysts(s, q){
   const recent = r.filter(x=> Date.now()-Date.parse(x.date) < 90*864e5);
   const ups = recent.filter(x=>x.action==='up').length, downs = recent.filter(x=>x.action==='down').length;
   document.getElementById('qConsensus').innerHTML = `
-    <div><span class="dim-note">Consensus</span><b class="${isNum(s.recMean)&&s.recMean<=2.5?'pos':isNum(s.recMean)&&s.recMean>3.5?'neg':''}">${recLabel(s.recMean)||'-'}</b><span class="dim-note">${isNum(s.recMean)?s.recMean.toFixed(2)+' / 5':''}</span></div>
-    <div><span class="dim-note">Avg. Price Target</span><b>${isNum(s.target)?'$'+s.target.toFixed(2):'-'}</b><span class="dim-note">${isNum(s.targetLow)?`$${s.targetLow.toFixed(0)} – $${s.targetHigh.toFixed(0)}`:''}</span></div>
-    <div><span class="dim-note">Implied Upside</span><b>${fPct(s.upside,1)}</b></div>
-    <div><span class="dim-note">Analysts</span><b>${isNum(s.analysts)?s.analysts:'-'}</b></div>
-    <div><span class="dim-note">Last 90 days</span><b><span class="pos">${ups} up</span> · <span class="neg">${downs} down</span></b></div>`;
+    <div><span class="dim-note">Consensus${tipBtn('The average recommendation of every analyst covering the stock, on a scale from 1 (Strong Buy) to 5 (Strong Sell), shown as a word. Below 2.5 reads as Buy, above 3.5 as Sell.')}</span><b class="${isNum(s.recMean)&&s.recMean<=2.5?'pos':isNum(s.recMean)&&s.recMean>3.5?'neg':''}">${recLabel(s.recMean)||'-'}</b><span class="dim-note">${isNum(s.recMean)?s.recMean.toFixed(2)+' / 5':''}</span></div>
+    <div><span class="dim-note">Avg. Price Target${tipBtn('The average price analysts expect the stock to reach in about 12 months. The range under it is the lowest and highest target.')}</span><b>${isNum(s.target)?'$'+s.target.toFixed(2):'-'}</b><span class="dim-note">${isNum(s.targetLow)?`$${s.targetLow.toFixed(0)} – $${s.targetHigh.toFixed(0)}`:''}</span></div>
+    <div><span class="dim-note">Implied Upside${tipBtn('How far the average price target is above today\'s price. A negative number means the average target is below the current price, often after a strong run.')}</span><b>${fPct(s.upside,1)}</b></div>
+    <div><span class="dim-note">Analysts${tipBtn('How many analysts give a recommendation. The more analysts, the more weight the consensus carries.')}</span><b>${isNum(s.analysts)?s.analysts:'-'}</b></div>
+    ${ratingDist(q)}
+    <div><span class="dim-note">Last 90 days${tipBtn('Upgrades and downgrades in the last three months. A run of upgrades shows improving sentiment; downgrades the opposite.')}</span><b><span class="pos">${ups} up</span> · <span class="neg">${downs} down</span></b></div>`;
   const tbl = document.getElementById('qRatings');
   if(!r.length){ tbl.innerHTML = '<tr><td class="dim-note">No rating changes on record.</td></tr>'; return; }
   tbl.innerHTML = '<thead><tr><th>Date</th><th>Action</th><th>Analyst</th><th>Rating Change</th><th class="r">Price Target</th><th class="r">Implied Upside</th></tr></thead><tbody>'+
@@ -3361,56 +3476,6 @@ function loadModalNews(s){
     const when = d ? d.toLocaleDateString('en-US',{month:'short',day:'2-digit'})+' '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : '';
     return `<li><span class="qn-t">${when}</span><a href="${safeLink}" target="_blank" rel="noopener">${a.title}</a> <span class="qn-s">(${a.publisher||''})</span></li>`;
   }).join('');
-}
-
-function recalcModal(){
-  const s = stockData.find(x=>x.ticker===modalTicker);
-  if(!s) return;
-  const growth = parseFloat(document.getElementById('growthInput').value)/100;
-  const discount = parseFloat(document.getElementById('discountInput').value)/100;
-  document.getElementById('growthDisplay').textContent = (growth*100).toFixed(1);
-  document.getElementById('discountDisplay').textContent = (discount*100).toFixed(1);
-  let fairValue = null, upside = null, rec, cls, note;
-  if(!(s.eps > 0)){
-    rec = 'Model not applicable'; cls = 'hold';
-    note = `${s.ticker} has negative or missing trailing earnings, so an earnings-based model value isn't meaningful. Look at revenue growth, cash flow and the balance sheet instead.`;
-  } else {
-    // 5 years of EPS at the chosen growth rate, discounted, plus a 3% perpetual-growth terminal value,
-    // blended 50/50 with a 20x market multiple on trailing EPS.
-    let pv = 0, e = s.eps;
-    for(let y=1;y<=5;y++){ e *= (1+growth); pv += e/Math.pow(1+discount,y); }
-    const tg = 0.03, terminal = discount-tg > 0.005 ? (e*(1+tg))/(discount-tg)/Math.pow(1+discount,5) : 0;
-    fairValue = ((pv + terminal) + s.eps*20) / 2;
-    upside = (fairValue/s.price - 1)*100;
-    if(upside > 20){ rec = 'Trades below this model value'; cls = 'buy'; }
-    else if(upside < -20){ rec = 'Trades above this model value'; cls = 'sell'; }
-    else { rec = 'Trades near this model value'; cls = 'hold'; }
-    note = `Model value = average of (a) 5 years of EPS growing ${(growth*100).toFixed(1)}%/yr discounted at ${(discount*100).toFixed(1)}% with 3% terminal growth and (b) 20x trailing EPS. Defaults use the analysts' next-year EPS estimate. Change the sliders to test your own view. Educational only, not investment advice.`;
-  }
-  document.getElementById('modalRecCard').className = `modal-rec ${cls}`;
-  document.getElementById('modalRec').textContent = rec;
-  document.getElementById('modalScore').textContent = fairValue==null ? '' :
-    `Model value $${fairValue.toFixed(2)} vs price $${s.price.toFixed(2)} (${upside>=0?'+':''}${upside.toFixed(1)}%)`;
-  document.getElementById('modalNote').textContent = note;
-  document.getElementById('modalMetricsGrid').innerHTML = `
-    <div class="mm-card"><div class="mm-label">FinSTR Signal <span class="dim-note" title="Percentile vs the S&amp;P 500 on six factors (trend, momentum, value, quality, growth, low risk). Separate from this model value. See the Signals page.">ⓘ</span></div><div class="mm-value">${scoreBadge(finstrScore(s))}</div></div>
-    <div class="mm-card"><div class="mm-label">Model Value</div><div class="mm-value">${fairValue==null?'-':'$'+fairValue.toFixed(2)}</div></div>
-    <div class="mm-card"><div class="mm-label">vs Price</div><div class="mm-value ${upside>=0?'pos':'neg'}">${upside==null?'-':(upside>=0?'+':'')+upside.toFixed(1)+'%'}</div></div>
-    <div class="mm-card"><div class="mm-label">Analyst Target</div><div class="mm-value">${isNum(s.target)?'$'+s.target.toFixed(2):'-'}</div></div>`;
-  renderModalProjection(s, growth);
-}
-function renderModalProjection(s, growth){
-  const investment = Math.max(0, parseFloat(document.getElementById('modalInvestment').value) || 0);
-  const shares = s.price>0 ? investment / s.price : 0;
-  const dps0 = isNum(s.divRate) ? s.divRate : 0;   // annual dividend per share, grown with the price
-  let price = s.price, dps = dps0, divs = 0, rows = '';
-  for(let y=1;y<=5;y++){
-    price *= (1+growth); dps *= (1+growth);
-    divs += shares*dps;
-    const val = shares*price + divs, ret = val - investment;
-    rows += `<tr><td>Yr ${y}</td><td>$${price.toFixed(2)}</td><td>$${val.toLocaleString(undefined,{maximumFractionDigits:0})}</td><td class="${ret>=0?'pos':'neg'}">${ret>=0?'+':'-'}$${Math.abs(ret).toLocaleString(undefined,{maximumFractionDigits:0})}</td></tr>`;
-  }
-  document.getElementById('modalProjBody').innerHTML = rows;
 }
 
 // ---------- PRICE REFRESH (Option A+B) ----------
@@ -4161,7 +4226,7 @@ async function loadSnapshot(){
       : `<b>Market snapshot</b> · Prices as of ${fr.label || asOfText} · `)+
     `<span class="bn-more">${stockData.length} S&amp;P 500 companies · Source: Yahoo Finance · </span>Updates about 10:30 AM, 1 PM and 4:20 PM ET on trading days, not real time · `+
     `<a href="#" onclick="openAbout();return false">Methodology</a> · <a href="stock/">All stocks</a>`;
-  const lu = document.getElementById('lastUpdated'); if(lu) lu.textContent = asOf ? 'Prices: '+fr.label.replace(/^the /,'') : '';
+  const lu = document.getElementById('lastUpdated'); if(lu) lu.textContent = asOf ? 'Updated: '+asOfText.replace(/, \d{4},/, ',') : '';
 }
 
 async function init(){

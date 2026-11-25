@@ -27,6 +27,7 @@ import csv
 import json
 import math
 import os
+import re
 import sys
 import threading
 import time
@@ -34,7 +35,7 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 import yfinance as yf
@@ -340,24 +341,86 @@ def news(sym, name=None):
     return out[:NEWS_PER_TICKER]
 
 
-def insiders(sym, n=6):
+_PRICE_RE = re.compile(r"at price ([0-9.,]+)(?:\s*-\s*([0-9.,]+))?")
+
+
+def insider_kind(tx):
+    t = (tx or "").strip().lower()
+    return "buy" if t.startswith("purchase") else "sell" if t.startswith("sale") else None
+
+
+def insider_label(tx):
+    """Finviz-style transaction name from Yahoo's text ("Sale at price 352.26 - 353.43 per share.")."""
+    t = (tx or "").strip().lower()
+    for key, label in (("purchase", "Buy"), ("sale", "Sale"), ("stock gift", "Gift"), ("stock award", "Award"),
+                       ("conversion of exercise", "Option Exercise"), ("exercise", "Option Exercise")):
+        if t.startswith(key):
+            return label
+    return "Other" if t else "Not specified"
+
+
+def insiders(sym, days=365, cap=300):
+    """Insider transactions of the last `days` (newest first), with Finviz-style columns: transaction
+    label, cost per share, shares, value, direct/indirect, and the insider's current direct holding and
+    full title from Yahoo's insider roster (same request). The screener keeps the first 6; the quote file
+    gets the 20 latest plus monthly open-market buy/sell totals (insider_monthly)."""
     try:
-        df = yf.Ticker(sym).insider_transactions
+        tk = yf.Ticker(sym)
+        df = tk.insider_transactions
         if df is None or df.empty:
             return []
+        roster = {}
+        try:
+            rh = tk.insider_roster_holders
+            for _, h in (rh.iterrows() if rh is not None else []):
+                own = h.get("Shares Owned Directly")
+                roster[str(h.get("Name") or "")] = {"title": str(h.get("Position") or ""),
+                                                    "owned": int(own) if own == own and own is not None else None}
+        except Exception:  # noqa: BLE001
+            pass
     except Exception:  # noqa: BLE001
         return []
+    cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
     rows = []
-    for _, r in df.head(n).iterrows():
+    for _, r in df.head(cap).iterrows():
         sh, val = r.get("Shares"), r.get("Value")
+        shares = int(sh) if sh == sh and sh is not None else 0
+        value = float(val) if val == val and val is not None else None
+        text = str(r.get("Text", "") or r.get("Transaction", "") or "")
+        m = _PRICE_RE.search(text)
+        cost = round(value / shares, 2) if value and shares else (
+            round((float(m.group(1).replace(",", "")) + float((m.group(2) or m.group(1)).replace(",", ""))) / 2, 2) if m else None)
+        name = str(r.get("Insider", "") or "")
+        ro = roster.get(name, {})
         rows.append({
-            "insider": str(r.get("Insider", "") or ""), "position": str(r.get("Position", "") or ""),
-            "transaction": str(r.get("Text", "") or r.get("Transaction", "") or ""),
-            "shares": int(sh) if sh == sh and sh is not None else 0,
-            "value": float(val) if val == val and val is not None else None,
+            "insider": name, "position": ro.get("title") or str(r.get("Position", "") or ""),
+            "transaction": text, "label": insider_label(text),
+            "shares": shares, "value": value, "cost": cost or None,
+            "ownership": {"D": "Direct", "I": "Indirect"}.get(str(r.get("Ownership") or ""), ""),
+            "ownedNow": ro.get("owned"),
             "date": str(r.get("Start Date", ""))[:10],
         })
-    return rows
+    return [r for r in rows if r["date"] >= cutoff]
+
+
+def insider_monthly(rows, months=12):
+    """Open-market buys and sales per calendar month, oldest first, including empty months."""
+    now = datetime.now()
+    keys = []
+    y, m = now.year, now.month
+    for _ in range(months):
+        keys.append(f"{y:04d}-{m:02d}")
+        y, m = (y, m - 1) if m > 1 else (y - 1, 12)
+    out = {k: {"m": k, "buyShares": 0, "buyValue": 0.0, "buys": 0, "sellShares": 0, "sellValue": 0.0, "sells": 0} for k in reversed(keys)}
+    for r in rows:
+        k, kind = r["date"][:7], insider_kind(r["transaction"])
+        if k not in out or not kind:
+            continue
+        b = out[k]
+        b[kind + "Shares"] += abs(r["shares"] or 0)
+        b[kind + "Value"] += abs(r["value"] or 0)
+        b[kind + "s"] += 1
+    return [dict(b, buyValue=round(b["buyValue"]), sellValue=round(b["sellValue"])) for b in out.values()]
 
 
 # ───────────────────────── deep data (financials, estimates, rating changes) ─────────────────────────
@@ -402,8 +465,16 @@ def fetch_deep(sym):
                    "shares": _series(a, "Diluted Average Shares", 1e-9, 3), "netIncome": _series(a, "Net Income", 1e-9, 2)},
         "quarterly": {"eps": _series(q, "Diluted EPS"), "sales": _series(q, "Total Revenue", 1e-9, 2),
                       "shares": _series(q, "Diluted Average Shares", 1e-9, 3), "netIncome": _series(q, "Net Income", 1e-9, 2)},
-        "ratings": [], "estimates": {}, "surprises": [], "ltg": None,
+        "ratings": [], "estimates": {}, "surprises": [], "ltg": None, "recTrend": None,
     }
+    try:  # current month's count of analyst recommendations (Finviz "Rating Distribution")
+        rt = t.recommendations
+        if rt is not None and not rt.empty:
+            cur = rt[rt["period"] == "0m"]
+            r = (cur if not cur.empty else rt).iloc[0]
+            deep["recTrend"] = {k: int(r.get(k) or 0) for k in ("strongBuy", "buy", "hold", "sell", "strongSell")}
+    except Exception:  # noqa: BLE001
+        pass
     try:
         u = t.upgrades_downgrades
         if u is not None and not u.empty:
@@ -540,7 +611,9 @@ def main():
             raise ValueError("no history")
         row.update(technicals(h))
         row["news"] = news(s, u["name"])
-        row["insiderTransactions"] = insiders(s)
+        ins = insiders(s)
+        row["insiderTransactions"] = ins[:6]
+        row["_insiders"] = ins
         row["_deep"] = get_deep(s)
         row.update(deep_fields(row["_deep"]))
         return row, h, row["news"]
@@ -574,11 +647,13 @@ def main():
     for row, h, nw in done:
         profile = row.pop("_profile")
         deep = row.pop("_deep", None)
+        ins = row.pop("_insiders", None) or []
         deep_map[row["ticker"]] = deep
         rows.append(compat(row))
         h = h.dropna(subset=["Close"])
         quote = {
             "ticker": row["ticker"], "profile": profile, "news": nw, "deep": deep,
+            "insiders": {"recent": ins[:20], "monthly": insider_monthly(ins)},
             "history": {
                 "d": [d.strftime("%Y-%m-%d") for d in h.index],
                 "o": [round(float(x), 2) for x in h["Open"]], "h": [round(float(x), 2) for x in h["High"]],
