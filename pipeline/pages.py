@@ -91,11 +91,20 @@ ul{{margin:8px 0 0;padding-left:18px}}
 .g{{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--b);border-radius:8px;overflow:hidden}}
 .g div{{display:flex;justify-content:space-between;padding:6px 10px;border-bottom:1px solid var(--b);font-size:13px}}
 .g span{{color:var(--d)}} .cta{{display:inline-block;background:var(--a);color:#fff;border-radius:6px;padding:9px 14px;font-weight:600;margin:6px 0}}
-footer{{color:var(--d);font-size:11.5px;margin:20px 0}}
+.brand-word{{display:flex;align-items:center;gap:7px;text-decoration:none}} .brand-word b{{color:var(--a)}}
+.bw-ico{{width:24px;height:24px;border-radius:6px;display:block;flex-shrink:0;}}
+.bw-tag{{font-weight:700;font-size:14px;letter-spacing:0;margin-left:4px;white-space:nowrap;}}
+.bw-tag b{{color:var(--accent, var(--a));font-weight:700;}} .bw-os{{color:var(--dim, var(--d));font-weight:600;}}
+@media (max-width:980px){{ .bw-tag{{display:none;}} }}
+.site-footer{{border-top:1px solid var(--border, var(--b));margin:28px 0 10px;padding:16px 4px 8px;text-align:center;font-size:12px;color:var(--dim, var(--d));}}
+.sf-links{{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;margin-bottom:8px;}}
+.sf-links a{{color:var(--dim, var(--d));text-decoration:none;white-space:nowrap;}} .sf-links a:hover{{color:var(--accent, var(--a));text-decoration:underline;}}
+.sf-links > span{{opacity:.5;}}
+.sf-note{{font-size:11.5px;line-height:1.5;opacity:.85;max-width:900px;margin:0 auto;}}
 .why{{border-left:3px solid var(--a);font-size:13.5px}}
 @media (max-width:640px){{.g{{grid-template-columns:1fr 1fr}} .f{{grid-template-columns:1fr 1fr}}}}
 </style></head><body><main>
-<header><a class="brand" href="../../">● Fin<b>STR</b></a><a href="../">All S&amp;P 500 stocks →</a></header>
+<header><a class="brand brand-word" href="../../" aria-label="FinSTR home"><img class="bw-ico" src="../../assets/img/finstr-icon-180.png" alt="" width="24" height="24"><span>Fin<b>STR</b></span><span class="bw-tag">· <b>Stock Trade Recommendation</b> <span class="bw-os">(Open Source)</span></span></a><a href="../">All S&amp;P 500 stocks →</a></header>
 <h1>{e(t)} <small>{e(name)}</small></h1>
 <div class="px">{fmt(s.get('price'))} <span style="font-size:15px;color:{'var(--p)' if (s.get('changePercent') or 0) >= 0 else 'var(--n)'}">{pct(s.get('changePercent'))}</span></div>
 <div class="meta">{e(s.get('sector', ''))} · {e(s.get('industry', ''))} · {e(s.get('exchange') or '')} · data as of {e(as_of[:16].replace('T', ' '))} UTC</div>
@@ -105,8 +114,10 @@ footer{{color:var(--d);font-size:11.5px;margin:20px 0}}
 <span class="meta">Stronger than {sig if sig is not None else '-'}% of the S&amp;P 500 on six factors. <a href="../../#view=signals">How it is built and how it has performed</a></span></div></div>
 <div class="f">{factors}</div><ul>{reasons}</ul></div>
 <div class="g">{grid}</div>
-<footer>Source: Yahoo Finance, refreshed several times per US trading day. FinSTR is open source; signals are educational, not investment advice.
-<a href="https://github.com/Punch-k/FinSTR-app">Source code</a></footer>
+<footer class="site-footer">
+  <nav class="sf-links"><a href="../../#about">About &amp; Methodology</a><span>·</span><a href="../../#view=screener">Screener</a><span>·</span><a href="../../#view=heatmap">Maps</a><span>·</span><a href="../../#view=signals">Signals</a><span>·</span><a href="../../stock/">All Stocks A–Z</a><span>·</span><a href="../../llms.txt">Data &amp; API</a><span>·</span><a href="https://github.com/Punch-k/FinSTR-app#mcp-server-claude-cursor-and-other-ai-assistants">AI Assistants (MCP)</a><span>·</span><a href="https://github.com/Punch-k/FinSTR-app">Source Code</a><span>·</span><a href="https://github.com/Punch-k/FinSTR-app/issues">Report an Issue</a><span>·</span><a href="../../privacy.html">Privacy</a><span>·</span><a href="../../terms.html">Terms</a></nav>
+  <div class="sf-note">© 2026 FinSTR · Open source · Market data from Yahoo Finance, refreshed hourly on US trading days, not real-time · Signals and ideas are educational, not investment advice.</div>
+</footer>
 </main></body></html>"""
 
 
@@ -141,12 +152,24 @@ h1{{font-size:22px;margin:14px 0 2px}} h2{{font-size:15px;margin:18px 0 6px;bord
 .l a{{display:grid;grid-template-columns:48px 1fr 62px 26px;gap:6px;padding:3px 0;color:var(--t);font-size:13px;border-bottom:1px solid var(--b)}}
 .l span{{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--d)}} .l b{{color:var(--a)}}
 .l i{{font-style:normal;text-align:right}} .l i.p{{color:#26a65b}} .l i.n{{color:#ef5350}} .l em{{font-style:normal;text-align:right;color:var(--d)}}
-footer{{color:var(--d);font-size:11.5px;margin:20px 0}}
+.brand-word{{display:flex;align-items:center;gap:7px;text-decoration:none}} .brand-word b{{color:var(--a)}}
+.bw-ico{{width:24px;height:24px;border-radius:6px;display:block;flex-shrink:0;}}
+.bw-tag{{font-weight:700;font-size:14px;letter-spacing:0;margin-left:4px;white-space:nowrap;}}
+.bw-tag b{{color:var(--accent, var(--a));font-weight:700;}} .bw-os{{color:var(--dim, var(--d));font-weight:600;}}
+@media (max-width:980px){{ .bw-tag{{display:none;}} }}
+.site-footer{{border-top:1px solid var(--border, var(--b));margin:28px 0 10px;padding:16px 4px 8px;text-align:center;font-size:12px;color:var(--dim, var(--d));}}
+.sf-links{{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;margin-bottom:8px;}}
+.sf-links a{{color:var(--dim, var(--d));text-decoration:none;white-space:nowrap;}} .sf-links a:hover{{color:var(--accent, var(--a));text-decoration:underline;}}
+.sf-links > span{{opacity:.5;}}
+.sf-note{{font-size:11.5px;line-height:1.5;opacity:.85;max-width:900px;margin:0 auto;}}
 </style></head><body><main>
-<header><a class="brand" href="../">● Fin<b>STR</b></a><a href="../#view=screener">Screener →</a></header>
+<header><a class="brand brand-word" href="../" aria-label="FinSTR home"><img class="bw-ico" src="../assets/img/finstr-icon-180.png" alt="" width="24" height="24"><span>Fin<b>STR</b></span><span class="bw-tag">· <b>Stock Trade Recommendation</b> <span class="bw-os">(Open Source)</span></span></a><a href="../#view=screener">Screener →</a></header>
 <h1>All S&amp;P 500 Stocks</h1><div class="meta">{len(rows)} companies · columns: ticker, name, today's change, FinSTR Signal (0-100) · data as of {e(as_of[:16].replace('T', ' '))} UTC</div>
 {"".join(secs)}
-<footer>Source: Yahoo Finance. Educational, not investment advice. <a href="https://github.com/Punch-k/FinSTR-app">Source code</a></footer>
+<footer class="site-footer">
+  <nav class="sf-links"><a href="../#about">About &amp; Methodology</a><span>·</span><a href="../#view=screener">Screener</a><span>·</span><a href="../#view=heatmap">Maps</a><span>·</span><a href="../#view=signals">Signals</a><span>·</span><a href="../stock/">All Stocks A–Z</a><span>·</span><a href="../llms.txt">Data &amp; API</a><span>·</span><a href="https://github.com/Punch-k/FinSTR-app#mcp-server-claude-cursor-and-other-ai-assistants">AI Assistants (MCP)</a><span>·</span><a href="https://github.com/Punch-k/FinSTR-app">Source Code</a><span>·</span><a href="https://github.com/Punch-k/FinSTR-app/issues">Report an Issue</a><span>·</span><a href="../privacy.html">Privacy</a><span>·</span><a href="../terms.html">Terms</a></nav>
+  <div class="sf-note">© 2026 FinSTR · Open source · Market data from Yahoo Finance, refreshed hourly on US trading days, not real-time · Signals and ideas are educational, not investment advice.</div>
+</footer>
 </main></body></html>"""
 
 
