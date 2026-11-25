@@ -25,7 +25,7 @@ infrastructure: a Python data pipeline on GitHub Actions and a static site on Gi
 
 | Area | Features |
 |---|---|
-| **Screener** | 90+ fields · 12 column views (Overview, Valuation, Financial, Ownership, Performance, Technical, Analysts, Signals, …) · 30+ filters in one row · sector pie (click to filter) · predictive ticker search · watchlist · CSV export · shareable links · screen alerts |
+| **Screener** | 90+ fields · 12 column views (Overview, Valuation, Financial, Ownership, Performance, Technical, Analysts, Signals, …) · 30+ filters always open beside a sector chart (Day / Week / Month / YTD, click a sector to filter, analysts' most and least liked stock per sector) · signal screens · predictive ticker search · sortable columns |
 | **Signals** | FinSTR Signal (0-100 percentile) with factor bars and plain-English reasons for every stock · monthly backtest · live out-of-sample record |
 | **Quote page** | Candlestick chart with moving averages · peers · 78-field snapshot · 5-year and quarterly financials · earnings surprises · analyst ratings · headlines · insider trades · valuation sandbox · "why it moved" context |
 | **Portfolio** | Paper portfolio: P&L, return vs the S&P 500 since each purchase, performance chart, sector mix, beta, rule-based points to consider (with trim amounts), diversification ideas, changes since your last visit |
