@@ -1,7 +1,7 @@
 """Decide whether a refresh of the published data is due.
 
-FinSTR refreshes three times per US trading day, at about 10:30, 13:00 and 16:20 New York
-time (the last one after the 16:00 close). GitHub's own scheduler often starts jobs hours
+FinSTR refreshes hourly on US trading days: 10:30, 11:30, 12:30, 13:30, 14:30 and 15:30
+New York time, plus 16:20 after the 16:00 close. GitHub's own scheduler often starts jobs hours
 late, so the deploy workflow is triggered often (hourly cron plus an outside timer) and
 this check makes the extra triggers cheap: a run only rebuilds the data when the live
 site's snapshot is older than the most recent refresh slot.
@@ -17,7 +17,7 @@ import urllib.request
 from zoneinfo import ZoneInfo
 
 ET = ZoneInfo("America/New_York")
-SLOTS = [(10, 30), (13, 0), (16, 20)]  # New York time, Monday to Friday
+SLOTS = [(10, 30), (11, 30), (12, 30), (13, 30), (14, 30), (15, 30), (16, 20)]  # New York time, Mon-Fri
 
 
 def latest_slot(now):

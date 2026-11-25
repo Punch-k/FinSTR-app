@@ -1,6 +1,7 @@
-# Reliable refresh schedule (3 times per trading day)
+# Reliable refresh schedule (hourly on trading days)
 
-FinSTR's data should refresh at about **10:30 AM, 1:00 PM and 4:20 PM New York time** on trading days.
+FinSTR's data refreshes **hourly from 10:30 AM to 3:30 PM New York time, plus 4:20 PM after the close**, on trading days
+(7 refreshes; each takes about 2 minutes and loads all 503 stocks).
 
 ## Why GitHub's schedule alone is not enough
 
@@ -70,11 +71,10 @@ end $$;
 
 revoke execute on function public.finstr_trigger_refresh() from public, anon, authenticated;
 
--- pg_cron uses UTC. Each slot is listed for both winter (EST) and summer (EDT) time;
--- the gate job skips whichever one is early, so no edits are needed when the clocks change.
-select cron.schedule('finstr-refresh-1030', '35 14,15 * * 1-5', 'select public.finstr_trigger_refresh()');
-select cron.schedule('finstr-refresh-1300', '5 17,18 * * 1-5',  'select public.finstr_trigger_refresh()');
-select cron.schedule('finstr-refresh-1620', '25 20,21 * * 1-5', 'select public.finstr_trigger_refresh()');
+-- pg_cron uses UTC. Hourly at :35 from 14:35 to 21:35 UTC covers the New York slots in both winter (EST)
+-- and summer (EDT) time; the gate job skips any trigger whose slot is already done, so no edits are
+-- needed when the clocks change.
+select cron.schedule('finstr-refresh-hourly', '35 14-21 * * 1-5', 'select public.finstr_trigger_refresh()');
 ```
 
 ### Step 4: test it
@@ -95,7 +95,7 @@ select jobname, schedule, active from cron.job where jobname like 'finstr%';
 select start_time, status, return_message from cron.job_run_details order by start_time desc limit 10;
 ```
 
-To stop it: `select cron.unschedule('finstr-refresh-1030');` (and the other two).
+To stop it: `select cron.unschedule('finstr-refresh-hourly');`
 
 ## Notes
 

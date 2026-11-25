@@ -49,6 +49,10 @@
   .hamburger-btn{ display:none; background:var(--panel2); border:1px solid var(--border); color:var(--text); width:38px; height:38px; border-radius:6px; font-size:16px; cursor:pointer; }
   .global-search{background:var(--panel2);border:1px solid var(--border);border-radius:6px;color:var(--fg);padding:7px 12px;font-size:12.5px;width:220px;margin-left:12px;}
   .global-search:focus{outline:none;border-color:var(--accent);}
+  .top-links{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--dim);white-space:nowrap;}
+  .top-links a{color:var(--dim);text-decoration:none;} .top-links a:hover{color:var(--accent);}
+  .m-only{display:none;}
+  @media (max-width:600px){ .top-links{display:none;} .m-only{display:block;text-decoration:none;} }
   @media (max-width:720px){ .global-search{width:120px;margin-left:8px;} }
   .topnav-body{ display:flex; justify-content:space-between; align-items:center; padding:0 16px 12px; flex-wrap:wrap; gap:10px; }
   .nav-links{display:flex; gap:14px; flex-wrap:wrap; align-items:center;}
@@ -574,7 +578,6 @@
   .banner-warn b{color:#b07d00;}
   :root:not([data-theme="light"]) .banner-warn b{color:#f0c14b;}
   #presetFilter{max-width:100%;}
-  @media(max-width:600px){ .banner .bn-more{display:none;} }
   .gv-tabs{overflow-x:auto;scrollbar-width:none;} .gv-tab{white-space:nowrap;}
   @media(max-width:700px){
     .news-subnav{flex-wrap:wrap;}
@@ -844,6 +847,7 @@
   <div class="topnav">
     <div class="topnav-bar">
       <a class="brand brand-word" href="#" onclick="setView('screener');return false" aria-label="FinSTR home"><span class="bw-dot"></span><span>Fin<b>STR</b></span></a>
+      <span class="top-links"><a href="#" onclick="openAbout();return false">Methodology</a><span>·</span><a href="stock/">All stocks</a></span>
       <input id="globalSearchInput" class="global-search" type="text" placeholder="Search ticker or company…" maxlength="40"
         onkeydown="if(event.key==='Enter')globalTickerJump()">
       <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()">☰</button>
@@ -880,13 +884,12 @@
         <label class="theme-switch"><input type="checkbox" id="themeSwitchInput" onchange="toggleTheme()"><span class="switch-track"><span class="switch-thumb">🌙</span></span></label>
         <button class="nav-ghost-btn" id="authBtn" onclick="openAuth()">Sign in</button>
         <button class="nav-ghost-btn" onclick="openAbout()">About</button>
+        <a class="nav-ghost-btn m-only" href="stock/">All stocks</a>
       </div>
     </div>
   </div>
 
-  <div class="banner" id="dataBanner">
-    <b>Loading</b> market snapshot…
-  </div>
+  <div class="banner" id="dataBanner" style="display:none"></div>
 
   <!-- ===================== SCREENER SECTION ===================== -->
   <div id="screenerSection">
@@ -4190,14 +4193,17 @@ function etParts(d){
   return {date:`${o.year}-${o.month}-${o.day}`, min:(+o.hour%24)*60 + +o.minute, wd:o.weekday};
 }
 // label: "Nov 24 close" for an after-close snapshot, else "Nov 25, 11:42 AM ET".
-// behind: the market has traded today past the first refresh (10:30 ET + run time) but the snapshot predates today.
+// behind: on a trading day after the first refresh (10:30 ET + run time), the snapshot is from an earlier day, or it
+// is from today but more than 2.5 hours old while hourly updates should be running (before the 16:20 close update).
 function dataFreshness(asOf, now){
   const a = etParts(asOf), n = etParts(now);
   const day = asOf.toLocaleDateString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric'});
   const label = a.min >= 16*60 ? `the ${day} close` : asOf.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' ET';
   const tradingToday = !['Sat','Sun'].includes(n.wd) && !NYSE_HOLIDAYS.has(n.date);
-  const behind = tradingToday && n.min >= 11*60 && a.date < n.date;
-  return {label, behind};
+  const ageMin = (now - asOf) / 6e4;
+  const earlierDay = a.date < n.date;
+  const behind = tradingToday && n.min >= 11*60 && (earlierDay || (a.min < 16*60 && ageMin > 150));
+  return {label, behind, earlierDay};
 }
 
 async function loadSnapshot(){
@@ -4213,19 +4219,19 @@ async function loadSnapshot(){
     usingLiveData = stockData.length > 0;
   }catch(e){ usingLiveData = false; }
   if(!usingLiveData){
-    banner.className = 'banner banner-error';
+    banner.className = 'banner banner-error'; banner.style.display = '';
     banner.innerHTML = '<b>Data unavailable.</b> The market snapshot could not be loaded. Please refresh in a minute.';
     return;
   }
   const asOf = dataMeta ? new Date(dataMeta.generatedAt*1000) : null;
   const asOfText = asOf ? asOf.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})+' ET' : 'unknown';
   const fr = asOf ? dataFreshness(asOf, new Date()) : {behind:false};
-  banner.className = 'banner' + (fr.behind ? ' banner-warn' : '');
-  banner.innerHTML = (fr.behind
-      ? `<b>Prices are from ${fr.label}, not today.</b> Today's update is running late, so live sites will show different numbers. `
-      : `<b>Market snapshot</b> · Prices as of ${fr.label || asOfText} · `)+
-    `<span class="bn-more">${stockData.length} S&amp;P 500 companies · Source: Yahoo Finance · </span>Updates about 10:30 AM, 1 PM and 4:20 PM ET on trading days, not real time · `+
-    `<a href="#" onclick="openAbout();return false">Methodology</a> · <a href="stock/">All stocks</a>`;
+  // the banner only appears when something is wrong: prices from an earlier day, or no data
+  banner.className = 'banner banner-warn';
+  banner.style.display = fr.behind ? '' : 'none';
+  if(fr.behind) banner.innerHTML = fr.earlierDay
+    ? `<b>Prices are from ${fr.label}, not today.</b> Today's update is running late, so live sites will show different numbers.`
+    : `<b>Prices are from ${fr.label}.</b> The hourly update is running late, so live sites will show different numbers.`;
   const lu = document.getElementById('lastUpdated'); if(lu) lu.textContent = asOf ? 'Updated: '+asOfText.replace(/, \d{4},/, ',') : '';
 }
 

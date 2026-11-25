@@ -7,7 +7,7 @@
 name: Build and deploy FinSTR
 
 on:
-  # Data refreshes 3 times per US trading day: ~10:30, ~13:00 and ~16:20 New York time.
+  # Data refreshes hourly on US trading days: 10:30 to 15:30 New York time, plus 16:20 after the close.
   # GitHub often starts scheduled jobs hours late, so the workflow is triggered hourly
   # (and by an outside timer, see docs/SCHEDULER.md); the "gate" job below rebuilds only
   # when the live snapshot is older than the latest refresh slot, so extra triggers cost ~20s.
