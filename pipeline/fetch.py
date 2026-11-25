@@ -183,11 +183,11 @@ def load_previous():
 
 # ───────────────────────── prices ─────────────────────────
 def download_history(symbols):
-    """2 years of daily OHLCV for many symbols in batches. Returns {sym: DataFrame}."""
+    """5 years of daily OHLCV for many symbols in batches (charts offer 5Y). Returns {sym: DataFrame}."""
     out = {}
 
     def grab(batch):
-        df = retry(lambda: yf.download(batch, period="2y", interval="1d", group_by="ticker",
+        df = retry(lambda: yf.download(batch, period="5y", interval="1d", group_by="ticker",
                                        auto_adjust=False, threads=True, progress=False))
         for s in batch:
             try:

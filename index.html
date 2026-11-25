@@ -1118,10 +1118,12 @@
         <option value="6mo">6 Months</option>
         <option value="1y">1 Year</option>
         <option value="2y">2 Years</option>
+        <option value="5y">5 Years</option>
       </select>
       <select id="chartIntervalSel" onchange="loadChart()">
         <option value="1d" selected>Daily</option>
         <option value="1wk">Weekly</option>
+        <option value="1mo">Monthly</option>
       </select>
       <button class="sim-btn" onclick="loadChart()">Load Chart</button>
     </div>
@@ -1353,8 +1355,8 @@
     <div class="q-signal" id="qSignal"></div>
     <div class="q-block" id="qOverview">
       <div class="q-chart-bar">
-        <span class="q-seg" id="qInterval"><button data-i="d" class="on">Daily</button><button data-i="w">Weekly</button></span>
-        <span class="q-seg" id="qRange"><button data-n="63">3M</button><button data-n="126">6M</button><button data-n="252" class="on">1Y</button><button data-n="9999">2Y</button></span>
+        <span class="q-seg" id="qInterval"><button data-i="d" class="on">Daily</button><button data-i="w">Weekly</button><button data-i="m">Monthly</button></span>
+        <span class="q-seg" id="qRange"><button data-n="63">3M</button><button data-n="126">6M</button><button data-n="252" class="on">1Y</button><button data-n="504">2Y</button><button data-n="9999">5Y</button></span>
         <span class="q-legend" id="qChartTitle"></span>
         <span class="q-seg q-ma" id="qMa"><button data-m="20" class="on">SMA20</button><button data-m="50" class="on">SMA50</button><button data-m="200" class="on">SMA200</button></span>
       </div>
@@ -3198,6 +3200,23 @@ function renderInsidersFor(s){
 }
 
 let qpChart = null, qpReq = 0;
+// Candle charts stop at the first and last bar: zooming out ends when the whole period fits, and there is no empty
+// space to scroll into past either end.
+const LOCKED_EDGES = { fixLeftEdge:true, fixRightEdge:true, lockVisibleTimeRangeOnResize:true };
+// Daily bars -> weekly (week starting Monday) or monthly candles; `last` keeps the bucket's final trading day.
+function aggBars(daily, iv){
+  if(iv !== 'w' && iv !== 'm') return daily.map(x=>({...x, last:x.time}));
+  const out = new Map();
+  daily.forEach(x=>{
+    let k;
+    if(iv === 'm') k = x.time.slice(0,7) + '-01';
+    else { const dt = new Date(x.time+'T12:00:00'); dt.setDate(dt.getDate()-((dt.getDay()+6)%7)); k = dt.toISOString().slice(0,10); }
+    const b = out.get(k);
+    if(!b) out.set(k, {...x, time:k, last:x.time});
+    else { b.high=Math.max(b.high,x.high); b.low=Math.min(b.low,x.low); b.close=x.close; b.volume+=x.volume; b.last=x.time; }
+  });
+  return [...out.values()];
+}
 const qState = { n: 252, interval: 'd', mas: {20:true, 50:true, 200:true}, fin: 'annual' };
 async function loadQuotePanel(s){
   const req = ++qpReq;
@@ -3229,22 +3248,18 @@ function drawQuoteChart(s, q){
   let bars = H.d.map((d,i)=>({time:d, open:H.o[i], high:H.h[i], low:H.l[i], close:H.c[i], volume:H.v[i]})).filter(x=>x.close>0);
   const smaOn = (arr, n) => arr.map((x,i)=> i<n-1 ? null : {time:x.time, value:+(arr.slice(i-n+1,i+1).reduce((a,b)=>a+b.close,0)/n).toFixed(2)}).filter(Boolean);
   const smas = {20:smaOn(bars,20), 50:smaOn(bars,50), 200:smaOn(bars,200)};   // on daily bars, before trimming
-  if(qState.interval==='w'){
-    const wk = {};
-    bars.forEach(x=>{ const dt=new Date(x.time+'T12:00:00'); const mon=new Date(dt); mon.setDate(dt.getDate()-((dt.getDay()+6)%7));
-      const k=mon.toISOString().slice(0,10); const w=wk[k];
-      if(!w) wk[k]={...x, time:k}; else { w.high=Math.max(w.high,x.high); w.low=Math.min(w.low,x.low); w.close=x.close; w.volume+=x.volume; } });
-    bars = Object.values(wk);
-  }
-  const want = qState.interval==='w' ? Math.ceil(qState.n/5) : qState.n;
+  bars = aggBars(bars, qState.interval);
+  const want = Math.ceil(qState.n / ({d:1, w:5, m:21}[qState.interval] || 1));
   bars = bars.slice(-want);
   const from = bars[0].time;
+  // moving averages plotted only at candle times (daily points would add dates and squeeze weekly/monthly candles)
+  const atBars = line => { const m = new Map(line.map(x=>[x.time, x.value])); return bars.filter(b=> m.has(b.last)).map(b=>({time:b.time, value:m.get(b.last)})); };
   const isDark = document.documentElement.dataset.theme !== 'light';
   qpChart = LightweightCharts.createChart(holder, {
     width: holder.clientWidth || 800, height: holder.clientHeight || 360,
     layout:{ background:{color:'transparent'}, textColor: isDark?'#8b94a3':'#6b7280', fontSize:11 },
     grid:{ vertLines:{color: isDark?'#1a1f2b':'#eef1f6'}, horzLines:{color: isDark?'#1a1f2b':'#eef1f6'} },
-    rightPriceScale:{ borderVisible:false, scaleMargins:{top:0.06, bottom:0.24} }, timeScale:{ borderVisible:false },
+    rightPriceScale:{ borderVisible:false, scaleMargins:{top:0.06, bottom:0.24} }, timeScale:{ borderVisible:false, ...LOCKED_EDGES },
     crosshair:{ mode: LightweightCharts.CrosshairMode.Normal },
   });
   const candles = qpChart.addCandlestickSeries({ upColor:'#26a65b', downColor:'#ef5350', borderVisible:false, wickUpColor:'#26a65b', wickDownColor:'#ef5350' });
@@ -3255,10 +3270,10 @@ function drawQuoteChart(s, q){
   const MA_COL = {20:'#c084fc', 50:'#4f8cff', 200:'#f5a623'};
   [20,50,200].forEach(n=>{ if(!qState.mas[n]) return;
     const ln = qpChart.addLineSeries({ color: MA_COL[n], lineWidth:1, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
-    ln.setData(smas[n].filter(x=>x.time>=from)); });
+    ln.setData(atBars(smas[n])); });
   qpChart.timeScale().fitContent();
   const first = bars[0].close, last = bars[bars.length-1].close, ch = (last/first-1)*100;
-  document.getElementById('qChartTitle').innerHTML = `<span class="${ch>=0?'pos':'neg'}">${ch>=0?'+':''}${ch.toFixed(2)}%</span> over period · last bar ${bars[bars.length-1].time}`;
+  document.getElementById('qChartTitle').innerHTML = `<span class="${ch>=0?'pos':'neg'}">${ch>=0?'+':''}${ch.toFixed(2)}%</span> over period · last bar ${bars[bars.length-1].last}`;
   if(!holder._ro){ holder._ro = new ResizeObserver(()=>{ if(qpChart) qpChart.applyOptions({width: holder.clientWidth}); }); holder._ro.observe(holder); }
 }
 function qMore(a){ a.previousElementSibling.classList.remove('q-clamp'); a.remove(); return false; }
@@ -3781,7 +3796,7 @@ async function loadChart(){
     grid:{ vertLines:{color: isDark?'#232838':'#dde2ec'}, horzLines:{color: isDark?'#232838':'#dde2ec'} },
     crosshair:{mode: LightweightCharts.CrosshairMode.Normal},
     rightPriceScale:{borderColor: isDark?'#232838':'#dde2ec'},
-    timeScale:{borderColor: isDark?'#232838':'#dde2ec', timeVisible:true},
+    timeScale:{borderColor: isDark?'#232838':'#dde2ec', ...LOCKED_EDGES},
   });
   lwCandleSeries = lwChartInst.addCandlestickSeries({
     upColor:'#26a65b', downColor:'#ef5350', borderVisible:false, wickUpColor:'#26a65b', wickDownColor:'#ef5350'
@@ -3793,18 +3808,10 @@ async function loadChart(){
   let bars = null;
   const qd = await getQuote(ticker);
   if(qd && qd.history){
-    const H = qd.history, take = {'1wk':5,'1mo':21,'3mo':63,'6mo':126,'1y':252,'2y':9999}[period] || 21;
+    const H = qd.history, take = {'1wk':5,'1mo':21,'3mo':63,'6mo':126,'1y':252,'2y':504,'5y':9999}[period] || 21;
     let b = H.d.map((d,i)=>({time:d, open:H.o[i], high:H.h[i], low:H.l[i], close:H.c[i], volume:H.v[i]})).filter(x=>x.close>0);
     b = b.slice(-take);
-    if(interval==='1wk'){
-      const wk = {};
-      b.forEach(x=>{ const dt=new Date(x.time+'T12:00:00'); const mon=new Date(dt); mon.setDate(dt.getDate()-((dt.getDay()+6)%7));
-        const k=mon.toISOString().slice(0,10); const w=wk[k];
-        if(!w) wk[k]={time:k, open:x.open, high:x.high, low:x.low, close:x.close, volume:x.volume};
-        else { w.high=Math.max(w.high,x.high); w.low=Math.min(w.low,x.low); w.close=x.close; w.volume+=x.volume; } });
-      b = Object.values(wk);
-    }
-    bars = b;
+    bars = aggBars(b, {'1wk':'w','1mo':'m'}[interval] || 'd');
   }
   if(bars && bars.length){
     lwCandleSeries.setData(bars.map(b=>({time:b.time,open:b.open,high:b.high,low:b.low,close:b.close})));
@@ -3820,7 +3827,7 @@ async function loadChart(){
        <span class="chart-stat">High <b>$${last.high.toFixed(2)}</b></span>
        <span class="chart-stat">Low <b>$${last.low.toFixed(2)}</b></span>
        <span class="chart-stat ${chg>=0?'pos':'neg'}">${chg>=0?'+':''}${chg}% (period)</span>
-       <span class="chart-stat" style="color:var(--dim)">Daily bars to ${last.time}</span>`;
+       <span class="chart-stat" style="color:var(--dim)">${{'1wk':'Weekly','1mo':'Monthly'}[interval]||'Daily'} bars to ${last.last}</span>`;
   } else {
     lwCandleSeries.setData([]);
     document.getElementById('chartInfo').innerHTML = '<span style="color:var(--dim)">Charts cover S&amp;P 500 companies. Try a ticker such as AAPL, MSFT or JPM.</span>';

@@ -14,7 +14,7 @@ infrastructure: a Python data pipeline on GitHub Actions and a static site on Gi
 | | |
 |---|---|
 | **What I built** | An end-to-end data product: automated data pipeline → scoring model → web app → AI automation (email digests, AI-assistant access) |
-| **Scale** | 503 companies, ~90 fields each, 2 years of daily prices, refreshed 3 times per US trading day (~10:30 AM, 1 PM, 4:20 PM ET); 503 generated stock pages |
+| **Scale** | 503 companies, ~90 fields each, 5 years of daily prices, refreshed 3 times per US trading day (~10:30 AM, 1 PM, 4:20 PM ET); 503 generated stock pages |
 | **Analytics** | Six-factor signal (trend, momentum, value, quality, growth, low risk) with a published backtest **and** a live, out-of-sample record that cannot be fitted after the fact |
 | **AI and automation** | Scheduled digests by email, Telegram, Slack or phone push; an optional AI-written summary whose every number, ticker and claim is checked against computed facts before sending; an MCP server so AI assistants (Claude, Cursor) can use FinSTR |
 | **Product** | Built mobile-first, plain-English screener ("cheap profitable tech near its 52-week high"), screen alerts, optional Google sign-in with synced portfolios |
