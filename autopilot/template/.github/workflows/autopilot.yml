@@ -1,0 +1,34 @@
+# Your monthly FinSTR Autopilot. Lives in your PRIVATE repo (copied from FinSTR-app/autopilot/template).
+#
+#   plan     weekdays 1st-7th of the month, 9:05 AM New York: makes the month's plan once and emails it
+#   check    every weekday evening: reads your account and marks which orders were filled (and keeps a
+#            Questrade token alive)
+# Run either by hand: Actions > FinSTR Autopilot > Run workflow.
+
+name: FinSTR Autopilot
+
+on:
+  schedule:
+    - cron: "5 14 1-7 * 1-5"     # plan (14:05 UTC = 9:05 AM EST; 10:05 AM in summer)
+    - cron: "30 22 * * 1-5"      # check
+  workflow_dispatch:
+    inputs:
+      command:
+        type: choice
+        options: [plan, check, refresh]
+        default: plan
+      force:
+        description: "Redo this month's plan"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write                # commit ledger/ back to this repo
+
+jobs:
+  autopilot:
+    uses: Punch-k/FinSTR-app/.github/workflows/autopilot.yml@main
+    with:
+      command: ${{ inputs.command || (github.event.schedule == '30 22 * * 1-5' && 'check' || 'plan') }}
+      force: ${{ inputs.force || false }}
+    secrets: inherit

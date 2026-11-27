@@ -708,6 +708,20 @@ def main():
     with open(os.path.join(DATA, "screener.json"), "w", encoding="utf-8") as f:
         json.dump(rows, f, separators=(",", ":"))
 
+    # Autopilot: daily headline tone (history carried from the live site) and a 5-year test of the example rules
+    try:
+        sys.path.insert(0, ROOT)
+        from autopilot import backtest as ap_backtest, config as ap_config, sentiment as ap_sentiment
+        ap_sentiment.run(rows, DATA, NOW_ET.date(), PREVIOUS_URL or None, UA)
+        if not args.limit:
+            res = ap_backtest.run(hist, universe, ap_config.load(None))
+            if res:
+                res["asOf"] = int(time.time())
+                with open(os.path.join(DATA, "autopilot.json"), "w", encoding="utf-8") as f:
+                    json.dump(res, f, separators=(",", ":"))
+    except Exception as e:  # noqa: BLE001  never let Autopilot extras stop the site build
+        print(f"[warn] autopilot: {e}", file=sys.stderr)
+
     # earnings + US economic-event calendar (keeps the last published copy if Yahoo fails)
     try:
         events_calendar.run(DATA, PREVIOUS_URL or None)

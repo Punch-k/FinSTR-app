@@ -1,0 +1,75 @@
+# FinSTR Autopilot (reusable). Your PRIVATE repo calls this; it never runs on FinSTR's public data alone.
+#
+# It checks out your private repo (rules.toml, holdings.json, ledger/) and this FinSTR code, runs one Autopilot
+# command, then commits the updated ledger back to YOUR repo. Nothing personal is written to FinSTR.
+# Copy autopilot/template/ into a new private repo to use it (see docs/AUTOPILOT.md).
+
+name: FinSTR Autopilot (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      command:
+        description: "plan | check | refresh"
+        type: string
+        required: true
+      force:
+        type: boolean
+        default: false
+      finstr_ref:
+        description: "FinSTR version to run (branch, tag or commit)"
+        type: string
+        default: main
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4            # your private repo
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Punch-k/FinSTR-app
+          ref: ${{ inputs.finstr_ref }}
+          path: .finstr
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install "yfinance>=1.5.1,<2" "pandas>=2.0,<3"
+
+      - name: Autopilot ${{ inputs.command }}
+        env:
+          PYTHONPATH: .finstr
+          GH_TOKEN: ${{ secrets.GH_SECRETS_TOKEN }}          # only to save Questrade's rotated token
+          QUESTRADE_REFRESH_TOKEN: ${{ secrets.QUESTRADE_REFRESH_TOKEN }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          args="${{ inputs.command }} --rules rules.toml --ledger ledger --holdings holdings.json"
+          if [ "${{ inputs.command }}" = "plan" ]; then args="$args --send"; fi
+          if [ "${{ inputs.force }}" = "true" ]; then args="$args --force"; fi
+          python -m autopilot $args
+
+      - name: Save the ledger to your repo
+        run: |
+          git config user.name "finstr-autopilot"
+          git config user.email "finstr-autopilot@users.noreply.github.com"
+          mkdir -p ledger && touch ledger/.keep
+          git add ledger
+          if git diff --cached --quiet; then echo "ledger unchanged"; exit 0; fi
+          git commit -m "Autopilot ${{ inputs.command }}: $(date -u +%Y-%m-%d)"
+          git push

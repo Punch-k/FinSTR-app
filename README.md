@@ -1,13 +1,46 @@
-# FinSTR: Free, Open-Source Stock Research for the S&P 500
+# FinSTR: Free, Open-Source Stock Research + a Monthly Investing Autopilot
 
-**Live site: [punch-k.github.io/FinSTR-app](https://punch-k.github.io/FinSTR-app/)** · Built by [Prapanch Kokkalemada](https://punch-k.github.io/Portfolio/)
+### 🌐 Live site: **[punch-k.github.io/FinSTR-app](https://punch-k.github.io/FinSTR-app/)** · ⭐ [Autopilot page](https://punch-k.github.io/FinSTR-app/#view=autopilot) · Built by [Prapanch Kokkalemada](https://punch-k.github.io/Portfolio/)
 
 [![FinSTR market map](assets/img/finstr-og.jpg)](https://punch-k.github.io/FinSTR-app/)
 
 FinSTR is a Finviz-style research tool for all ~500 S&P 500 companies: a screener, market maps, a quote page for every
-stock, a paper-portfolio tracker and scheduled AI portfolio digests. It explains what it shows (why a stock moved,
-why a signal is strong) and publishes an honest record of how its signal performs. It runs entirely on free
-infrastructure: a Python data pipeline on GitHub Actions and a static site on GitHub Pages.
+stock, a calendar, a paper-portfolio tracker and AI digests. On top of that research sits **FinSTR Autopilot**, a
+monthly, rules-based investing workflow for a long-term account such as a Canadian TFSA. Everything runs on free
+infrastructure: a Python pipeline on GitHub Actions and a static site on GitHub Pages.
+
+## ⭐ Highlight: FinSTR Autopilot
+
+**One plan a month, built from your rules, with a reason for every order.** Autopilot reads your account, applies the
+strategy you wrote (a core index fund plus a few stocks chosen from FinSTR's signal, analyst ratings and headline tone),
+and sends you the exact whole-share orders to place. You place them in your broker's app in about five minutes;
+Autopilot then checks what filled and tracks your TFSA contribution room.
+
+```
+every hour     FinSTR pipeline    prices · analyst ratings · insider trades · headlines (503 companies)
+every day      sentiment.py       headline tone per stock and for the market (finance word list, explainable)
+1st trading    your PRIVATE repo  read account (Questrade read-only, or holdings.json)
+day, 9 AM ET   `autopilot plan`   → rules.toml → whole-share orders + reasons → limits & TFSA-room checks
+                                  → optional AI market-mood paragraph, fact-checked against the plan
+                                  → email / Telegram / phone push  +  ledger/plans/YYYY-MM.md
+you, ~5 min    broker app         place the orders (Autopilot cannot trade)
+each evening   `autopilot check`  which orders filled, deposits so far this year
+```
+
+| | |
+|---|---|
+| **Same engine, tested** | The live plan and a 5-year backtest run the same code (`autopilot/engine.py`); the backtest of the example rules is rebuilt hourly and charted on the [Autopilot page](https://punch-k.github.io/FinSTR-app/#view=autopilot) against simply buying the core fund, with its limits stated (price-only signal, survivorship bias) |
+| **Your rules, not advice** | Core fund and weight, number of stocks, buy/exit signal levels, headline-tone exits, sector and position caps, monthly turnover limit, cash buffer, fees: all in one `rules.toml` |
+| **Safe by design** | Read-only broker access and no order code; your rules, holdings and plans live only in **your private repo**; the AI may only describe the plan, and any number or ticker not in the plan rejects its text |
+| **Canada-ready** | TFSA contribution-room warnings, Canadian-dollar listings (CDRs) so US companies can be bought without currency fees, each listing checked to really trade |
+| **Any AI model** | Ollama, LM Studio, OpenAI or Claude for the optional write-up |
+| **Cost** | $0: GitHub Actions in your private repo, free Yahoo data |
+
+Set it up in about 20 minutes: **[docs/AUTOPILOT.md](docs/AUTOPILOT.md)** · code: [`autopilot/`](autopilot) ·
+private-repo template: [`autopilot/template/`](autopilot/template) · test your own rules locally with
+`python -m autopilot backtest --rules rules.toml`.
+
+> Not investment advice. Autopilot applies rules you choose; it does not know your situation and cannot place orders.
 
 ## At a glance
 
@@ -16,6 +49,7 @@ infrastructure: a Python data pipeline on GitHub Actions and a static site on Gi
 | **What I built** | An end-to-end data product: automated data pipeline → scoring model → web app → AI automation (email digests, AI-assistant access) |
 | **Scale** | 503 companies, ~90 fields each, 5 years of daily prices, refreshed hourly on US trading days (10:30 AM to 3:30 PM ET, plus 4:20 PM after the close); 503 generated stock pages |
 | **Analytics** | Six-factor signal (trend, momentum, value, quality, growth, low risk) with a published backtest **and** a live, out-of-sample record that cannot be fitted after the fact |
+| **Investing workflow** | **FinSTR Autopilot**: monthly rules-based plan for a TFSA or any long-term account, read-only broker link, fact-checked AI write-up, 5-year backtest on the same engine |
 | **AI and automation** | Scheduled digests by email, Telegram, Slack or phone push; an optional AI-written summary whose every number, ticker and claim is checked against computed facts before sending; an MCP server so AI assistants (Claude, Cursor) can use FinSTR |
 | **Product** | Built mobile-first, predictive ticker search, sector pie that filters the screener, screen alerts, optional Google sign-in with synced portfolios |
 | **Stack** | Python (pandas, yfinance) · GitHub Actions · GitHub Pages · JavaScript, D3, TradingView Lightweight Charts · Supabase (auth, Postgres with row-level security) · Resend |
@@ -32,6 +66,7 @@ infrastructure: a Python data pipeline on GitHub Actions and a static site on Gi
 | **Home** | Your followed stocks with one plain-English line each · market internals (median vs cap-weighted move, move histogram, day-vs-week reversals) · top movers · heat map |
 | **Maps and markets** | Market-cap treemap and bubble view by timeframe · index cards, futures, currencies, crypto · sector and industry groups · calendar (earnings preview, earnings, dividends, US economic releases) · news |
 | **Stock pages** | A fast, no-JavaScript page per company at `/stock/TICKER/` and an [A-Z index by sector](https://punch-k.github.io/FinSTR-app/stock/), rebuilt on every deploy |
+| **Autopilot** | Monthly plan from your rules · headline tone per stock and market · backtest vs the core fund · fill check and TFSA-room tracking ([docs/AUTOPILOT.md](docs/AUTOPILOT.md)) |
 | **Automation** | Email / Telegram / Slack / phone-push digests and alerts · [MCP server](#mcp-server-claude-cursor-and-other-ai-assistants) · every dataset as public JSON documented in [`llms.txt`](https://punch-k.github.io/FinSTR-app/llms.txt) |
 
 ## Data and method
@@ -55,15 +90,18 @@ infrastructure: a Python data pipeline on GitHub Actions and a static site on Gi
 ## How it works
 
 ```
-GitHub Actions, 4x per trading day
+GitHub Actions, hourly on trading days
   └─ pipeline/fetch.py      Yahoo Finance → prices, fundamentals, analyst data, news for 503 companies
        ├─ signals.py        six-factor scores, composite signal, monthly backtest
        ├─ context.py        "why it moved" context, pace-adjusted relative volume
        ├─ track.py          live out-of-sample record (carried forward run to run)
+       ├─ autopilot/sentiment.py   daily headline tone (history carried forward run to run)
+       ├─ autopilot/backtest.py    5-year test of the example Autopilot rules
        └─ pages.py          503 stock pages, index, sitemap
   └─ static site (index.html + data/*.json) ──► GitHub Pages
 
 pipeline/digest.py   (GitHub Actions, scheduled)  portfolio review → email / Telegram / Slack / push
+autopilot/           (your private repo, monthly)  rules → monthly plan → you place orders → fill check
 pipeline/mcp_server.py                            FinSTR tools for AI assistants
 Supabase (optional)                               Google / email sign-in, synced portfolios
 ```

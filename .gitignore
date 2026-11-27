@@ -31,3 +31,6 @@ API Keys passwords/
 *secret*
 *.env
 .env*
+
+# Autopilot: Questrade token saved when run locally
+.questrade_token

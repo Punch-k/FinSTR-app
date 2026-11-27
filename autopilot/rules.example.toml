@@ -1,0 +1,44 @@
+# FinSTR Autopilot rules: copy this file to rules.toml in your PRIVATE autopilot repo and edit it.
+# Every number below is an EXAMPLE to show the format, not a recommendation. You choose the strategy;
+# Autopilot only applies it the same way every month and shows its working.
+
+[account]
+type = "TFSA"
+currency = "CAD"
+broker = "manual"            # "manual" (you keep holdings.json up to date) or "questrade" (read-only link)
+monthly_contribution = 400   # what you plan to deposit each month
+tfsa_room = 20000            # your room on 1 January this year, from CRA My Account (Autopilot subtracts deposits)
+cad_only = true              # only trade Canadian-dollar listings (TSX ETFs, CDRs) to avoid currency fees
+
+[core]
+# The part that is never sold because of news. Example ticker only: pick your own.
+symbol = "VFV.TO"
+weight = 0.60
+backtest_proxy = "SPY"       # US fund with long history, used only by the backtest
+
+[satellites]
+weight = 0.35                # share of the account for individual stocks
+count = 5                    # how many at most
+max_position = 0.10          # no single stock above this share of the account
+min_signal = 70              # FinSTR Signal (0-100) needed to buy
+exit_signal_below = 45       # sell a satellite whose signal falls below this
+min_sentiment = -0.10        # skip stocks whose 30-day headline tone is below this (-1..+1)
+exit_after_negative_months = 2   # sell if 30-day tone has been negative this many months running
+max_per_sector = 2
+# How a US ticker becomes something you can buy in CAD. "cdr" tries the Canadian Depositary Receipt
+# (TICKER.NE on Cboe Canada) and skips the stock if none trades. Add exceptions under [satellites.map].
+trade_as = "cdr"
+
+[satellites.map]
+# GOOGL = "GOOG.NE"
+
+[limits]
+max_turnover = 0.20          # sell at most this share of the account in one month (new deposits are extra)
+cash_buffer = 0.03           # keep this share in cash
+min_order = 50               # skip orders smaller than this many dollars
+fee_per_order = 0.0          # your broker's commission, used in the plan and the backtest
+
+[report]
+llm = "none"                 # "none", "openai" (any OpenAI-compatible URL: OpenAI, Ollama, LM Studio), or "anthropic"
+# Set LLM_BASE_URL, LLM_MODEL and LLM_API_KEY as secrets in your private repo. The model only writes the
+# market-mood paragraph; every number it writes is checked against the plan, otherwise the plain version is sent.

@@ -195,6 +195,25 @@
   .scr-filters .filter-field{min-width:0;} .scr-filters .filter-field select{width:100%; max-width:none;}
   @media (max-width:860px){ .scr-filters .filters-body{max-height:none; overflow:visible;} }
   .sp-signal{margin:0 0 10px;} .sp-signal select{width:100%; max-width:340px;}
+  /* ===== AUTOPILOT ===== */
+  .ap-badge{font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:2px 8px;vertical-align:middle;margin-left:6px;white-space:nowrap;}
+  .ap-steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:12px;}
+  .ap-steps > div{display:flex;flex-direction:column;gap:3px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px;}
+  .ap-steps b{font-size:13px;color:var(--accent);} .ap-steps span{font-size:12px;color:var(--dim);line-height:1.45;}
+  .sg-stats.ap-stats{grid-template-columns:repeat(4,minmax(0,1fr));} .ap-stats span{font-size:11.5px;color:var(--dim);}
+  .ap-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;margin:4px 0 6px;}
+  .ap-legend i{display:inline-block;width:16px;height:0;border-top:2px solid;vertical-align:middle;margin-right:6px;}
+  .ap-chart{position:relative;width:100%;height:280px;} .ap-chart svg{display:block;width:100%;height:100%;overflow:visible;}
+  .ap-chart .ap-tip{position:absolute;pointer-events:none;background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;white-space:nowrap;display:none;z-index:2;}
+  .ap-mood-big{display:flex;align-items:baseline;gap:10px;margin-bottom:8px;} .ap-mood-big b{font-size:22px;}
+  .ap-tone{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12.5px;}
+  .ap-tone div{display:grid;gap:3px;} .ap-tone a{color:var(--accent);font-weight:700;text-decoration:none;cursor:pointer;}
+  .ap-setup{margin:0 0 8px;padding-left:20px;font-size:13px;line-height:1.7;} .ap-setup a, #autopilotSection .dim-note a{color:var(--accent);}
+  .ap-dec{width:100%;font-size:12.5px;border-collapse:collapse;} .ap-dec td,.ap-dec th{padding:5px 6px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top;}
+  .ap-dec th{color:var(--dim);font-weight:600;}
+  @media (max-width:900px){ .ap-steps{grid-template-columns:repeat(2,minmax(0,1fr));} .sg-stats.ap-stats{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (max-width:520px){ .ap-steps{grid-template-columns:1fr;} .ap-chart{height:230px;} .ap-tone{grid-template-columns:1fr;} }
+
   /* ===== CALENDAR (Finviz-style layout) ===== */
   .cal-tabs{display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:14px; overflow-x:auto; scrollbar-width:none;}
   .cal-tabs button{background:none; border:none; border-bottom:2px solid transparent; color:var(--dim); padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; margin-bottom:-1px;}
@@ -957,6 +976,7 @@
         <span class="nav-link" data-nav="heatmap" onclick="setView('heatmap')">Maps</span>
         <span class="nav-link" data-nav="signals" onclick="setView('signals')">Signals</span>
         <span class="nav-link" data-nav="portfolio" onclick="setView('portfolio')">Portfolio</span>
+        <span class="nav-link" data-nav="autopilot" onclick="setView('autopilot')">Autopilot</span>
         <div class="nav-dropdown" id="navDropdownMarkets">
           <span class="nav-link nav-dropdown-toggle" onclick="toggleNavDropdown('navDropdownMarkets', event)">Markets ▾</span>
           <div class="nav-dropdown-menu">
@@ -1341,6 +1361,40 @@
   </div>
 
   <!-- ===================== CALENDAR SECTION ===================== -->
+  <div id="autopilotSection" style="display:none;">
+    <div class="sg-intro">
+      <h2>FinSTR Autopilot <span class="ap-badge">monthly · rules-based · read-only</span></h2>
+      <p>Autopilot turns FinSTR's research into <b>one plan a month</b> for a long-term account such as a Canadian TFSA: which stocks to keep, buy or sell, how many shares and why, within limits you write. You place the orders yourself in your broker's app; Autopilot cannot trade. It runs free on GitHub Actions in your own private repo. Not investment advice.</p>
+    </div>
+    <div class="ap-steps">
+      <div><b>1 · Collect</b><span>Prices, analyst ratings, insider trades and headlines for the S&amp;P 500, every hour</span></div>
+      <div><b>2 · Score</b><span>FinSTR Signal plus daily headline tone for each stock and the market</span></div>
+      <div><b>3 · Plan</b><span>1st trading day: your rules → whole-share orders, a reason for each</span></div>
+      <div><b>4 · Approve</b><span>The plan arrives by email or phone; you place the orders (~5 min)</span></div>
+      <div><b>5 · Log</b><span>Each evening it checks what filled and your TFSA room</span></div>
+    </div>
+    <div class="sg-card"><h3>Backtest of the example rules <span class="dim-note" id="apPeriod"></span></h3>
+      <div id="apStats" class="sg-stats ap-stats"></div>
+      <div class="ap-legend" id="apLegend"></div>
+      <div id="apChart" class="ap-chart"></div>
+      <div class="dim-note" id="apRules"></div>
+      <div class="dim-note" id="apMethod"></div>
+    </div>
+    <div class="sg-grid">
+      <div class="sg-card"><h3>Market mood from headlines <span class="dim-note" id="apMoodAsOf"></span></h3><div id="apMood"></div></div>
+      <div class="sg-card"><h3>What the backtest bought and sold recently</h3><div id="apDecisions"></div></div>
+    </div>
+    <div class="sg-card"><h3>Use it</h3>
+      <ol class="ap-setup">
+        <li>Create a <b>private</b> GitHub repo and copy <a href="https://github.com/Punch-k/FinSTR-app/tree/main/autopilot/template" target="_blank" rel="noopener">autopilot/template</a> into it.</li>
+        <li>Edit <code>rules.toml</code>: your core fund, limits, TFSA room and monthly deposit.</li>
+        <li>Choose how it reads your account: <code>holdings.json</code> you update, or Questrade's read-only link.</li>
+        <li>Add where the plan goes (email, Telegram or phone push) and, if you like, any AI model (Ollama, OpenAI, Claude) for a fact-checked market-mood paragraph.</li>
+      </ol>
+      <div class="dim-note">Full guide: <a href="https://github.com/Punch-k/FinSTR-app/blob/main/docs/AUTOPILOT.md" target="_blank" rel="noopener">docs/AUTOPILOT.md</a> · code: <a href="https://github.com/Punch-k/FinSTR-app/tree/main/autopilot" target="_blank" rel="noopener">autopilot/</a></div>
+    </div>
+  </div>
+
   <div id="calendarSection" style="display:none;">
     <div class="cal-tabs" id="calTabs">
       <button data-ct="preview" onclick="calSetTab('preview')">Earnings Preview</button><button data-ct="earnings" onclick="calSetTab('earnings')">Earnings</button><button data-ct="dividends" onclick="calSetTab('dividends')">Dividends</button><button data-ct="economic" onclick="calSetTab('economic')">Economic</button>
@@ -2792,7 +2846,7 @@ function noMatchToast(raw){ showToast(`No S&P 500 company matches "${raw}".`); }
 })();
 
 // ---------- VIEW SWITCH ----------
-const ALL_SECTIONS = ['home','screener','heatmap','news','charts','groups','futures','forex','crypto','insider','calendar','quote','signals','portfolio'];
+const ALL_SECTIONS = ['home','screener','heatmap','news','charts','groups','futures','forex','crypto','insider','calendar','quote','signals','portfolio','autopilot'];
 // Grouped nav dropdowns (Markets / Analytics) — declutters the top nav from 12 flat
 // links down to a handful, per user request to "club the analytics into dropdowns."
 const NAV_DROPDOWN_GROUPS = {
@@ -2835,9 +2889,99 @@ function setView(view){
   if(view==='calendar') renderCalendar();
   if(view==='signals') renderSignalsPage();
   if(view==='portfolio') renderPortfolio();
+  if(view==='autopilot') renderAutopilot();
   encodeStateToHash();
   closeMobileMenu();
 }
+
+// ---------- AUTOPILOT (backtest of the example rules + headline mood) ----------
+let apData = null, apSent = null, apLoading = null;
+const AP_COLORS = ()=> document.documentElement.dataset.theme === 'light' ? {a:'#3366ff', b:'#b06f00'} : {a:'#4f8cff', b:'#b87c00'};
+function apMoney(v){ return '$' + Math.round(v).toLocaleString(); }
+function apPct(v){ return (v > 0 ? '+' : '') + v.toFixed(1) + '%'; }
+async function renderAutopilot(){
+  const v = (dataMeta && dataMeta.generatedAt) || '';
+  if(!apLoading) apLoading = Promise.all([
+    fetch(`data/autopilot.json?v=${v}`).then(r=> r.ok ? r.json() : null).catch(()=>null),
+    fetch(`data/sentiment.json?v=${v}`).then(r=> r.ok ? r.json() : null).catch(()=>null),
+  ]).then(([a, s])=>{ apData = a; apSent = s; });
+  await apLoading;
+  const D = apData, el = id=> document.getElementById(id);
+  if(!D){
+    el('apStats').innerHTML = '<div class="dim-note">The backtest appears here after the next data refresh.</div>';
+  } else {
+    const S = D.stats, A = S.autopilot, B = S.coreOnly;
+    el('apPeriod').textContent = `${D.start} to ${D.end}`;
+    el('apStats').innerHTML = `
+      <div><span>Deposited</span><b>${apMoney(S.contributed)}</b><span>monthly, whole shares</span></div>
+      <div><span>Autopilot rules</span><b>${apMoney(A.endValue)}</b><span>${apPct(A.perYear)}/yr · worst drop ${A.maxDrawdown.toFixed(1)}%</span></div>
+      <div><span>Core fund only</span><b>${apMoney(B.endValue)}</b><span>${apPct(B.perYear)}/yr · worst drop ${B.maxDrawdown.toFixed(1)}%</span></div>
+      <div><span>Orders</span><b>${S.ordersPerMonth}/month</b><span>${S.orders} in total</span></div>`;
+    el('apRules').textContent = 'Example rules: ' + [D.rules.core, D.rules.satellites, D.rules.limits].join(' · ') + '.';
+    el('apMethod').textContent = D.method;
+    drawApChart(D.months);
+    el('apDecisions').innerHTML = `<table class="ap-dec"><tr><th>Month-end</th><th>Bought</th><th>Sold</th></tr>${
+      D.decisions.slice(-6).reverse().map(d=> `<tr><td>${d.d}</td><td>${d.buy.map(apTk).join(', ') || '–'}</td><td>${d.sell.map(apTk).join(', ') || '–'}</td></tr>`).join('')
+    }</table><div class="dim-note" style="margin-top:6px">Each month also tops up the core fund with the new deposit.</div>`;
+  }
+  const M = apSent && apSent.market;
+  if(!M || M.score == null){ el('apMood').innerHTML = '<div class="dim-note">Headline tone appears after the next data refresh.</div>'; return; }
+  const lbl = M.score >= .25 ? 'Positive' : M.score >= .08 ? 'Slightly positive' : M.score <= -.25 ? 'Negative' : M.score <= -.08 ? 'Slightly negative' : 'Neutral';
+  el('apMoodAsOf').textContent = 'today';
+  const T = Object.entries(apSent.tickers || {}).filter(([, x])=> x.avg30 != null && (x.n30 || 0) >= 3);
+  const top = [...T].sort((a, b)=> b[1].avg30 - a[1].avg30).slice(0, 6), bot = [...T].sort((a, b)=> a[1].avg30 - b[1].avg30).slice(0, 6);
+  const line = ([t, x])=> `<span>${apTk(t)} ${x.avg30 > 0 ? '+' : ''}${x.avg30.toFixed(2)} <span class="dim-note">(${x.n30} headlines)</span></span>`;
+  el('apMood').innerHTML = `<div class="ap-mood-big"><b>${lbl}</b><span class="dim-note">tone ${M.score > 0 ? '+' : ''}${M.score.toFixed(2)} · ${M.pos} positive vs ${M.neg} negative of ${M.n} headlines</span></div>
+    <div class="ap-tone"><div><b>Most positive, 30 days</b>${top.map(line).join('') || '<span class="dim-note">Building history</span>'}</div>
+    <div><b>Most negative, 30 days</b>${bot.map(line).join('') || '<span class="dim-note">Building history</span>'}</div></div>
+    <div class="dim-note" style="margin-top:8px">Tone runs from −1 (all negative) to +1 (all positive), from a finance word list applied to company headlines. It describes the news; it does not predict prices.</div>`;
+}
+function apTk(t){ return `<a onclick="openModal('${escAttr(t)}')">${escapeHtml(t)}</a>`; }
+function drawApChart(M){
+  const box = document.getElementById('apChart'); if(!box || !M || !M.length) return;
+  const C = AP_COLORS(), W = Math.max(280, box.clientWidth), H = box.clientHeight || 280, L = 52, R = 70, T = 10, Bm = 24;
+  const xs = i=> L + (W - L - R) * (M.length > 1 ? i / (M.length - 1) : 0);
+  const max = Math.max(...M.map(m=> Math.max(m.a, m.b, m.in))) * 1.05;
+  const ys = v=> T + (H - T - Bm) * (1 - v / max);
+  const path = k=> M.map((m, i)=> (i ? 'L' : 'M') + xs(i).toFixed(1) + ',' + ys(m[k]).toFixed(1)).join('');
+  const step = max > 20000 ? 10000 : max > 8000 ? 5000 : 2000;
+  let grid = '';
+  for(let v = 0; v <= max; v += step) grid += `<line x1="${L}" x2="${W - R}" y1="${ys(v)}" y2="${ys(v)}" stroke="var(--border)" stroke-width="1"/><text x="${L - 6}" y="${ys(v) + 4}" text-anchor="end" font-size="11" fill="var(--dim)">$${v / 1000}k</text>`;
+  let years = '';
+  M.forEach((m, i)=>{ if(m.d.slice(5, 7) === '01') years += `<text x="${xs(i)}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--dim)">${m.d.slice(0, 4)}</text>`; });
+  const last = M[M.length - 1], lx = xs(M.length - 1) + 6;
+  let la = ys(last.a), lb = ys(last.b); if(Math.abs(la - lb) < 14){ const mid = (la + lb) / 2; la = mid + (last.a >= last.b ? -8 : 8); lb = mid + (last.a >= last.b ? 8 : -8); }
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Backtest: Autopilot rules vs core fund only vs money deposited">
+    ${grid}${years}
+    <path d="${path('in')}" fill="none" stroke="var(--dim)" stroke-width="1.5" stroke-dasharray="4 4"/>
+    <path d="${path('b')}" fill="none" stroke="${C.b}" stroke-width="2"/>
+    <path d="${path('a')}" fill="none" stroke="${C.a}" stroke-width="2"/>
+    <text x="${lx}" y="${la + 4}" font-size="11" fill="var(--text)">Autopilot</text>
+    <text x="${lx}" y="${lb + 4}" font-size="11" fill="var(--text)">Core only</text>
+    <line id="apX" y1="${T}" y2="${H - Bm}" stroke="var(--dim)" stroke-width="1" visibility="hidden"/>
+    <circle id="apDa" r="4" fill="${C.a}" stroke="var(--panel)" stroke-width="2" visibility="hidden"/>
+    <circle id="apDb" r="4" fill="${C.b}" stroke="var(--panel)" stroke-width="2" visibility="hidden"/>
+    <rect x="${L}" y="${T}" width="${W - L - R}" height="${H - T - Bm}" fill="transparent" id="apHit"/>
+  </svg><div class="ap-tip" id="apTip"></div>`;
+  document.getElementById('apLegend').innerHTML = `<span><i style="border-color:${C.a}"></i>Autopilot rules</span><span><i style="border-color:${C.b}"></i>Core fund only</span><span><i style="border-color:var(--dim);border-top-style:dashed"></i>Money deposited</span>`;
+  const svg = box.querySelector('svg'), tip = document.getElementById('apTip');
+  const show = e=>{
+    const r = svg.getBoundingClientRect(), x = (e.clientX - r.left) * (W / r.width);
+    const i = Math.max(0, Math.min(M.length - 1, Math.round((x - L) / ((W - L - R) / Math.max(1, M.length - 1)))));
+    const m = M[i], px = xs(i);
+    const X = document.getElementById('apX'); X.setAttribute('x1', px); X.setAttribute('x2', px); X.setAttribute('visibility', 'visible');
+    [['apDa', m.a], ['apDb', m.b]].forEach(([id, v])=>{ const c = document.getElementById(id); c.setAttribute('cx', px); c.setAttribute('cy', ys(v)); c.setAttribute('visibility', 'visible'); });
+    tip.innerHTML = `<b>${m.d}</b><br>Autopilot ${apMoney(m.a)}<br>Core only ${apMoney(m.b)}<br><span style="color:var(--dim)">Deposited ${apMoney(m.in)}</span>`;
+    tip.style.display = 'block';
+    const left = px * r.width / W;
+    tip.style.left = (left > r.width / 2 ? left - tip.offsetWidth - 12 : left + 12) + 'px'; tip.style.top = '8px';
+  };
+  const hide = ()=>{ tip.style.display = 'none'; ['apX', 'apDa', 'apDb'].forEach(id=> document.getElementById(id).setAttribute('visibility', 'hidden')); };
+  const hit = document.getElementById('apHit');
+  hit.addEventListener('pointermove', show); hit.addEventListener('pointerdown', show); hit.addEventListener('pointerleave', hide);
+}
+addEventListener('resize', ()=>{ if(state.view === 'autopilot' && apData) drawApChart(apData.months); });
+new MutationObserver(()=>{ if(state.view === 'autopilot' && apData) drawApChart(apData.months); }).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
 
 // ---------- FINSTR SIGNAL ----------
 // Computed in pipeline/signals.py: six factor scores (trend, momentum, value, quality,
